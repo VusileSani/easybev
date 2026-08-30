@@ -1,1 +1,384 @@
-hello
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EasyBev Prototype</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 25px;
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: white;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 5px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #aaa;
+      margin-bottom: 30px;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: auto;
+    }
+
+    .panel {
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 16px;
+      padding: 25px;
+      margin-bottom: 25px;
+    }
+
+    .panel h2 {
+      margin-top: 0;
+    }
+
+    .table {
+      color: #aaa;
+      margin-bottom: 20px;
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      margin: 7px 0;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      background: #444;
+      color: #777;
+      cursor: not-allowed;
+    }
+
+    .active {
+      background: #20c96b;
+      color: #07150d;
+    }
+
+    .waiter-button {
+      background: #3478f6;
+      color: white;
+    }
+
+    .complete-button {
+      background: #f0a500;
+      color: #111;
+    }
+
+    .close-button {
+      background: #e84c4c;
+      color: white;
+    }
+
+    .status {
+      margin-top: 20px;
+      padding: 15px;
+      background: #292929;
+      border-radius: 10px;
+      min-height: 50px;
+    }
+
+    .status strong {
+      color: #20c96b;
+    }
+
+    .divider {
+      text-align: center;
+      color: #666;
+      margin: 15px 0 25px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>EasyBev</h1>
+  <div class="subtitle">Table 7 — Prototype</div>
+
+  <!-- GUEST VIEW -->
+  <div class="panel">
+    <h2>Guest</h2>
+    <div class="table">Table 7</div>
+
+    <button
+      id="callWaiter"
+      class="active"
+      onclick="callWaiter()">
+      Call Waiter
+    </button>
+
+    <button
+      id="orderDrinks"
+      onclick="requestDrinks()"
+      disabled>
+      Order Drinks
+    </button>
+
+    <button
+      id="orderFood"
+      onclick="requestFood()"
+      disabled>
+      Order Food
+    </button>
+
+    <button
+      id="askBill"
+      onclick="requestBill()"
+      disabled>
+      Ask for Bill
+    </button>
+
+    <div class="status">
+      <strong>Status:</strong>
+      <span id="guestStatus">Ready</span>
+    </div>
+  </div>
+
+
+  <div class="divider">
+    ↓ WAITER'S DEVICE ↓
+  </div>
+
+
+  <!-- WAITER VIEW -->
+  <div class="panel">
+    <h2>Waiter</h2>
+    <div class="table">Table 7</div>
+
+    <div class="status">
+      <strong>Request:</strong>
+      <span id="waiterStatus">No active request</span>
+    </div>
+
+    <button
+      id="acceptWaiter"
+      class="waiter-button"
+      onclick="acceptWaiter()"
+      disabled>
+      Accept Call
+    </button>
+
+    <button
+      id="completeDrinks"
+      class="complete-button"
+      onclick="completeDrinks()"
+      disabled>
+      Drinks Delivered
+    </button>
+
+    <button
+      id="completeFood"
+      class="complete-button"
+      onclick="completeFood()"
+      disabled>
+      Food Delivered
+    </button>
+
+    <button
+      id="billDelivered"
+      class="complete-button"
+      onclick="billDelivered()"
+      disabled>
+      Bill Delivered
+    </button>
+
+    <button
+      id="closeTable"
+      class="close-button"
+      onclick="closeTable()"
+      disabled>
+      Close Table
+    </button>
+
+  </div>
+
+</div>
+
+
+<script>
+
+  const guestStatus = document.getElementById("guestStatus");
+  const waiterStatus = document.getElementById("waiterStatus");
+
+  const callWaiterBtn = document.getElementById("callWaiter");
+  const orderDrinksBtn = document.getElementById("orderDrinks");
+  const orderFoodBtn = document.getElementById("orderFood");
+  const askBillBtn = document.getElementById("askBill");
+
+  const acceptWaiterBtn = document.getElementById("acceptWaiter");
+  const completeDrinksBtn = document.getElementById("completeDrinks");
+  const completeFoodBtn = document.getElementById("completeFood");
+  const billDeliveredBtn = document.getElementById("billDelivered");
+  const closeTableBtn = document.getElementById("closeTable");
+
+
+  function enableGuestButton(button) {
+    button.disabled = false;
+    button.classList.add("active");
+  }
+
+
+  function callWaiter() {
+
+    guestStatus.innerText = "Waiter called";
+
+    waiterStatus.innerText =
+      "Table 7 is calling you";
+
+    callWaiterBtn.disabled = true;
+    callWaiterBtn.classList.remove("active");
+
+    acceptWaiterBtn.disabled = false;
+  }
+
+
+  function acceptWaiter() {
+
+    guestStatus.innerText =
+      "Waiter accepted your call";
+
+    waiterStatus.innerText =
+      "Call accepted — waiting for guest request";
+
+    acceptWaiterBtn.disabled = true;
+
+    enableGuestButton(orderDrinksBtn);
+    enableGuestButton(orderFoodBtn);
+  }
+
+
+  function requestDrinks() {
+
+    guestStatus.innerText =
+      "Drinks requested";
+
+    waiterStatus.innerText =
+      "Table 7 requested drinks";
+
+    orderDrinksBtn.disabled = true;
+    orderDrinksBtn.classList.remove("active");
+
+    completeDrinksBtn.disabled = false;
+  }
+
+
+  function completeDrinks() {
+
+    guestStatus.innerText =
+      "Drinks delivered";
+
+    waiterStatus.innerText =
+      "Drinks delivered";
+
+    completeDrinksBtn.disabled = true;
+
+    enableGuestButton(orderDrinksBtn);
+
+    enableGuestButton(askBillBtn);
+  }
+
+
+  function requestFood() {
+
+    guestStatus.innerText =
+      "Food requested";
+
+    waiterStatus.innerText =
+      "Table 7 requested food";
+
+    orderFoodBtn.disabled = true;
+    orderFoodBtn.classList.remove("active");
+
+    completeFoodBtn.disabled = false;
+  }
+
+
+  function completeFood() {
+
+    guestStatus.innerText =
+      "Food delivered";
+
+    waiterStatus.innerText =
+      "Food delivered";
+
+    completeFoodBtn.disabled = true;
+
+    enableGuestButton(orderFoodBtn);
+
+    enableGuestButton(askBillBtn);
+  }
+
+
+  function requestBill() {
+
+    guestStatus.innerText =
+      "Bill requested";
+
+    waiterStatus.innerText =
+      "Table 7 requested the bill";
+
+    askBillBtn.disabled = true;
+    askBillBtn.classList.remove("active");
+
+    billDeliveredBtn.disabled = false;
+  }
+
+
+  function billDelivered() {
+
+    guestStatus.innerText =
+      "Bill delivered";
+
+    waiterStatus.innerText =
+      "Bill delivered — waiting for payment";
+
+    billDeliveredBtn.disabled = true;
+
+    closeTableBtn.disabled = false;
+  }
+
+
+  function closeTable() {
+
+    guestStatus.innerText =
+      "Thank you — visit complete";
+
+    waiterStatus.innerText =
+      "Table 7 closed";
+
+    closeTableBtn.disabled = true;
+
+    callWaiterBtn.disabled = true;
+    orderDrinksBtn.disabled = true;
+    orderFoodBtn.disabled = true;
+    askBillBtn.disabled = true;
+
+    orderDrinksBtn.classList.remove("active");
+    orderFoodBtn.classList.remove("active");
+    askBillBtn.classList.remove("active");
+  }
+
+</script>
+
+</body>
+</html>
