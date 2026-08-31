@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EasyBev Prototype</title>
+
+  <title>EasyBev Live Prototype</title>
 
   <style>
     * {
@@ -12,7 +13,7 @@
 
     body {
       margin: 0;
-      padding: 25px;
+      padding: 25px 15px;
       font-family: Arial, sans-serif;
       background: #111;
       color: white;
@@ -23,362 +24,1297 @@
       margin-bottom: 5px;
     }
 
-    .subtitle {
-      text-align: center;
-      color: #aaa;
-      margin-bottom: 30px;
-    }
-
-    .container {
-      max-width: 700px;
-      margin: auto;
-    }
-
-    .panel {
-      background: #1e1e1e;
-      border: 1px solid #333;
-      border-radius: 16px;
-      padding: 25px;
-      margin-bottom: 25px;
-    }
-
-    .panel h2 {
+    h2, h3 {
       margin-top: 0;
     }
 
-    .table {
+    .subtitle {
+      text-align: center;
+      color: #aaa;
+      margin-bottom: 25px;
+    }
+
+    .mode-selector {
+      max-width: 1000px;
+      margin: 0 auto 20px auto;
+      padding: 15px;
+      background: #1d1d1d;
+      border: 1px solid #333;
+      border-radius: 12px;
+    }
+
+    .mode-buttons {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: auto;
+    }
+
+    .card {
+      background: #1d1d1d;
+      border-radius: 14px;
+      padding: 25px;
+      border: 1px solid #333;
+      margin-bottom: 20px;
+    }
+
+    .table-number {
       color: #aaa;
       margin-bottom: 20px;
     }
 
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      border: 1px solid #444;
+      background: #292929;
+      color: white;
+      font-size: 15px;
+    }
+
     button {
       width: 100%;
-      padding: 15px;
-      margin: 7px 0;
+      padding: 13px;
+      margin: 6px 0;
       border: none;
-      border-radius: 10px;
-      font-size: 16px;
+      border-radius: 8px;
+      font-size: 15px;
       font-weight: bold;
       cursor: pointer;
+      background: #21c063;
+      color: #07150c;
+    }
+
+    button:hover {
+      opacity: 0.9;
     }
 
     button:disabled {
-      background: #444;
-      color: #777;
+      background: #555;
+      color: #999;
       cursor: not-allowed;
     }
 
-    .active {
-      background: #20c96b;
-      color: #07150d;
-    }
-
-    .waiter-button {
-      background: #3478f6;
+    .secondary {
+      background: #3677d8;
       color: white;
     }
 
-    .complete-button {
-      background: #f0a500;
+    .warning-button {
+      background: #f2b84b;
       color: #111;
     }
 
-    .close-button {
+    .danger {
       background: #e84c4c;
       color: white;
     }
 
     .status {
-      margin-top: 20px;
+      margin-top: 18px;
       padding: 15px;
+      border-radius: 8px;
       background: #292929;
-      border-radius: 10px;
-      min-height: 50px;
+      min-height: 55px;
+      line-height: 1.5;
     }
 
-    .status strong {
-      color: #20c96b;
+    .session-info {
+      margin-top: 15px;
+      padding: 12px;
+      border: 1px solid #444;
+      border-radius: 8px;
+      line-height: 1.7;
     }
 
-    .divider {
+    .bill-box {
+      margin: 20px 0;
+      padding: 20px;
+      border-radius: 12px;
+      background: #252525;
+      border: 1px solid #444;
       text-align: center;
-      color: #666;
-      margin: 15px 0 25px;
+    }
+
+    .bill-label {
+      color: #aaa;
+      font-size: 14px;
+    }
+
+    .bill-total {
+      font-size: 36px;
+      font-weight: bold;
+      margin: 8px 0;
+    }
+
+    .small-text {
+      color: #aaa;
+      font-size: 13px;
+    }
+
+    .verified {
+      color: #21c063;
+      font-weight: bold;
+    }
+
+    .warning {
+      color: #f2b84b;
+      font-weight: bold;
+    }
+
+    .paid {
+      color: #21c063;
+      font-weight: bold;
+    }
+
+    .table-card {
+      background: #252525;
+      border: 1px solid #444;
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 12px;
+    }
+
+    .table-card h3 {
+      margin-bottom: 8px;
+    }
+
+    .item-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid #333;
+    }
+
+    .item-row:last-child {
+      border-bottom: none;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 700px) {
+      .mode-buttons {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 
 <body>
 
-<div class="container">
-
   <h1>EasyBev</h1>
-  <div class="subtitle">Table 7 — Prototype</div>
-
-  <!-- GUEST VIEW -->
-  <div class="panel">
-    <h2>Guest</h2>
-    <div class="table">Table 7</div>
-
-    <button
-      id="callWaiter"
-      class="active"
-      onclick="callWaiter()">
-      Call Waiter
-    </button>
-
-    <button
-      id="orderDrinks"
-      onclick="requestDrinks()"
-      disabled>
-      Order Drinks
-    </button>
-
-    <button
-      id="orderFood"
-      onclick="requestFood()"
-      disabled>
-      Order Food
-    </button>
-
-    <button
-      id="askBill"
-      onclick="requestBill()"
-      disabled>
-      Ask for Bill
-    </button>
-
-    <div class="status">
-      <strong>Status:</strong>
-      <span id="guestStatus">Ready</span>
-    </div>
+  <div class="subtitle">
+    Live Multi-Device Prototype
   </div>
 
+  <div class="mode-selector">
 
-  <div class="divider">
-    ↓ WAITER'S DEVICE ↓
-  </div>
+    <strong>Choose this device:</strong>
 
+    <div class="mode-buttons">
 
-  <!-- WAITER VIEW -->
-  <div class="panel">
-    <h2>Waiter</h2>
-    <div class="table">Table 7</div>
+      <button onclick="showGuest(7)">
+        Guest — Table 7
+      </button>
 
-    <div class="status">
-      <strong>Request:</strong>
-      <span id="waiterStatus">No active request</span>
+      <button onclick="showGuest(8)">
+        Guest — Table 8
+      </button>
+
+      <button
+        class="secondary"
+        onclick="showWaiter()"
+      >
+        Waiter Dashboard
+      </button>
+
     </div>
 
-    <button
-      id="acceptWaiter"
-      class="waiter-button"
-      onclick="acceptWaiter()"
-      disabled>
-      Accept Call
-    </button>
+  </div>
 
-    <button
-      id="completeDrinks"
-      class="complete-button"
-      onclick="completeDrinks()"
-      disabled>
-      Drinks Delivered
-    </button>
 
-    <button
-      id="completeFood"
-      class="complete-button"
-      onclick="completeFood()"
-      disabled>
-      Food Delivered
-    </button>
+  <div class="container">
 
-    <button
-      id="billDelivered"
-      class="complete-button"
-      onclick="billDelivered()"
-      disabled>
-      Bill Delivered
-    </button>
+    <!-- ================================= -->
+    <!-- GUEST VIEW -->
+    <!-- ================================= -->
 
-    <button
-      id="closeTable"
-      class="close-button"
-      onclick="closeTable()"
-      disabled>
-      Close Table
-    </button>
+    <div id="guestView" class="card hidden">
+
+      <h2>Guest View</h2>
+
+      <div class="table-number">
+        Table <span id="guestTableNumber"></span>
+        — Waiter: Thabo
+      </div>
+
+
+      <div id="guestLogin">
+
+        <h3>Verify your EasyBev account</h3>
+
+        <input
+          id="guestName"
+          type="text"
+          placeholder="Your name"
+        >
+
+        <input
+          id="guestPhone"
+          type="tel"
+          placeholder="Mobile number"
+        >
+
+        <button onclick="sendOTP()">
+          Verify Mobile Number
+        </button>
+
+      </div>
+
+
+      <div id="otpArea" class="hidden">
+
+        <p>
+          Prototype OTP:
+          <strong>1234</strong>
+        </p>
+
+        <input
+          id="otpInput"
+          type="text"
+          placeholder="Enter OTP"
+        >
+
+        <button onclick="verifyOTP()">
+          Verify & Start Session
+        </button>
+
+      </div>
+
+
+      <div id="activeGuestSession" class="hidden">
+
+        <div class="session-info">
+
+          <strong>ACTIVE EASYBEV SESSION</strong>
+
+          <br>
+
+          Guest:
+          <span id="activeGuestName"></span>
+
+          <br>
+
+          Table:
+          <span id="activeGuestTable"></span>
+
+          <br>
+
+          Waiter:
+          <strong>Thabo</strong>
+
+          <br>
+
+          Account:
+          <span class="verified">
+            VERIFIED
+          </span>
+
+        </div>
+
+
+        <div class="bill-box">
+
+          <div class="bill-label">
+            Current Running Bill
+          </div>
+
+          <div
+            id="guestTotal"
+            class="bill-total"
+          >
+            R0.00
+          </div>
+
+          <div
+            id="guestBillState"
+            class="small-text"
+          >
+            Your total updates automatically.
+          </div>
+
+        </div>
+
+
+        <div id="guestItems"></div>
+
+
+        <button onclick="sendGuestRequest('Need assistance')">
+          Need Assistance
+        </button>
+
+        <button onclick="sendGuestRequest('Drinks requested')">
+          Request Drinks
+        </button>
+
+        <button onclick="sendGuestRequest('Food requested')">
+          Request Food
+        </button>
+
+        <button
+          id="requestBillButton"
+          class="warning-button"
+          onclick="requestBill()"
+        >
+          Request Bill
+        </button>
+
+        <button
+          id="payButton"
+          class="secondary"
+          onclick="payBill()"
+          disabled
+        >
+          Pay
+        </button>
+
+      </div>
+
+
+      <div
+        id="guestStatus"
+        class="status"
+      >
+        Select a table and verify your account.
+      </div>
+
+    </div>
+
+
+    <!-- ================================= -->
+    <!-- WAITER DASHBOARD -->
+    <!-- ================================= -->
+
+    <div id="waiterView" class="card hidden">
+
+      <h2>Waiter Dashboard</h2>
+
+      <div class="table-number">
+        Waiter: Thabo
+      </div>
+
+      <div class="status">
+        Live tables assigned to you.
+        Updates from guests will appear automatically.
+      </div>
+
+      <br>
+
+      <div id="waiterTables">
+        Waiting for active tables...
+      </div>
+
+    </div>
 
   </div>
 
-</div>
 
+  <script type="module">
 
-<script>
+    import {
+      initializeApp
+    } from
+      "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
 
-  const guestStatus = document.getElementById("guestStatus");
-  const waiterStatus = document.getElementById("waiterStatus");
 
-  const callWaiterBtn = document.getElementById("callWaiter");
-  const orderDrinksBtn = document.getElementById("orderDrinks");
-  const orderFoodBtn = document.getElementById("orderFood");
-  const askBillBtn = document.getElementById("askBill");
+    import {
+      getDatabase,
+      ref,
+      set,
+      update,
+      onValue,
+      push,
+      remove
+    } from
+      "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
 
-  const acceptWaiterBtn = document.getElementById("acceptWaiter");
-  const completeDrinksBtn = document.getElementById("completeDrinks");
-  const completeFoodBtn = document.getElementById("completeFood");
-  const billDeliveredBtn = document.getElementById("billDelivered");
-  const closeTableBtn = document.getElementById("closeTable");
 
+    // =================================
+    // YOUR FIREBASE PROJECT
+    // =================================
 
-  function enableGuestButton(button) {
-    button.disabled = false;
-    button.classList.add("active");
-  }
+    const firebaseConfig = {
 
+      apiKey:
+        "AIzaSyDydmFMOw3Kd5lTXq_n0WGRIamM5cgO08o",
 
-  function callWaiter() {
+      authDomain:
+        "easybev-prototype.firebaseapp.com",
 
-    guestStatus.innerText = "Waiter called";
+      databaseURL:
+        "https://easybev-prototype-default-rtdb.firebaseio.com",
 
-    waiterStatus.innerText =
-      "Table 7 is calling you";
+      projectId:
+        "easybev-prototype",
 
-    callWaiterBtn.disabled = true;
-    callWaiterBtn.classList.remove("active");
+      storageBucket:
+        "easybev-prototype.firebasestorage.app",
 
-    acceptWaiterBtn.disabled = false;
-  }
+      messagingSenderId:
+        "1006818240163",
 
+      appId:
+        "1:1006818240163:web:765843bafcd931ff98c116"
 
-  function acceptWaiter() {
+    };
 
-    guestStatus.innerText =
-      "Waiter accepted your call";
 
-    waiterStatus.innerText =
-      "Call accepted — waiting for guest request";
+    const app =
+      initializeApp(firebaseConfig);
 
-    acceptWaiterBtn.disabled = true;
 
-    enableGuestButton(orderDrinksBtn);
-    enableGuestButton(orderFoodBtn);
-  }
+    const database =
+      getDatabase(app);
 
 
-  function requestDrinks() {
+    // =================================
+    // LOCAL DEVICE STATE
+    // =================================
 
-    guestStatus.innerText =
-      "Drinks requested";
+    let currentTable = null;
 
-    waiterStatus.innerText =
-      "Table 7 requested drinks";
+    let pendingGuestName = "";
 
-    orderDrinksBtn.disabled = true;
-    orderDrinksBtn.classList.remove("active");
+    let pendingGuestPhone = "";
 
-    completeDrinksBtn.disabled = false;
-  }
+    let currentGuestListener = null;
 
 
-  function completeDrinks() {
+    // =================================
+    // VIEW SELECTION
+    // =================================
 
-    guestStatus.innerText =
-      "Drinks delivered";
+    window.showGuest = function(tableNumber) {
 
-    waiterStatus.innerText =
-      "Drinks delivered";
+      currentTable = tableNumber;
 
-    completeDrinksBtn.disabled = true;
 
-    enableGuestButton(orderDrinksBtn);
+      document
+        .getElementById("waiterView")
+        .classList.add("hidden");
 
-    enableGuestButton(askBillBtn);
-  }
 
+      document
+        .getElementById("guestView")
+        .classList.remove("hidden");
 
-  function requestFood() {
 
-    guestStatus.innerText =
-      "Food requested";
+      document.getElementById(
+        "guestTableNumber"
+      ).innerText = tableNumber;
 
-    waiterStatus.innerText =
-      "Table 7 requested food";
 
-    orderFoodBtn.disabled = true;
-    orderFoodBtn.classList.remove("active");
+      resetGuestScreen();
 
-    completeFoodBtn.disabled = false;
-  }
 
+      listenToGuestTable();
 
-  function completeFood() {
+    };
 
-    guestStatus.innerText =
-      "Food delivered";
 
-    waiterStatus.innerText =
-      "Food delivered";
+    window.showWaiter = function() {
 
-    completeFoodBtn.disabled = true;
+      currentTable = null;
 
-    enableGuestButton(orderFoodBtn);
 
-    enableGuestButton(askBillBtn);
-  }
+      document
+        .getElementById("guestView")
+        .classList.add("hidden");
 
 
-  function requestBill() {
+      document
+        .getElementById("waiterView")
+        .classList.remove("hidden");
 
-    guestStatus.innerText =
-      "Bill requested";
+    };
 
-    waiterStatus.innerText =
-      "Table 7 requested the bill";
 
-    askBillBtn.disabled = true;
-    askBillBtn.classList.remove("active");
+    function resetGuestScreen() {
 
-    billDeliveredBtn.disabled = false;
-  }
+      document
+        .getElementById("guestLogin")
+        .classList.remove("hidden");
 
 
-  function billDelivered() {
+      document
+        .getElementById("otpArea")
+        .classList.add("hidden");
 
-    guestStatus.innerText =
-      "Bill delivered";
 
-    waiterStatus.innerText =
-      "Bill delivered — waiting for payment";
+      document
+        .getElementById("activeGuestSession")
+        .classList.add("hidden");
 
-    billDeliveredBtn.disabled = true;
 
-    closeTableBtn.disabled = false;
-  }
+      document.getElementById("guestStatus").innerText =
+        "Verify your EasyBev account to open Table " +
+        currentTable +
+        ".";
 
+    }
 
-  function closeTable() {
 
-    guestStatus.innerText =
-      "Thank you — visit complete";
+    // =================================
+    // DEMO PHONE VERIFICATION
+    // =================================
 
-    waiterStatus.innerText =
-      "Table 7 closed";
+    window.sendOTP = function() {
 
-    closeTableBtn.disabled = true;
+      const name =
+        document.getElementById("guestName")
+          .value.trim();
 
-    callWaiterBtn.disabled = true;
-    orderDrinksBtn.disabled = true;
-    orderFoodBtn.disabled = true;
-    askBillBtn.disabled = true;
 
-    orderDrinksBtn.classList.remove("active");
-    orderFoodBtn.classList.remove("active");
-    askBillBtn.classList.remove("active");
-  }
+      const phone =
+        document.getElementById("guestPhone")
+          .value.trim();
 
-</script>
+
+      if (!name || !phone) {
+
+        document.getElementById(
+          "guestStatus"
+        ).innerText =
+          "Enter your name and mobile number.";
+
+        return;
+
+      }
+
+
+      pendingGuestName = name;
+
+      pendingGuestPhone = phone;
+
+
+      document
+        .getElementById("guestLogin")
+        .classList.add("hidden");
+
+
+      document
+        .getElementById("otpArea")
+        .classList.remove("hidden");
+
+
+      document.getElementById(
+        "guestStatus"
+      ).innerText =
+        "Prototype OTP sent. Enter 1234.";
+
+    };
+
+
+    window.verifyOTP = async function() {
+
+      const otp =
+        document.getElementById("otpInput")
+          .value.trim();
+
+
+      if (otp !== "1234") {
+
+        document.getElementById(
+          "guestStatus"
+        ).innerText =
+          "Incorrect OTP.";
+
+        return;
+
+      }
+
+
+      const tableRef =
+        ref(
+          database,
+          "tables/" + currentTable
+        );
+
+
+      await set(tableRef, {
+
+        tableNumber: currentTable,
+
+        waiter: "Thabo",
+
+        guest: {
+          name: pendingGuestName,
+          phone: pendingGuestPhone,
+          verified: true
+        },
+
+        status: "active",
+
+        runningTotal: 0,
+
+        billRequested: false,
+
+        billFinalised: false,
+
+        paid: false,
+
+        request: "",
+
+        items: {}
+
+      });
+
+
+      document.getElementById(
+        "guestStatus"
+      ).innerText =
+        "Verified. Your live EasyBev session is active.";
+
+    };
+
+
+    // =================================
+    // GUEST LIVE TABLE LISTENER
+    // =================================
+
+    function listenToGuestTable() {
+
+      const tableRef =
+        ref(
+          database,
+          "tables/" + currentTable
+        );
+
+
+      onValue(tableRef, function(snapshot) {
+
+        if (!snapshot.exists()) {
+          return;
+        }
+
+
+        const table =
+          snapshot.val();
+
+
+        if (table.status === "closed") {
+
+          document
+            .getElementById("activeGuestSession")
+            .classList.add("hidden");
+
+
+          document
+            .getElementById("guestLogin")
+            .classList.remove("hidden");
+
+
+          document.getElementById(
+            "guestStatus"
+          ).innerText =
+            "This EasyBev session has been closed.";
+
+          return;
+
+        }
+
+
+        document
+          .getElementById("guestLogin")
+          .classList.add("hidden");
+
+
+        document
+          .getElementById("otpArea")
+          .classList.add("hidden");
+
+
+        document
+          .getElementById("activeGuestSession")
+          .classList.remove("hidden");
+
+
+        document.getElementById(
+          "activeGuestName"
+        ).innerText =
+          table.guest?.name || "Guest";
+
+
+        document.getElementById(
+          "activeGuestTable"
+        ).innerText =
+          table.tableNumber;
+
+
+        const total =
+          Number(table.runningTotal || 0);
+
+
+        document.getElementById(
+          "guestTotal"
+        ).innerText =
+          "R" + total.toFixed(2);
+
+
+        document.getElementById(
+          "payButton"
+        ).innerText =
+          "Pay R" + total.toFixed(2);
+
+
+        document.getElementById(
+          "payButton"
+        ).disabled =
+          !table.billFinalised ||
+          table.paid;
+
+
+        document.getElementById(
+          "requestBillButton"
+        ).disabled =
+          table.billRequested ||
+          table.paid;
+
+
+        if (table.paid) {
+
+          document.getElementById(
+            "guestBillState"
+          ).innerHTML =
+            "<span class='paid'>PAID</span>";
+
+        }
+
+        else if (table.billFinalised) {
+
+          document.getElementById(
+            "guestBillState"
+          ).innerHTML =
+            "<span class='warning'>" +
+            "Bill finalised — ready for payment" +
+            "</span>";
+
+        }
+
+        else {
+
+          document.getElementById(
+            "guestBillState"
+          ).innerText =
+            "Your total updates automatically.";
+
+        }
+
+
+        renderGuestItems(table.items);
+
+      });
+
+    }
+
+
+    function renderGuestItems(items) {
+
+      const box =
+        document.getElementById("guestItems");
+
+
+      box.innerHTML = "";
+
+
+      if (!items) {
+
+        box.innerHTML =
+          "<div class='small-text'>" +
+          "No items added yet." +
+          "</div>";
+
+        return;
+
+      }
+
+
+      Object.values(items).forEach(function(item) {
+
+        const row =
+          document.createElement("div");
+
+
+        row.className =
+          "item-row";
+
+
+        row.innerHTML =
+          "<span>" +
+          item.name +
+          "</span>" +
+          "<strong>R" +
+          Number(item.price).toFixed(2) +
+          "</strong>";
+
+
+        box.appendChild(row);
+
+      });
+
+    }
+
+
+    // =================================
+    // GUEST REQUESTS
+    // =================================
+
+    window.sendGuestRequest =
+      async function(message) {
+
+        if (!currentTable) {
+          return;
+        }
+
+
+        await update(
+          ref(
+            database,
+            "tables/" + currentTable
+          ),
+          {
+            request: message
+          }
+        );
+
+
+        document.getElementById(
+          "guestStatus"
+        ).innerText =
+          message +
+          " sent to Thabo.";
+
+      };
+
+
+    window.requestBill =
+      async function() {
+
+        if (!currentTable) {
+          return;
+        }
+
+
+        await update(
+          ref(
+            database,
+            "tables/" + currentTable
+          ),
+          {
+            billRequested: true,
+            request: "Bill requested"
+          }
+        );
+
+
+        document.getElementById(
+          "guestStatus"
+        ).innerText =
+          "Bill requested. Waiting for your waiter to finalise it.";
+
+      };
+
+
+    // =================================
+    // SIMULATED PAYMENT
+    // =================================
+
+    window.payBill =
+      async function() {
+
+        const tableRef =
+          ref(
+            database,
+            "tables/" + currentTable
+          );
+
+
+        const approved =
+          confirm(
+            "SIMULATED EASYBEV PAYMENT\n\n" +
+            "Approve payment using your saved payment method?"
+          );
+
+
+        if (!approved) {
+          return;
+        }
+
+
+        await update(
+          tableRef,
+          {
+            paid: true,
+            status: "paid"
+          }
+        );
+
+
+        document.getElementById(
+          "guestStatus"
+        ).innerText =
+          "Payment approved. Your waiter can now close the session.";
+
+      };
+
+
+    // =================================
+    // WAITER LIVE DASHBOARD
+    // =================================
+
+    const allTablesRef =
+      ref(database, "tables");
+
+
+    onValue(
+      allTablesRef,
+      function(snapshot) {
+
+        const container =
+          document.getElementById(
+            "waiterTables"
+          );
+
+
+        container.innerHTML = "";
+
+
+        if (!snapshot.exists()) {
+
+          container.innerHTML =
+            "No active tables.";
+
+          return;
+
+        }
+
+
+        const tables =
+          snapshot.val();
+
+
+        Object.keys(tables)
+          .sort(
+            (a, b) =>
+              Number(a) - Number(b)
+          )
+          .forEach(function(tableNumber) {
+
+            const table =
+              tables[tableNumber];
+
+
+            if (table.status === "closed") {
+              return;
+            }
+
+
+            const card =
+              document.createElement("div");
+
+
+            card.className =
+              "table-card";
+
+
+            const total =
+              Number(
+                table.runningTotal || 0
+              );
+
+
+            let requestText =
+              table.request ||
+              "No outstanding request";
+
+
+            card.innerHTML = `
+
+              <h3>
+                Table ${tableNumber}
+              </h3>
+
+              <div>
+                Guest:
+                <strong>
+                  ${table.guest?.name || "—"}
+                </strong>
+              </div>
+
+              <div>
+                Running Bill:
+                <strong>
+                  R${total.toFixed(2)}
+                </strong>
+              </div>
+
+              <div>
+                Request:
+                <strong>
+                  ${requestText}
+                </strong>
+              </div>
+
+              <br>
+
+              <button
+                onclick="addItem(
+                  '${tableNumber}',
+                  'Beer',
+                  35
+                )"
+              >
+                + Beer R35
+              </button>
+
+              <button
+                onclick="addItem(
+                  '${tableNumber}',
+                  'Cocktail',
+                  85
+                )"
+              >
+                + Cocktail R85
+              </button>
+
+              <button
+                onclick="addItem(
+                  '${tableNumber}',
+                  'Shot',
+                  45
+                )"
+              >
+                + Shot R45
+              </button>
+
+              <button
+                onclick="addItem(
+                  '${tableNumber}',
+                  'Round of 10 Shots',
+                  450
+                )"
+              >
+                + 10 Shots R450
+              </button>
+
+              <button
+                onclick="addItem(
+                  '${tableNumber}',
+                  'Burger',
+                  120
+                )"
+              >
+                + Burger R120
+              </button>
+
+              <button
+                onclick="acknowledgeRequest(
+                  '${tableNumber}'
+                )"
+              >
+                Acknowledge Request
+              </button>
+
+              <button
+                class="warning-button"
+                onclick="finaliseBill(
+                  '${tableNumber}'
+                )"
+                ${table.billRequested &&
+                  !table.billFinalised
+                    ? ""
+                    : "disabled"}
+              >
+                Finalise Bill
+              </button>
+
+              <button
+                class="danger"
+                onclick="closeTable(
+                  '${tableNumber}'
+                )"
+                ${table.paid
+                    ? ""
+                    : "disabled"}
+              >
+                Close Session
+              </button>
+
+            `;
+
+
+            container.appendChild(card);
+
+          });
+
+
+        if (
+          container.children.length === 0
+        ) {
+
+          container.innerHTML =
+            "No active tables.";
+
+        }
+
+      }
+    );
+
+
+    // =================================
+    // WAITER ACTIONS
+    // =================================
+
+    window.addItem =
+      async function(
+        tableNumber,
+        itemName,
+        price
+      ) {
+
+        const tableRef =
+          ref(
+            database,
+            "tables/" + tableNumber
+          );
+
+
+        onValue(
+          tableRef,
+          async function(snapshot) {
+
+            if (!snapshot.exists()) {
+              return;
+            }
+
+
+            const table =
+              snapshot.val();
+
+
+            if (table.billFinalised) {
+
+              alert(
+                "This bill has already been finalised."
+              );
+
+              return;
+
+            }
+
+
+            const itemRef =
+              push(
+                ref(
+                  database,
+                  "tables/" +
+                  tableNumber +
+                  "/items"
+                )
+              );
+
+
+            await set(
+              itemRef,
+              {
+                name: itemName,
+                price: price,
+                createdAt: Date.now()
+              }
+            );
+
+
+            const newTotal =
+              Number(
+                table.runningTotal || 0
+              ) + price;
+
+
+            await update(
+              tableRef,
+              {
+                runningTotal:
+                  newTotal
+              }
+            );
+
+          },
+          {
+            onlyOnce: true
+          }
+        );
+
+      };
+
+
+    window.acknowledgeRequest =
+      async function(tableNumber) {
+
+        await update(
+          ref(
+            database,
+            "tables/" + tableNumber
+          ),
+          {
+            request: ""
+          }
+        );
+
+      };
+
+
+    window.finaliseBill =
+      async function(tableNumber) {
+
+        await update(
+          ref(
+            database,
+            "tables/" + tableNumber
+          ),
+          {
+            billFinalised: true,
+            request: ""
+          }
+        );
+
+      };
+
+
+    window.closeTable =
+      async function(tableNumber) {
+
+        await update(
+          ref(
+            database,
+            "tables/" + tableNumber
+          ),
+          {
+            status: "closed"
+          }
+        );
+
+      };
+
+  </script>
 
 </body>
 </html>
