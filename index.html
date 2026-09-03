@@ -432,6 +432,56 @@
     }
 
 
+    .app-footer {
+
+      max-width: 1000px;
+
+      margin: 30px auto 10px auto;
+
+      padding: 20px 10px;
+
+      text-align: center;
+
+      color: #777;
+
+      font-size: 13px;
+
+      line-height: 2;
+
+      border-top: 1px solid #222;
+
+    }
+
+
+    .app-footer a {
+
+      color: #aaa;
+
+      text-decoration: none;
+
+      margin: 0 5px;
+
+    }
+
+
+    .app-footer a:hover {
+
+      color: white;
+
+    }
+
+
+    .footer-brand {
+
+      display: block;
+
+      margin-bottom: 5px;
+
+      color: #aaa;
+
+    }
+
+
     @media (max-width: 700px) {
 
       .mode-buttons {
@@ -979,6 +1029,110 @@
 
 
   </div>
+
+
+
+  <!-- ================================= -->
+  <!-- OFFICIAL EASYBEV FOOTER -->
+  <!-- ================================= -->
+
+
+  <footer class="app-footer">
+
+
+    <span class="footer-brand">
+
+      EasyBev
+
+      &copy;
+
+      <span id="footerYear"></span>
+
+    </span>
+
+
+    <a
+      href="https://easybev.co.za"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+
+      Official Website
+
+    </a>
+
+
+    <span>•</span>
+
+
+    <a
+      href="https://easybev.co.za/help"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+
+      Help
+
+    </a>
+
+
+    <span>•</span>
+
+
+    <a
+      href="https://easybev.co.za/contact"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+
+      Contact Us
+
+    </a>
+
+
+    <span>•</span>
+
+
+    <a
+      href="https://easybev.co.za/about"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+
+      About
+
+    </a>
+
+
+    <span>•</span>
+
+
+    <a
+      href="https://easybev.co.za/privacy"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+
+      Privacy
+
+    </a>
+
+
+    <span>•</span>
+
+
+    <a
+      href="https://easybev.co.za/terms"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+
+      Terms
+
+    </a>
+
+
+  </footer>
 
 
 
@@ -2056,11 +2210,6 @@
 
 
 
-            // =================================
-            // NO ACTIVE SESSION
-            // =================================
-
-
             if (
               !sessionId
             ) {
@@ -2127,11 +2276,6 @@
 
 
 
-            // =================================
-            // ACTIVE SESSION EXISTS
-            // =================================
-
-
             currentSessionId =
 
               sessionId;
@@ -2155,8 +2299,7 @@
 
 
     // =================================
-    // CHECK WHETHER THIS PHONE
-    // ALREADY BELONGS TO SESSION
+    // CHECK LOCAL DEVICE MEMBERSHIP
     // =================================
 
 
@@ -2259,7 +2402,7 @@
 
 
     // =================================
-    // NEW DEVICE JOINING ACTIVE TABLE
+    // JOIN EXISTING TABLE SCREEN
     // =================================
 
 
@@ -2490,12 +2633,6 @@
 
 
 
-        // =================================
-        // EXISTING SESSION:
-        // ADD THIS PERSON
-        // =================================
-
-
         if (
           tableRecord.activeSessionId
         ) {
@@ -2516,12 +2653,6 @@
 
         }
 
-
-
-        // =================================
-        // NO SESSION:
-        // FIRST GUEST CREATES IT
-        // =================================
 
 
         await createNewSession();
@@ -4796,6 +4927,21 @@
 
 
     }
+
+
+
+    // =================================
+    // FOOTER YEAR
+    // =================================
+
+
+    document.getElementById(
+
+      "footerYear"
+
+    ).innerText =
+
+      new Date().getFullYear();
 
 
 
