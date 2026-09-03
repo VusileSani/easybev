@@ -332,7 +332,6 @@
       border-radius: 20px;
       font-size: 11px;
       font-weight: bold;
-      letter-spacing: 0.3px;
     }
 
     .badge-request {
@@ -362,7 +361,6 @@
       font-size: 12px;
       font-weight: bold;
       text-transform: uppercase;
-      letter-spacing: 0.7px;
     }
 
     .request-card {
@@ -371,10 +369,6 @@
       border: 1px solid #555;
       border-radius: 8px;
       background: #202020;
-    }
-
-    .request-card button {
-      margin-top: 8px;
     }
 
     .request-message {
@@ -424,11 +418,6 @@
       padding: 14px;
       margin-bottom: 8px;
       border-radius: 9px;
-      text-align: left;
-    }
-
-    .menu-item:hover {
-      background: #333;
     }
 
     .menu-price {
@@ -453,7 +442,6 @@
       text-align: center;
       color: #777;
       font-size: 13px;
-      line-height: 2;
       border-top: 1px solid #222;
     }
 
@@ -463,32 +451,8 @@
       margin: 0 5px;
     }
 
-    .app-footer a:hover {
-      color: white;
-    }
-
-    .footer-brand {
-      display: block;
-      margin-bottom: 5px;
-      color: #aaa;
-    }
-
-    @media (max-width: 700px) {
-
-      .developer-buttons,
-      .compact-actions {
-        grid-template-columns: 1fr 1fr;
-      }
-
-      .patron-summary {
-        align-items: flex-start;
-      }
-
-    }
-
   </style>
 </head>
-
 
 <body>
 
@@ -498,16 +462,13 @@
     Service at your fingertips
   </div>
 
-
-  <!-- DEVELOPMENT CONTROLS -->
-
   <div
     id="developerControls"
     class="developer-controls hidden"
   >
 
     <strong>
-      EasyBev V4.2 Developer Controls
+      EasyBev V4.3 Developer Controls
     </strong>
 
     <div class="developer-buttons">
@@ -530,9 +491,6 @@
 
   <div class="container">
 
-
-    <!-- LANDING -->
-
     <div
       id="landingView"
       class="card landing"
@@ -549,8 +507,6 @@
     </div>
 
 
-    <!-- GUEST VIEW -->
-
     <div
       id="guestView"
       class="card hidden"
@@ -565,8 +521,6 @@
         class="waiter-intro"
       ></div>
 
-
-      <!-- LOGIN -->
 
       <div id="guestLogin">
 
@@ -592,8 +546,6 @@
 
       </div>
 
-
-      <!-- OTP -->
 
       <div
         id="otpArea"
@@ -625,8 +577,6 @@
       </div>
 
 
-      <!-- ACTIVE GUEST SESSION -->
-
       <div
         id="activeGuestSession"
         class="hidden"
@@ -652,8 +602,10 @@
             id="guestLocationRow"
             class="hidden"
           >
+
             Location:
             <span id="activeLocation"></span>
+
           </div>
 
           Account:
@@ -692,9 +644,7 @@
 
         <div class="guest-actions">
 
-          <button
-            onclick="showGuestRequestModal()"
-          >
+          <button onclick="showGuestRequestModal()">
             Request Something
           </button>
 
@@ -733,8 +683,6 @@
       </div>
 
 
-      <!-- SESSION COMPLETE -->
-
       <div
         id="sessionComplete"
         class="completion-box hidden"
@@ -751,9 +699,7 @@
         <p
           id="completionMessage"
           class="small-text"
-        >
-          Thanks for using EasyBev.
-        </p>
+        ></p>
 
       </div>
 
@@ -767,8 +713,6 @@
 
     </div>
 
-
-    <!-- WAITER DASHBOARD -->
 
     <div
       id="waiterView"
@@ -790,16 +734,14 @@
         Loading...
       </div>
 
-      <div id="waiterSessions">
-        Waiting for patrons...
-      </div>
+      <div id="waiterSessions"></div>
 
     </div>
 
   </div>
 
 
-  <!-- REQUEST SOMETHING MODAL -->
+  <!-- REQUEST MODAL -->
 
   <div
     id="guestRequestModal"
@@ -809,24 +751,16 @@
 
     <div class="modal-card">
 
-      <h2 class="modal-title">
+      <h2>
         What can Thabo get you?
       </h2>
-
-      <div class="small-text">
-        Type your request as it appears on the venue menu, or simply describe what you need.
-      </div>
-
-      <br>
 
       <textarea
         id="guestRequestText"
         placeholder="e.g. 2 Castle Lagers and an ice bucket"
       ></textarea>
 
-      <button
-        onclick="submitGuestTextRequest()"
-      >
+      <button onclick="submitGuestTextRequest()">
         Send Request
       </button>
 
@@ -852,7 +786,7 @@
 
     <div class="modal-card">
 
-      <h2 class="modal-title">
+      <h2>
         Add Item
       </h2>
 
@@ -861,7 +795,6 @@
         class="small-text"
       ></div>
 
-
       <div class="menu-list">
 
         <button
@@ -869,43 +802,39 @@
           onclick="addSelectedItem('Beer', 35)"
         >
           <span>Beer</span>
-          <span class="menu-price">R35</span>
+          <span>R35</span>
         </button>
-
 
         <button
           class="menu-item"
           onclick="addSelectedItem('Cocktail', 85)"
         >
           <span>Cocktail</span>
-          <span class="menu-price">R85</span>
+          <span>R85</span>
         </button>
-
 
         <button
           class="menu-item"
           onclick="addSelectedItem('Shot', 45)"
         >
           <span>Shot</span>
-          <span class="menu-price">R45</span>
+          <span>R45</span>
         </button>
-
 
         <button
           class="menu-item"
           onclick="addSelectedItem('Round of 10 Shots', 450)"
         >
           <span>10 Shots</span>
-          <span class="menu-price">R450</span>
+          <span>R450</span>
         </button>
-
 
         <button
           class="menu-item"
           onclick="addSelectedItem('Burger', 120)"
         >
           <span>Burger</span>
-          <span class="menu-price">R120</span>
+          <span>R120</span>
         </button>
 
       </div>
@@ -929,15 +858,12 @@
   </div>
 
 
-  <!-- FOOTER -->
-
   <footer class="app-footer">
 
-    <span class="footer-brand">
-      EasyBev
-      &copy;
-      <span id="footerYear"></span>
-    </span>
+    EasyBev ©
+    <span id="footerYear"></span>
+
+    <br>
 
     <a
       href="https://easybev.co.za"
@@ -947,7 +873,7 @@
       Official Website
     </a>
 
-    <span>•</span>
+    •
 
     <a
       href="https://easybev.co.za/help"
@@ -957,44 +883,14 @@
       Help
     </a>
 
-    <span>•</span>
+    •
 
     <a
       href="https://easybev.co.za/contact"
       target="_blank"
       rel="noopener noreferrer"
     >
-      Contact Us
-    </a>
-
-    <span>•</span>
-
-    <a
-      href="https://easybev.co.za/about"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      About
-    </a>
-
-    <span>•</span>
-
-    <a
-      href="https://easybev.co.za/privacy"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      Privacy
-    </a>
-
-    <span>•</span>
-
-    <a
-      href="https://easybev.co.za/terms"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      Terms
+      Contact
     </a>
 
   </footer>
@@ -1104,30 +1000,14 @@
     let unsubscribeGuestSession =
       null;
 
-    let sessionEndedLocally =
-      false;
-
     let waiterDashboardStarted =
       false;
 
     let currentAddItemSessionId =
       null;
 
-
-    function waiterRef() {
-
-      return ref(
-
-        database,
-
-        "venues/" +
-        currentVenueId +
-        "/waiters/" +
-        currentWaiter.waiterId
-
-      );
-
-    }
+    let sessionEndedLocally =
+      false;
 
 
     function activeSessionRef(
@@ -1168,11 +1048,8 @@
     ) {
 
       localStorage.setItem(
-
         sessionStorageKey(),
-
         sessionId
-
       );
 
     }
@@ -1181,9 +1058,7 @@
     function getLocalSession() {
 
       return localStorage.getItem(
-
         sessionStorageKey()
-
       );
 
     }
@@ -1192,9 +1067,7 @@
     function clearLocalSession() {
 
       localStorage.removeItem(
-
         sessionStorageKey()
-
       );
 
     }
@@ -1203,28 +1076,16 @@
     function hideAllViews() {
 
       document
-        .getElementById(
-          "landingView"
-        )
-        .classList.add(
-          "hidden"
-        );
+        .getElementById("landingView")
+        .classList.add("hidden");
 
       document
-        .getElementById(
-          "guestView"
-        )
-        .classList.add(
-          "hidden"
-        );
+        .getElementById("guestView")
+        .classList.add("hidden");
 
       document
-        .getElementById(
-          "waiterView"
-        )
-        .classList.add(
-          "hidden"
-        );
+        .getElementById("waiterView")
+        .classList.add("hidden");
 
     }
 
@@ -1232,36 +1093,20 @@
     function hideGuestSections() {
 
       document
-        .getElementById(
-          "guestLogin"
-        )
-        .classList.add(
-          "hidden"
-        );
+        .getElementById("guestLogin")
+        .classList.add("hidden");
 
       document
-        .getElementById(
-          "otpArea"
-        )
-        .classList.add(
-          "hidden"
-        );
+        .getElementById("otpArea")
+        .classList.add("hidden");
 
       document
-        .getElementById(
-          "activeGuestSession"
-        )
-        .classList.add(
-          "hidden"
-        );
+        .getElementById("activeGuestSession")
+        .classList.add("hidden");
 
       document
-        .getElementById(
-          "sessionComplete"
-        )
-        .classList.add(
-          "hidden"
-        );
+        .getElementById("sessionComplete")
+        .classList.add("hidden");
 
     }
 
@@ -1271,17 +1116,8 @@
       hideGuestSections();
 
       document
-        .getElementById(
-          "guestLogin"
-        )
-        .classList.remove(
-          "hidden"
-        );
-
-      document.getElementById(
-        "guestHeading"
-      ).innerText =
-        "Hey there 👋";
+        .getElementById("guestLogin")
+        .classList.remove("hidden");
 
     }
 
@@ -1294,32 +1130,20 @@
       hideGuestSections();
 
       document
-        .getElementById(
-          "sessionComplete"
-        )
-        .classList.remove(
-          "hidden"
-        );
+        .getElementById("sessionComplete")
+        .classList.remove("hidden");
 
-      document.getElementById(
-        "guestHeading"
-      ).innerText =
-        "Thanks for stopping by";
 
       document.getElementById(
         "completionTitle"
       ).innerText =
         title;
 
+
       document.getElementById(
         "completionMessage"
       ).innerText =
         message;
-
-      document.getElementById(
-        "guestStatus"
-      ).innerText =
-        "Your EasyBev session has ended.";
 
     }
 
@@ -1332,55 +1156,24 @@
         );
 
 
-      const dev =
-        params.get(
-          "dev"
-        );
-
-      const venueId =
-        params.get(
-          "v"
-        );
-
-      const waiterToken =
-        params.get(
-          "w"
-        );
-
-
       if (
-        dev === "1"
+        params.get("dev") === "1"
       ) {
 
         document
-          .getElementById(
-            "developerControls"
-          )
-          .classList.remove(
-            "hidden"
-          );
+          .getElementById("developerControls")
+          .classList.remove("hidden");
 
       }
+
+
+      const waiterToken =
+        params.get("w");
 
 
       if (
         waiterToken
       ) {
-
-        if (
-          venueId &&
-          venueId !==
-          DEMO_VENUE.id
-        ) {
-
-          showError(
-            "This EasyBev venue is not recognised."
-          );
-
-          return;
-
-        }
-
 
         await openWaiterQR(
           waiterToken
@@ -1426,12 +1219,12 @@
 
 
     async function openWaiterQR(
-      waiterToken
+      token
     ) {
 
       const waiter =
         DEMO_WAITERS[
-          waiterToken
+          token
         ];
 
 
@@ -1439,7 +1232,7 @@
         !waiter
       ) {
 
-        showError(
+        alert(
           "This EasyBev waiter QR is not recognised."
         );
 
@@ -1448,32 +1241,19 @@
       }
 
 
-      currentWaiterToken =
-        waiterToken;
-
       currentWaiter =
         waiter;
 
-      currentSessionId =
-        null;
-
-      sessionEndedLocally =
-        false;
-
-
-      await ensureWaiterRecord();
+      currentWaiterToken =
+        token;
 
 
       hideAllViews();
 
 
       document
-        .getElementById(
-          "guestView"
-        )
-        .classList.remove(
-          "hidden"
-        );
+        .getElementById("guestView")
+        .classList.remove("hidden");
 
 
       document.getElementById(
@@ -1482,56 +1262,38 @@
 
         "<strong>" +
         escapeHtml(
-          currentWaiter.name
+          waiter.name
         ) +
-        "</strong> is looking after you.<br>" +
-
-        "<span class='small-text'>" +
-        escapeHtml(
-          DEMO_VENUE.name
-        ) +
-        "</span>";
+        "</strong> is looking after you.";
 
 
-      const savedSessionId =
+      const saved =
         getLocalSession();
 
 
       if (
-        savedSessionId
+        saved
       ) {
 
         const snapshot =
           await get(
-
             activeSessionRef(
-              savedSessionId
+              saved
             )
-
           );
 
 
         if (
-          snapshot.exists()
+          snapshot.exists() &&
+          snapshot.val().status === "active"
         ) {
 
-          const session =
-            snapshot.val();
+          currentSessionId =
+            saved;
 
+          listenToGuestSession();
 
-          if (
-            session.waiterId ===
-            currentWaiter.waiterId
-          ) {
-
-            currentSessionId =
-              savedSessionId;
-
-            listenToGuestSession();
-
-            return;
-
-          }
+          return;
 
         }
 
@@ -1543,172 +1305,50 @@
 
       showGuestLogin();
 
-
-      document.getElementById(
-        "guestStatus"
-      ).innerText =
-        "Enter your details to get started.";
-
-    }
-
-
-    async function ensureWaiterRecord() {
-
-      const snapshot =
-        await get(
-          waiterRef()
-        );
-
-
-      const data = {
-
-        waiterId:
-          currentWaiter.waiterId,
-
-        name:
-          currentWaiter.name,
-
-        qrToken:
-          currentWaiter.qrToken,
-
-        active:
-          true,
-
-        updatedAt:
-          Date.now()
-
-      };
-
-
-      if (
-        snapshot.exists()
-      ) {
-
-        await update(
-          waiterRef(),
-          data
-        );
-
-      }
-
-      else {
-
-        await set(
-          waiterRef(),
-          data
-        );
-
-      }
-
-    }
-
-
-    function showError(
-      message
-    ) {
-
-      hideAllViews();
-
-
-      document
-        .getElementById(
-          "guestView"
-        )
-        .classList.remove(
-          "hidden"
-        );
-
-
-      hideGuestSections();
-
-
-      document.getElementById(
-        "guestHeading"
-      ).innerText =
-        "Hmm…";
-
-
-      document.getElementById(
-        "waiterIntro"
-      ).innerText =
-        "";
-
-
-      document.getElementById(
-        "guestStatus"
-      ).innerText =
-        message;
-
     }
 
 
     window.sendOTP =
       function() {
 
-        const name =
+        pendingGuestName =
           document
-            .getElementById(
-              "guestName"
-            )
+            .getElementById("guestName")
             .value
             .trim();
 
 
-        const phone =
+        pendingGuestPhone =
           document
-            .getElementById(
-              "guestPhone"
-            )
+            .getElementById("guestPhone")
             .value
             .trim();
 
 
         if (
-          !name ||
-          !phone
+          !pendingGuestName ||
+          !pendingGuestPhone
         ) {
 
-          document.getElementById(
-            "guestStatus"
-          ).innerText =
-            "Enter your name and mobile number.";
+          alert(
+            "Enter your name and mobile number."
+          );
 
           return;
 
         }
 
 
-        pendingGuestName =
-          name;
-
-        pendingGuestPhone =
-          phone;
+        document
+          .getElementById("guestLogin")
+          .classList.add("hidden");
 
 
         document
-          .getElementById(
-            "guestLogin"
-          )
-          .classList.add(
-            "hidden"
-          );
+          .getElementById("otpArea")
+          .classList.remove("hidden");
 
-
-        document
-          .getElementById(
-            "otpArea"
-          )
-          .classList.remove(
-            "hidden"
-          );
-
-
-        document.getElementById(
-          "guestStatus"
-        ).innerText =
-          "Enter the verification code to continue.";
-
-      };
+    };
 
 
     window.verifyOTP =
@@ -1716,9 +1356,7 @@
 
         const otp =
           document
-            .getElementById(
-              "otpInput"
-            )
+            .getElementById("otpInput")
             .value
             .trim();
 
@@ -1727,10 +1365,9 @@
           otp !== "1234"
         ) {
 
-          document.getElementById(
-            "guestStatus"
-          ).innerText =
-            "Incorrect OTP.";
+          alert(
+            "Incorrect OTP."
+          );
 
           return;
 
@@ -1739,97 +1376,94 @@
 
         await createPatronSession();
 
-      };
+    };
 
 
     async function createPatronSession() {
 
-      const activeSessionsRef =
-        ref(
-
-          database,
-
-          "venues/" +
-          currentVenueId +
-          "/activeSessions"
-
-        );
-
-
-      const newSessionRef =
+      const newRef =
         push(
-          activeSessionsRef
+
+          ref(
+
+            database,
+
+            "venues/" +
+            currentVenueId +
+            "/activeSessions"
+
+          )
+
         );
 
 
       const sessionId =
-        newSessionRef.key;
+        newRef.key;
 
 
       const now =
         Date.now();
 
 
-      const sessionData = {
+      await set(
 
-        sessionId:
+        newRef,
+
+        {
+
           sessionId,
 
-        venueId:
-          currentVenueId,
+          venueId:
+            currentVenueId,
 
-        waiterId:
-          currentWaiter.waiterId,
+          waiterId:
+            currentWaiter.waiterId,
 
-        waiterName:
-          currentWaiter.name,
+          waiterName:
+            currentWaiter.name,
 
-        waiterToken:
-          currentWaiterToken,
+          waiterToken:
+            currentWaiterToken,
 
-        guest: {
+          guest: {
 
-          name:
-            pendingGuestName,
+            name:
+              pendingGuestName,
 
-          phone:
-            pendingGuestPhone,
+            phone:
+              pendingGuestPhone,
 
-          verified:
-            true,
+            verified:
+              true,
 
-          joinedAt:
-            now
+            joinedAt:
+              now
 
-        },
+          },
 
-        locationLabel:
-          "",
+          locationLabel:
+            "",
 
-        status:
-          "active",
+          status:
+            "active",
 
-        openedAt:
-          now,
+          openedAt:
+            now,
 
-        runningTotal:
-          0,
+          runningTotal:
+            0,
 
-        billRequested:
-          false,
+          billRequested:
+            false,
 
-        billFinalised:
-          false,
+          billFinalised:
+            false,
 
-        paid:
-          false
+          paid:
+            false
 
-      };
+        }
 
-
-      await set(
-        newSessionRef,
-        sessionData
       );
 
 
@@ -1844,14 +1478,6 @@
 
       listenToGuestSession();
 
-
-      document.getElementById(
-        "guestStatus"
-      ).innerText =
-        "You're connected to " +
-        currentWaiter.name +
-        ".";
-
     }
 
 
@@ -1860,7 +1486,9 @@
       if (
         !currentSessionId
       ) {
+
         return;
+
       }
 
 
@@ -1886,6 +1514,9 @@
 
               clearLocalSession();
 
+              currentSessionId =
+                null;
+
 
               if (
                 !sessionEndedLocally
@@ -1907,8 +1538,37 @@
             }
 
 
+            const session =
+              snapshot.val();
+
+
+            if (
+              session.status !==
+              "active"
+            ) {
+
+              clearLocalSession();
+
+              currentSessionId =
+                null;
+
+
+              showSessionComplete(
+
+                "Session complete ✅",
+
+                "Thanks for using EasyBev."
+
+              );
+
+
+              return;
+
+            }
+
+
             renderGuestSession(
-              snapshot.val()
+              session
             );
 
           }
@@ -1926,18 +1586,8 @@
 
 
       document
-        .getElementById(
-          "activeGuestSession"
-        )
-        .classList.remove(
-          "hidden"
-        );
-
-
-      document.getElementById(
-        "guestHeading"
-      ).innerText =
-        "You're all set 🙌";
+        .getElementById("activeGuestSession")
+        .classList.remove("hidden");
 
 
       document.getElementById(
@@ -1952,37 +1602,6 @@
       ).innerText =
         session.waiterName ||
         "Your waiter";
-
-
-      const locationRow =
-        document.getElementById(
-          "guestLocationRow"
-        );
-
-
-      if (
-        session.locationLabel
-      ) {
-
-        document.getElementById(
-          "activeLocation"
-        ).innerText =
-          session.locationLabel;
-
-
-        locationRow.classList.remove(
-          "hidden"
-        );
-
-      }
-
-      else {
-
-        locationRow.classList.add(
-          "hidden"
-        );
-
-      }
 
 
       const total =
@@ -2012,19 +1631,14 @@
 
 
       if (
-        total === 0
+        total <= 0
       ) {
 
         requestBillButton
-          .classList.add(
-            "hidden"
-          );
-
+          .classList.add("hidden");
 
         payButton
-          .classList.add(
-            "hidden"
-          );
+          .classList.add("hidden");
 
 
         document.getElementById(
@@ -2034,79 +1648,60 @@
 
       }
 
+      else if (
+        session.billFinalised
+      ) {
+
+        requestBillButton
+          .classList.add("hidden");
+
+
+        payButton
+          .classList.remove("hidden");
+
+
+        payButton.disabled =
+          false;
+
+
+        payButton.innerText =
+
+          "Pay R" +
+          total.toFixed(2);
+
+
+        document.getElementById(
+          "guestBillState"
+        ).innerText =
+          "Bill finalised — ready for payment.";
+
+      }
+
       else {
 
         requestBillButton
-          .classList.remove(
-            "hidden"
-          );
+          .classList.remove("hidden");
 
 
         requestBillButton.disabled =
-          session.billRequested ||
-          session.billFinalised;
+          Boolean(
+            session.billRequested
+          );
 
 
-        if (
-          session.billFinalised
-        ) {
-
-          payButton
-            .classList.remove(
-              "hidden"
-            );
+        payButton
+          .classList.add("hidden");
 
 
-          payButton.disabled =
-            false;
+        document.getElementById(
+          "guestBillState"
+        ).innerText =
 
-
-          payButton.innerText =
-            "Pay R" +
-            total.toFixed(2);
-
-
-          document.getElementById(
-            "guestBillState"
-          ).innerHTML =
-
-            "<span class='warning'>" +
-            "Bill finalised — ready for payment" +
-            "</span>";
-
-        }
-
-        else if (
           session.billRequested
-        ) {
 
-          payButton
-            .classList.add(
-              "hidden"
-            );
+            ? "Bill requested. Waiting for your waiter."
 
-
-          document.getElementById(
-            "guestBillState"
-          ).innerText =
-            "Bill requested. Waiting for your waiter.";
-
-        }
-
-        else {
-
-          payButton
-            .classList.add(
-              "hidden"
-            );
-
-
-          document.getElementById(
-            "guestBillState"
-          ).innerText =
-            "Your bill updates automatically.";
-
-        }
+            : "Your bill updates automatically.";
 
       }
 
@@ -2143,11 +1738,7 @@
       ) {
 
         box.innerHTML =
-
-          "<div class='small-text'>" +
-          "No items added yet." +
-          "</div>";
-
+          "<div class='small-text'>No items added yet.</div>";
 
         return;
 
@@ -2158,7 +1749,7 @@
         items
       ).forEach(
 
-        function(item) {
+        item => {
 
           const row =
             document.createElement(
@@ -2170,37 +1761,19 @@
             "item-row";
 
 
-          const name =
-            document.createElement(
-              "span"
-            );
+          row.innerHTML =
 
+            "<span>" +
+            escapeHtml(
+              item.name
+            ) +
+            "</span>" +
 
-          name.textContent =
-            item.name;
-
-
-          const price =
-            document.createElement(
-              "strong"
-            );
-
-
-          price.textContent =
-            "R" +
+            "<strong>R" +
             Number(
               item.price
-            ).toFixed(2);
-
-
-          row.appendChild(
-            name
-          );
-
-
-          row.appendChild(
-            price
-          );
+            ).toFixed(2) +
+            "</strong>";
 
 
           box.appendChild(
@@ -2242,42 +1815,25 @@
       }
 
 
-      const recentRequests =
+      const serviceRequests =
         Object.values(
           requests
         )
         .filter(
-
-          function(request) {
-
-            return (
-              request.type !==
-              "bill"
-            );
-
-          }
-
+          request =>
+            request.type !==
+            "bill"
         )
         .sort(
-
-          function(a, b) {
-
-            return (
-
-              Number(
-                b.createdAt ||
-                0
-              ) -
-
-              Number(
-                a.createdAt ||
-                0
-              )
-
-            );
-
-          }
-
+          (a, b) =>
+            Number(
+              b.createdAt ||
+              0
+            ) -
+            Number(
+              a.createdAt ||
+              0
+            )
         )
         .slice(
           0,
@@ -2286,7 +1842,7 @@
 
 
       if (
-        recentRequests.length === 0
+        serviceRequests.length === 0
       ) {
 
         box.classList.add(
@@ -2303,68 +1859,50 @@
       );
 
 
-      recentRequests.forEach(
+      serviceRequests.forEach(
 
-        function(request) {
+        request => {
 
-          const line =
+          const div =
             document.createElement(
               "div"
             );
 
 
-          line.className =
+          div.className =
             "request-status-line";
 
 
-          const safeWaiterName =
-            escapeHtml(
-              waiterName ||
-              "Your waiter"
-            );
+          div.innerHTML =
 
-
-          if (
             request.status ===
             "acknowledged"
-          ) {
 
-            line.innerHTML =
+              ? "<span class='request-seen'>" +
+                escapeHtml(
+                  waiterName
+                ) +
+                " has seen your request ✅</span><br>" +
+                "<span class='small-text'>" +
+                escapeHtml(
+                  request.message
+                ) +
+                "</span>"
 
-              "<span class='request-seen'>" +
-              safeWaiterName +
-              " has seen your request ✅" +
-              "</span><br>" +
-
-              "<span class='small-text'>" +
-              escapeHtml(
-                request.message
-              ) +
-              "</span>";
-
-          }
-
-          else {
-
-            line.innerHTML =
-
-              "<span class='request-sent'>" +
-              "Request sent to " +
-              safeWaiterName +
-              " ✅" +
-              "</span><br>" +
-
-              "<span class='small-text'>" +
-              escapeHtml(
-                request.message
-              ) +
-              "</span>";
-
-          }
+              : "<span class='request-sent'>Request sent to " +
+                escapeHtml(
+                  waiterName
+                ) +
+                " ✅</span><br>" +
+                "<span class='small-text'>" +
+                escapeHtml(
+                  request.message
+                ) +
+                "</span>";
 
 
           box.appendChild(
-            line
+            div
           );
 
         }
@@ -2377,19 +1915,9 @@
     window.showGuestRequestModal =
       function() {
 
-        document.getElementById(
-          "guestRequestText"
-        ).value =
-          "";
-
-
         document
-          .getElementById(
-            "guestRequestModal"
-          )
-          .classList.remove(
-            "hidden"
-          );
+          .getElementById("guestRequestModal")
+          .classList.remove("hidden");
 
     };
 
@@ -2398,12 +1926,8 @@
       function() {
 
         document
-          .getElementById(
-            "guestRequestModal"
-          )
-          .classList.add(
-            "hidden"
-          );
+          .getElementById("guestRequestModal")
+          .classList.add("hidden");
 
     };
 
@@ -2416,7 +1940,7 @@
           "guestRequestModal"
         ) {
 
-          window.closeGuestRequestModal();
+          closeGuestRequestModal();
 
         }
 
@@ -2428,9 +1952,7 @@
 
         const message =
           document
-            .getElementById(
-              "guestRequestText"
-            )
+            .getElementById("guestRequestText")
             .value
             .trim();
 
@@ -2454,16 +1976,13 @@
         );
 
 
-        window.closeGuestRequestModal();
-
-
         document.getElementById(
-          "guestStatus"
-        ).innerText =
+          "guestRequestText"
+        ).value =
+          "";
 
-          "Request sent to " +
-          currentWaiter.name +
-          " ✅";
+
+        closeGuestRequestModal();
 
     };
 
@@ -2476,14 +1995,6 @@
           "Need assistance"
         );
 
-
-        document.getElementById(
-          "guestStatus"
-        ).innerText =
-
-          currentWaiter.name +
-          " has been notified that you need assistance.";
-
     };
 
 
@@ -2492,49 +2003,36 @@
       message
     ) {
 
-      if (
-        !currentSessionId
-      ) {
-
-        return;
-
-      }
-
-
-      const requestsRef =
-        ref(
-
-          database,
-
-          "venues/" +
-          currentVenueId +
-          "/activeSessions/" +
-          currentSessionId +
-          "/requests"
-
-        );
-
-
-      const newRequestRef =
+      const requestRef =
         push(
-          requestsRef
+
+          ref(
+
+            database,
+
+            "venues/" +
+            currentVenueId +
+            "/activeSessions/" +
+            currentSessionId +
+            "/requests"
+
+          )
+
         );
 
 
       await set(
 
-        newRequestRef,
+        requestRef,
 
         {
 
           requestId:
-            newRequestRef.key,
+            requestRef.key,
 
-          type:
-            type,
+          type,
 
-          message:
-            message,
+          message,
 
           status:
             "pending",
@@ -2551,15 +2049,6 @@
 
     window.requestBill =
       async function() {
-
-        if (
-          !currentSessionId
-        ) {
-
-          return;
-
-        }
-
 
         const snapshot =
           await get(
@@ -2580,23 +2069,11 @@
           snapshot.val();
 
 
-        const total =
+        if (
           Number(
             session.runningTotal ||
             0
-          );
-
-
-        if (
-          total <= 0
-        ) {
-
-          return;
-
-        }
-
-
-        if (
+          ) <= 0 ||
           session.billRequested
         ) {
 
@@ -2689,29 +2166,11 @@
           updates
         );
 
-
-        document.getElementById(
-          "guestStatus"
-        ).innerText =
-
-          "Bill requested. Waiting for " +
-          currentWaiter.name +
-          ".";
-
     };
 
 
     window.payBill =
       async function() {
-
-        if (
-          !currentSessionId
-        ) {
-
-          return;
-
-        }
-
 
         const sessionId =
           currentSessionId;
@@ -2719,11 +2178,9 @@
 
         const snapshot =
           await get(
-
             activeSessionRef(
               sessionId
             )
-
           );
 
 
@@ -2748,8 +2205,8 @@
 
 
         if (
-          total <= 0 ||
-          !session.billFinalised
+          !session.billFinalised ||
+          total <= 0
         ) {
 
           return;
@@ -2757,22 +2214,12 @@
         }
 
 
-        const approved =
-          confirm(
-
-            "SIMULATED EASYBEV PAYMENT\n\n" +
-
-            "Approve payment of R" +
-
-            total.toFixed(2) +
-
-            "?"
-
-          );
-
-
         if (
-          !approved
+          !confirm(
+            "SIMULATED PAYMENT\n\nPay R" +
+            total.toFixed(2) +
+            "?"
+          )
         ) {
 
           return;
@@ -2784,25 +2231,6 @@
           Date.now();
 
 
-        const finalSession = {
-
-          ...session,
-
-          paid:
-            true,
-
-          paidAt:
-            now,
-
-          status:
-            "closed",
-
-          closedAt:
-            now
-
-        };
-
-
         sessionEndedLocally =
           true;
 
@@ -2811,19 +2239,38 @@
 
           sessionId,
 
-          finalSession
+          {
+
+            ...session,
+
+            paid:
+              true,
+
+            paidAt:
+              now,
+
+            status:
+              "closed",
+
+            closedAt:
+              now
+
+          }
 
         );
 
 
         clearLocalSession();
 
+        currentSessionId =
+          null;
+
 
         showSessionComplete(
 
           "Payment complete ✅",
 
-          "Thanks for using EasyBev. Your payment was successful and your session is now closed."
+          "Your payment was successful and your EasyBev session is closed."
 
         );
 
@@ -2845,18 +2292,8 @@
 
 
         document
-          .getElementById(
-            "waiterView"
-          )
-          .classList.remove(
-            "hidden"
-          );
-
-
-        document.getElementById(
-          "waiterDashboardTitle"
-        ).innerText =
-          currentWaiter.name;
+          .getElementById("waiterView")
+          .classList.remove("hidden");
 
 
         listenToWaiterSessions();
@@ -2879,7 +2316,8 @@
         true;
 
 
-      const sessionsRef =
+      onValue(
+
         ref(
 
           database,
@@ -2888,16 +2326,11 @@
           DEMO_VENUE.id +
           "/activeSessions"
 
-        );
+        ),
 
+        snapshot => {
 
-      onValue(
-
-        sessionsRef,
-
-        function(snapshot) {
-
-          const sessionsContainer =
+          const container =
             document.getElementById(
               "waiterSessions"
             );
@@ -2909,57 +2342,33 @@
             );
 
 
-          sessionsContainer.innerHTML =
+          container.innerHTML =
             "";
 
 
-          if (
-            !snapshot.exists()
-          ) {
-
-            summary.innerText =
-              "0 active patrons";
-
-
-            sessionsContainer.innerHTML =
-
-              "<div class='small-text'>" +
-              "No active EasyBev patrons." +
-              "</div>";
-
-
-            return;
-
-          }
-
-
-          const allSessions =
-            Object.values(
-              snapshot.val()
-            );
-
-
           const sessions =
-            allSessions.filter(
+            snapshot.exists()
 
-              function(session) {
+              ? Object.values(
+                  snapshot.val()
+                ).filter(
 
-                return (
+                  session =>
 
-                  session.waiterId ===
-                  currentWaiter.waiterId
+                    session.waiterId ===
+                    currentWaiter.waiterId &&
 
-                );
+                    session.status ===
+                    "active"
 
-              }
+                )
 
-            );
+              : [];
 
 
           summary.innerText =
 
             sessions.length +
-
             (
               sessions.length === 1
 
@@ -2973,117 +2382,27 @@
             sessions.length === 0
           ) {
 
-            sessionsContainer.innerHTML =
-
-              "<div class='small-text'>" +
-              "No active EasyBev patrons." +
-              "</div>";
-
+            container.innerHTML =
+              "<div class='small-text'>No active EasyBev patrons.</div>";
 
             return;
 
           }
 
 
-          sessions
-            .sort(
+          sessions.forEach(
 
-              function(a, b) {
-
-                const aPending =
-                  countPendingRequests(
-                    a
-                  );
-
-
-                const bPending =
-                  countPendingRequests(
-                    b
-                  );
-
-
-                if (
-                  aPending !==
-                  bPending
-                ) {
-
-                  return (
-                    bPending -
-                    aPending
-                  );
-
-                }
-
-
-                return (
-
-                  Number(
-                    a.openedAt ||
-                    0
-                  ) -
-
-                  Number(
-                    b.openedAt ||
-                    0
-                  )
-
-                );
-
-              }
-
-            )
-            .forEach(
-
-              function(session) {
-
-                renderWaiterSessionCard(
-
-                  session,
-
-                  sessionsContainer
-
-                );
-
-              }
-
-            );
-
-        }
-
-      );
-
-    }
-
-
-    function countPendingRequests(
-      session
-    ) {
-
-      if (
-        !session.requests
-      ) {
-
-        return 0;
-
-      }
-
-
-      return Object.values(
-        session.requests
-      ).filter(
-
-        function(request) {
-
-          return (
-
-            request.status ===
-            "pending"
+            session =>
+              renderWaiterSessionCard(
+                session,
+                container
+              )
 
           );
 
         }
 
-      ).length;
+      );
 
     }
 
@@ -3103,11 +2422,6 @@
         "session-card";
 
 
-      const guestName =
-        session.guest?.name ||
-        "Guest";
-
-
       const total =
         Number(
           session.runningTotal ||
@@ -3115,185 +2429,56 @@
         );
 
 
-      const location =
-        session.locationLabel ||
-        "Location not set";
-
-
-      const pendingRequests =
+      const pending =
         session.requests
 
           ? Object.values(
               session.requests
             ).filter(
-
-              function(request) {
-
-                return (
-
-                  request.status ===
-                  "pending"
-
-                );
-
-              }
-
+              r =>
+                r.status ===
+                "pending"
             )
 
           : [];
 
 
-      const canFinalise =
-        total > 0 &&
-        session.billRequested &&
-        !session.billFinalised;
-
-
-      const canClose =
-        total === 0 ||
-        session.paid;
-
-
-      let badgesHtml =
+      let requestHTML =
         "";
 
 
-      if (
-        pendingRequests.length >
-        0
-      ) {
+      pending.forEach(
 
-        badgesHtml += `
+        request => {
 
-          <span class="badge badge-request">
+          requestHTML += `
 
-            ${pendingRequests.length}
+            <div class="request-card">
 
-            ${
-              pendingRequests.length === 1
+              <strong>
+                ${escapeHtml(
+                  request.message
+                )}
+              </strong>
 
-                ? " REQUEST"
+              <button
+                onclick="
+                  acknowledgeRequest(
+                    '${session.sessionId}',
+                    '${request.requestId}'
+                  )
+                "
+              >
+                Acknowledge
+              </button>
 
-                : " REQUESTS"
-            }
+            </div>
 
-          </span>
+          `;
 
-        `;
+        }
 
-      }
-
-
-      if (
-        session.billRequested &&
-        !session.billFinalised
-      ) {
-
-        badgesHtml += `
-
-          <span class="badge badge-bill">
-            BILL REQUESTED
-          </span>
-
-        `;
-
-      }
-
-
-      if (
-        session.billFinalised
-      ) {
-
-        badgesHtml += `
-
-          <span class="badge badge-ready">
-            READY TO PAY
-          </span>
-
-        `;
-
-      }
-
-
-      let requestsHtml =
-        "";
-
-
-      if (
-        pendingRequests.length ===
-        0
-      ) {
-
-        requestsHtml =
-
-          "<div class='small-text'>" +
-          "No pending requests." +
-          "</div>";
-
-      }
-
-      else {
-
-        pendingRequests
-          .sort(
-
-            function(a, b) {
-
-              return (
-
-                Number(
-                  a.createdAt ||
-                  0
-                ) -
-
-                Number(
-                  b.createdAt ||
-                  0
-                )
-
-              );
-
-            }
-
-          )
-          .forEach(
-
-            function(request) {
-
-              requestsHtml += `
-
-                <div class="request-card">
-
-                  <div class="request-message">
-
-                    <strong>
-                      ${escapeHtml(
-                        request.message
-                      )}
-                    </strong>
-
-                  </div>
-
-                  <button
-                    onclick="
-                      acknowledgeRequest(
-                        '${session.sessionId}',
-                        '${request.requestId}'
-                      )
-                    "
-                  >
-                    Acknowledge
-                  </button>
-
-                </div>
-
-              `;
-
-            }
-
-          );
-
-      }
+      );
 
 
       card.innerHTML = `
@@ -3302,13 +2487,15 @@
 
           <div class="patron-name">
             ${escapeHtml(
-              guestName
+              session.guest?.name ||
+              "Guest"
             )}
           </div>
 
           <span class="location-label">
             ${escapeHtml(
-              location
+              session.locationLabel ||
+              "Location not set"
             )}
           </span>
 
@@ -3322,7 +2509,38 @@
           </div>
 
           <div class="badge-area">
-            ${badgesHtml}
+
+            ${
+              pending.length
+
+                ? `<span class="badge badge-request">
+                     ${pending.length} REQUEST
+                   </span>`
+
+                : ""
+            }
+
+            ${
+              session.billRequested &&
+              !session.billFinalised
+
+                ? `<span class="badge badge-bill">
+                     BILL REQUESTED
+                   </span>`
+
+                : ""
+            }
+
+            ${
+              session.billFinalised
+
+                ? `<span class="badge badge-ready">
+                     READY TO PAY
+                   </span>`
+
+                : ""
+            }
+
           </div>
 
         </div>
@@ -3369,13 +2587,15 @@
             Requests
           </div>
 
-          ${requestsHtml}
+          ${
+            requestHTML ||
+            "<div class='small-text'>No pending requests.</div>"
+          }
 
 
           <div class="detail-heading">
             Patron details
           </div>
-
 
           <div class="small-text">
 
@@ -3387,15 +2607,13 @@
 
           </div>
 
-
           <br>
 
 
           <input
             id="location-${session.sessionId}"
-            type="text"
             placeholder="Table 7, VIP Booth, Outside..."
-            value="${escapeAttribute(
+            value="${escapeHtml(
               session.locationLabel ||
               ""
             )}"
@@ -3419,15 +2637,9 @@
           </div>
 
 
-          <div>
-
-            Current total:
-
-            <strong>
-              R${total.toFixed(2)}
-            </strong>
-
-          </div>
+          <strong>
+            R${total.toFixed(2)}
+          </strong>
 
 
           <button
@@ -3438,8 +2650,12 @@
               )
             "
             ${
-              canFinalise
+              total > 0 &&
+              session.billRequested &&
+              !session.billFinalised
+
                 ? ""
+
                 : "disabled"
             }
           >
@@ -3455,8 +2671,11 @@
               )
             "
             ${
-              canClose
+              total === 0 ||
+              session.paid
+
                 ? ""
+
                 : "disabled"
             }
           >
@@ -3488,27 +2707,14 @@
         sessionId
       ) {
 
-        const details =
-          document.getElementById(
-
+        document
+          .getElementById(
             "details-" +
             sessionId
-
+          )
+          ?.classList.toggle(
+            "hidden"
           );
-
-
-        if (
-          !details
-        ) {
-
-          return;
-
-        }
-
-
-        details.classList.toggle(
-          "hidden"
-        );
 
     };
 
@@ -3520,34 +2726,16 @@
 
         const snapshot =
           await get(
-
             activeSessionRef(
               sessionId
             )
-
           );
 
 
         if (
-          !snapshot.exists()
+          !snapshot.exists() ||
+          snapshot.val().billFinalised
         ) {
-
-          return;
-
-        }
-
-
-        const session =
-          snapshot.val();
-
-
-        if (
-          session.billFinalised
-        ) {
-
-          alert(
-            "This bill has already been finalised."
-          );
 
           return;
 
@@ -3563,35 +2751,20 @@
         ).innerText =
 
           "Adding to " +
-
           (
-            session.guest?.name ||
+            snapshot.val().guest?.name ||
             "Guest"
           );
 
 
-        const feedback =
-          document.getElementById(
-            "addItemFeedback"
-          );
-
-
-        feedback.innerText =
-          "";
-
-
-        feedback.classList.add(
-          "hidden"
-        );
+        document
+          .getElementById("addItemFeedback")
+          .classList.add("hidden");
 
 
         document
-          .getElementById(
-            "addItemModal"
-          )
-          .classList.remove(
-            "hidden"
-          );
+          .getElementById("addItemModal")
+          .classList.remove("hidden");
 
     };
 
@@ -3604,12 +2777,8 @@
 
 
         document
-          .getElementById(
-            "addItemModal"
-          )
-          .classList.add(
-            "hidden"
-          );
+          .getElementById("addItemModal")
+          .classList.add("hidden");
 
     };
 
@@ -3622,7 +2791,7 @@
           "addItemModal"
         ) {
 
-          window.closeAddItemMenu();
+          closeAddItemMenu();
 
         }
 
@@ -3644,13 +2813,9 @@
         }
 
 
-        const sessionId =
-          currentAddItemSessionId;
-
-
         await addItem(
 
-          sessionId,
+          currentAddItemSessionId,
 
           itemName,
 
@@ -3676,55 +2841,6 @@
           "hidden"
         );
 
-
-        /*
-          IMPORTANT:
-
-          The Add Item window stays open.
-
-          Thabo can add as many items as
-          required and then press Done.
-        */
-
-    };
-
-
-    window.setLocation =
-      async function(
-        sessionId
-      ) {
-
-        const input =
-          document.getElementById(
-
-            "location-" +
-            sessionId
-
-          );
-
-
-        const location =
-          input.value.trim();
-
-
-        await update(
-
-          activeSessionRef(
-            sessionId
-          ),
-
-          {
-
-            locationLabel:
-              location,
-
-            locationUpdatedAt:
-              Date.now()
-
-          }
-
-        );
-
     };
 
 
@@ -3733,44 +2849,6 @@
       itemName,
       price
     ) {
-
-      const sessionReference =
-        activeSessionRef(
-          sessionId
-        );
-
-
-      const snapshot =
-        await get(
-          sessionReference
-        );
-
-
-      if (
-        !snapshot.exists()
-      ) {
-
-        return;
-
-      }
-
-
-      const session =
-        snapshot.val();
-
-
-      if (
-        session.billFinalised
-      ) {
-
-        alert(
-          "This bill has already been finalised."
-        );
-
-        return;
-
-      }
-
 
       const itemRef =
         push(
@@ -3829,26 +2907,56 @@
 
         ),
 
-        function(currentTotal) {
+        current =>
 
-          return (
+          Number(
+            current ||
+            0
+          ) +
 
-            Number(
-              currentTotal ||
-              0
-            ) +
-
-            Number(
-              price
-            )
-
-          );
-
-        }
+          Number(
+            price
+          )
 
       );
 
     }
+
+
+    window.setLocation =
+      async function(
+        sessionId
+      ) {
+
+        const location =
+          document
+            .getElementById(
+              "location-" +
+              sessionId
+            )
+            .value
+            .trim();
+
+
+        await update(
+
+          activeSessionRef(
+            sessionId
+          ),
+
+          {
+
+            locationLabel:
+              location,
+
+            locationUpdatedAt:
+              Date.now()
+
+          }
+
+        );
+
+    };
 
 
     window.acknowledgeRequest =
@@ -3894,11 +3002,9 @@
 
         const snapshot =
           await get(
-
             activeSessionRef(
               sessionId
             )
-
           );
 
 
@@ -3915,33 +3021,13 @@
           snapshot.val();
 
 
-        const total =
+        if (
+          !session.billRequested ||
           Number(
             session.runningTotal ||
             0
-          );
-
-
-        if (
-          total <= 0
+          ) <= 0
         ) {
-
-          alert(
-            "There is no bill to finalise."
-          );
-
-          return;
-
-        }
-
-
-        if (
-          !session.billRequested
-        ) {
-
-          alert(
-            "The patron has not requested the bill yet."
-          );
 
           return;
 
@@ -3984,14 +3070,11 @@
             session.requests
           ).forEach(
 
-            function(request) {
+            request => {
 
               if (
-                request.type ===
-                "bill" &&
-
-                request.status ===
-                "pending"
+                request.type === "bill" &&
+                request.status === "pending"
               ) {
 
                 updates[
@@ -4007,20 +3090,6 @@
                 ] =
                   "acknowledged";
 
-
-                updates[
-
-                  "venues/" +
-                  DEMO_VENUE.id +
-                  "/activeSessions/" +
-                  sessionId +
-                  "/requests/" +
-                  request.requestId +
-                  "/acknowledgedAt"
-
-                ] =
-                  Date.now();
-
               }
 
             }
@@ -4031,13 +3100,8 @@
 
 
         await update(
-
-          ref(
-            database
-          ),
-
+          ref(database),
           updates
-
         );
 
     };
@@ -4050,11 +3114,9 @@
 
         const snapshot =
           await get(
-
             activeSessionRef(
               sessionId
             )
-
           );
 
 
@@ -4084,7 +3146,11 @@
         ) {
 
           alert(
-            "Payment must be completed before this session can close."
+
+            "This session still has an unpaid balance of R" +
+            total.toFixed(2) +
+            "."
+
           );
 
           return;
@@ -4092,8 +3158,15 @@
         }
 
 
-        const now =
-          Date.now();
+        if (
+          !confirm(
+            "Close this EasyBev session?"
+          )
+        ) {
+
+          return;
+
+        }
 
 
         await archiveSession(
@@ -4108,7 +3181,7 @@
               "closed",
 
             closedAt:
-              now
+              Date.now()
 
           }
 
@@ -4122,6 +3195,27 @@
       finalSession
     ) {
 
+      const now =
+        Date.now();
+
+
+      const closedSession = {
+
+        ...finalSession,
+
+        status:
+          "closed",
+
+        closedAt:
+          finalSession.closedAt ||
+          now,
+
+        archivedAt:
+          now
+
+      };
+
+
       const updates =
         {};
 
@@ -4134,7 +3228,7 @@
         sessionId
 
       ] =
-        finalSession;
+        closedSession;
 
 
       updates[
@@ -4149,13 +3243,8 @@
 
 
       await update(
-
-        ref(
-          database
-        ),
-
+        ref(database),
         updates
-
       );
 
     }
@@ -4166,7 +3255,8 @@
     ) {
 
       return String(
-        value
+        value ??
+        ""
       )
 
         .replaceAll(
@@ -4197,17 +3287,6 @@
     }
 
 
-    function escapeAttribute(
-      value
-    ) {
-
-      return escapeHtml(
-        value
-      );
-
-    }
-
-
     document.getElementById(
       "footerYear"
     ).innerText =
@@ -4219,5 +3298,4 @@
   </script>
 
 </body>
-
 </html>
