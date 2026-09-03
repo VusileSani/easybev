@@ -12,7 +12,6 @@
   <title>EasyBev</title>
 
   <style>
-
     * {
       box-sizing: border-box;
     }
@@ -117,7 +116,8 @@
       color: white;
     }
 
-    input {
+    input,
+    textarea {
       width: 100%;
       padding: 12px;
       margin-bottom: 10px;
@@ -126,6 +126,12 @@
       background: #292929;
       color: white;
       font-size: 15px;
+      font-family: Arial, sans-serif;
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
     }
 
     .small-text {
@@ -239,10 +245,35 @@
       border: 1px solid #444;
     }
 
+    .guest-actions {
+      margin-top: 12px;
+    }
 
-    /* ========================================
-       V4.1 COMPACT PATRON CARDS
-       ======================================== */
+    .guest-request-status {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 9px;
+      background: #202020;
+      border: 1px solid #3d3d3d;
+    }
+
+    .request-status-line {
+      padding: 7px 0;
+      border-bottom: 1px solid #333;
+      line-height: 1.5;
+    }
+
+    .request-status-line:last-child {
+      border-bottom: none;
+    }
+
+    .request-sent {
+      color: #f2b84b;
+    }
+
+    .request-seen {
+      color: #21c063;
+    }
 
     .session-card {
       background: #252525;
@@ -345,10 +376,10 @@
       margin-top: 8px;
     }
 
-
-    /* ========================================
-       ADD ITEM MODAL
-       ======================================== */
+    .request-message {
+      white-space: pre-wrap;
+      line-height: 1.5;
+    }
 
     .modal-overlay {
       position: fixed;
@@ -403,11 +434,6 @@
       font-weight: bold;
     }
 
-
-    /* ========================================
-       FOOTER
-       ======================================== */
-
     .app-footer {
       max-width: 1000px;
       margin: 30px auto 10px auto;
@@ -436,7 +462,6 @@
     }
 
     @media (max-width: 700px) {
-
       .developer-buttons,
       .compact-actions {
         grid-template-columns: 1fr 1fr;
@@ -445,9 +470,7 @@
       .patron-summary {
         align-items: flex-start;
       }
-
     }
-
   </style>
 </head>
 
@@ -469,7 +492,7 @@
   >
 
     <strong>
-      EasyBev V4.1 Developer Controls
+      EasyBev V4.2 Developer Controls
     </strong>
 
     <div class="developer-buttons">
@@ -528,6 +551,8 @@
       ></div>
 
 
+      <!-- LOGIN -->
+
       <div id="guestLogin">
 
         <h3>
@@ -552,6 +577,8 @@
 
       </div>
 
+
+      <!-- OTP -->
 
       <div
         id="otpArea"
@@ -582,6 +609,8 @@
 
       </div>
 
+
+      <!-- ACTIVE SESSION -->
 
       <div
         id="activeGuestSession"
@@ -645,61 +674,51 @@
 
         <div id="guestItems"></div>
 
-        <br>
+
+        <div class="guest-actions">
+
+          <button
+            onclick="showGuestRequestModal()"
+          >
+            Request Something
+          </button>
+
+          <button
+            class="secondary"
+            onclick="sendAssistanceRequest()"
+          >
+            Need Assistance
+          </button>
+
+          <button
+            id="requestBillButton"
+            class="warning-button hidden"
+            onclick="requestBill()"
+          >
+            Request Bill
+          </button>
+
+          <button
+            id="payButton"
+            class="secondary hidden"
+            onclick="payBill()"
+            disabled
+          >
+            Pay
+          </button>
+
+        </div>
 
 
-        <button
-          onclick="sendGuestRequest(
-            'assistance',
-            'Need assistance'
-          )"
-        >
-          Need Assistance
-        </button>
-
-
-        <button
-          id="drinksButton"
-          onclick="sendGuestRequest(
-            'drinks',
-            'Drinks requested'
-          )"
-        >
-          Request Drinks
-        </button>
-
-
-        <button
-          id="foodButton"
-          onclick="sendGuestRequest(
-            'food',
-            'Food requested'
-          )"
-        >
-          Request Food
-        </button>
-
-
-        <button
-          id="requestBillButton"
-          class="warning-button hidden"
-          onclick="requestBill()"
-        >
-          Request Bill
-        </button>
-
-
-        <button
-          id="payButton"
-          class="secondary hidden"
-          onclick="payBill()"
-          disabled
-        >
-          Pay
-        </button>
+        <div
+          id="guestRequestStatus"
+          class="guest-request-status hidden"
+        ></div>
 
       </div>
 
+
+      <!-- COMPLETE -->
 
       <div
         id="sessionComplete"
@@ -765,6 +784,49 @@
   </div>
 
 
+  <!-- REQUEST SOMETHING MODAL -->
+
+  <div
+    id="guestRequestModal"
+    class="modal-overlay hidden"
+    onclick="guestRequestBackgroundClick(event)"
+  >
+
+    <div class="modal-card">
+
+      <h2 class="modal-title">
+        What can Thabo get you?
+      </h2>
+
+      <div class="small-text">
+        Type your request as it appears on the venue menu, or simply describe what you need.
+      </div>
+
+      <br>
+
+      <textarea
+        id="guestRequestText"
+        placeholder="e.g. 2 Castle Lagers and an ice bucket"
+      ></textarea>
+
+      <button
+        onclick="submitGuestTextRequest()"
+      >
+        Send Request
+      </button>
+
+      <button
+        class="muted-button"
+        onclick="closeGuestRequestModal()"
+      >
+        Cancel
+      </button>
+
+    </div>
+
+  </div>
+
+
   <!-- ADD ITEM MODAL -->
 
   <div
@@ -794,7 +856,6 @@
           <span class="menu-price">R35</span>
         </button>
 
-
         <button
           class="menu-item"
           onclick="addSelectedItem('Cocktail', 85)"
@@ -802,7 +863,6 @@
           <span>Cocktail</span>
           <span class="menu-price">R85</span>
         </button>
-
 
         <button
           class="menu-item"
@@ -812,7 +872,6 @@
           <span class="menu-price">R45</span>
         </button>
 
-
         <button
           class="menu-item"
           onclick="addSelectedItem('Round of 10 Shots', 450)"
@@ -820,7 +879,6 @@
           <span>10 Shots</span>
           <span class="menu-price">R450</span>
         </button>
-
 
         <button
           class="menu-item"
@@ -831,7 +889,6 @@
         </button>
 
       </div>
-
 
       <button
         class="muted-button"
@@ -850,11 +907,9 @@
   <footer class="app-footer">
 
     <span class="footer-brand">
-
       EasyBev
       &copy;
       <span id="footerYear"></span>
-
     </span>
 
     <a
@@ -968,35 +1023,22 @@
     const app =
       initializeApp(firebaseConfig);
 
-
     const database =
       getDatabase(app);
 
 
     const DEMO_VENUE = {
-
-      id:
-        "easybev-demo",
-
-      name:
-        "EasyBev Demo Venue"
-
+      id: "easybev-demo",
+      name: "EasyBev Demo Venue"
     };
 
 
     const DEMO_WAITERS = {
 
       THABO7X: {
-
-        waiterId:
-          "thabo",
-
-        name:
-          "Thabo",
-
-        qrToken:
-          "THABO7X"
-
+        waiterId: "thabo",
+        name: "Thabo",
+        qrToken: "THABO7X"
       }
 
     };
@@ -1036,14 +1078,11 @@
     function waiterRef() {
 
       return ref(
-
         database,
-
         "venues/" +
         currentVenueId +
         "/waiters/" +
         currentWaiter.waiterId
-
       );
 
     }
@@ -1054,14 +1093,11 @@
     ) {
 
       return ref(
-
         database,
-
         "venues/" +
         currentVenueId +
         "/activeSessions/" +
         sessionId
-
       );
 
     }
@@ -1070,13 +1106,11 @@
     function sessionStorageKey() {
 
       return (
-
         "easybev:" +
         currentVenueId +
         ":" +
         currentWaiter.waiterId +
         ":activeSession"
-
       );
 
     }
@@ -1560,13 +1594,10 @@
 
       const activeSessionsRef =
         ref(
-
           database,
-
           "venues/" +
           currentVenueId +
           "/activeSessions"
-
         );
 
 
@@ -1803,23 +1834,6 @@
           "payButton"
         );
 
-      const drinksButton =
-        document.getElementById(
-          "drinksButton"
-        );
-
-      const foodButton =
-        document.getElementById(
-          "foodButton"
-        );
-
-
-      drinksButton.disabled =
-        !!session.billFinalised;
-
-      foodButton.disabled =
-        !!session.billFinalised;
-
 
       if (total === 0) {
 
@@ -1859,12 +1873,13 @@
           document.getElementById(
             "guestBillState"
           ).innerHTML =
-
             "<span class='warning'>" +
             "Bill finalised — ready for payment" +
             "</span>";
 
-        } else if (session.billRequested) {
+        } else if (
+          session.billRequested
+        ) {
 
           payButton
             .classList.add("hidden");
@@ -1891,6 +1906,11 @@
 
       renderGuestItems(
         session.items
+      );
+
+
+      renderGuestRequestStatuses(
+        session.requests
       );
 
     }
@@ -1976,72 +1996,296 @@
     }
 
 
-    window.sendGuestRequest =
-      async function(
-        type,
-        message
+    function renderGuestRequestStatuses(
+      requests
+    ) {
+
+      const box =
+        document.getElementById(
+          "guestRequestStatus"
+        );
+
+
+      box.innerHTML =
+        "";
+
+
+      if (!requests) {
+
+        box.classList.add(
+          "hidden"
+        );
+
+        return;
+
+      }
+
+
+      const recentRequests =
+        Object.values(requests)
+          .filter(
+            function(request) {
+
+              return (
+                request.type !== "bill"
+              );
+
+            }
+          )
+          .sort(
+            function(a, b) {
+
+              return (
+                Number(
+                  b.createdAt ||
+                  0
+                ) -
+                Number(
+                  a.createdAt ||
+                  0
+                )
+              );
+
+            }
+          )
+          .slice(0, 3);
+
+
+      if (
+        recentRequests.length === 0
       ) {
 
-        if (!currentSessionId) {
-          return;
-        }
+        box.classList.add(
+          "hidden"
+        );
+
+        return;
+
+      }
 
 
-        const requestsRef =
-          ref(
-
-            database,
-
-            "venues/" +
-            currentVenueId +
-            "/activeSessions/" +
-            currentSessionId +
-            "/requests"
-
-          );
+      box.classList.remove(
+        "hidden"
+      );
 
 
-        const newRequestRef =
-          push(
-            requestsRef
-          );
+      recentRequests.forEach(
+
+        function(request) {
+
+          const line =
+            document.createElement(
+              "div"
+            );
 
 
-        await set(
+          line.className =
+            "request-status-line";
 
-          newRequestRef,
 
-          {
+          if (
+            request.status ===
+            "acknowledged"
+          ) {
 
-            requestId:
-              newRequestRef.key,
+            line.innerHTML =
+              "<span class='request-seen'>" +
+              "Thabo has seen your request ✅" +
+              "</span><br>" +
+              "<span class='small-text'>" +
+              escapeHtml(
+                request.message
+              ) +
+              "</span>";
 
-            type:
-              type,
+          } else {
 
-            message:
-              message,
-
-            status:
-              "pending",
-
-            createdAt:
-              Date.now()
+            line.innerHTML =
+              "<span class='request-sent'>" +
+              "Request sent to Thabo ✅" +
+              "</span><br>" +
+              "<span class='small-text'>" +
+              escapeHtml(
+                request.message
+              ) +
+              "</span>";
 
           }
 
+
+          box.appendChild(
+            line
+          );
+
+        }
+
+      );
+
+    }
+
+
+    window.showGuestRequestModal =
+      function() {
+
+        document.getElementById(
+          "guestRequestText"
+        ).value =
+          "";
+
+
+        document
+          .getElementById(
+            "guestRequestModal"
+          )
+          .classList.remove(
+            "hidden"
+          );
+
+    };
+
+
+    window.closeGuestRequestModal =
+      function() {
+
+        document
+          .getElementById(
+            "guestRequestModal"
+          )
+          .classList.add(
+            "hidden"
+          );
+
+    };
+
+
+    window.guestRequestBackgroundClick =
+      function(event) {
+
+        if (
+          event.target.id ===
+          "guestRequestModal"
+        ) {
+
+          window.closeGuestRequestModal();
+
+        }
+
+    };
+
+
+    window.submitGuestTextRequest =
+      async function() {
+
+        const message =
+          document
+            .getElementById(
+              "guestRequestText"
+            )
+            .value
+            .trim();
+
+
+        if (!message) {
+
+          alert(
+            "Type your request first."
+          );
+
+          return;
+
+        }
+
+
+        await createGuestRequest(
+          "service",
+          message
+        );
+
+
+        window.closeGuestRequestModal();
+
+
+        document.getElementById(
+          "guestStatus"
+        ).innerText =
+          "Request sent to " +
+          currentWaiter.name +
+          " ✅";
+
+    };
+
+
+    window.sendAssistanceRequest =
+      async function() {
+
+        await createGuestRequest(
+          "assistance",
+          "Need assistance"
         );
 
 
         document.getElementById(
           "guestStatus"
         ).innerText =
-          message +
-          " sent to " +
           currentWaiter.name +
-          ".";
+          " has been notified that you need assistance.";
 
-      };
+    };
+
+
+    async function createGuestRequest(
+      type,
+      message
+    ) {
+
+      if (!currentSessionId) {
+        return;
+      }
+
+
+      const requestsRef =
+        ref(
+          database,
+          "venues/" +
+          currentVenueId +
+          "/activeSessions/" +
+          currentSessionId +
+          "/requests"
+        );
+
+
+      const newRequestRef =
+        push(
+          requestsRef
+        );
+
+
+      await set(
+
+        newRequestRef,
+
+        {
+
+          requestId:
+            newRequestRef.key,
+
+          type:
+            type,
+
+          message:
+            message,
+
+          status:
+            "pending",
+
+          createdAt:
+            Date.now()
+
+        }
+
+      );
+
+    }
 
 
     window.requestBill =
@@ -2084,29 +2328,76 @@
         }
 
 
+        const requestRef =
+          push(
+            ref(
+              database,
+              "venues/" +
+              currentVenueId +
+              "/activeSessions/" +
+              currentSessionId +
+              "/requests"
+            )
+          );
+
+
+        const now =
+          Date.now();
+
+
+        const updates = {};
+
+
+        updates[
+          "venues/" +
+          currentVenueId +
+          "/activeSessions/" +
+          currentSessionId +
+          "/billRequested"
+        ] =
+          true;
+
+
+        updates[
+          "venues/" +
+          currentVenueId +
+          "/activeSessions/" +
+          currentSessionId +
+          "/billRequestedAt"
+        ] =
+          now;
+
+
+        updates[
+          "venues/" +
+          currentVenueId +
+          "/activeSessions/" +
+          currentSessionId +
+          "/requests/" +
+          requestRef.key
+        ] = {
+
+          requestId:
+            requestRef.key,
+
+          type:
+            "bill",
+
+          message:
+            "Bill requested",
+
+          status:
+            "pending",
+
+          createdAt:
+            now
+
+        };
+
+
         await update(
-
-          activeSessionRef(),
-
-          {
-
-            billRequested:
-              true,
-
-            billRequestedAt:
-              Date.now()
-
-          }
-
-        );
-
-
-        await sendGuestRequest(
-
-          "bill",
-
-          "Bill requested"
-
+          ref(database),
+          updates
         );
 
 
@@ -2117,7 +2408,7 @@
           currentWaiter.name +
           ".";
 
-      };
+    };
 
 
     window.payBill =
@@ -2213,11 +2504,8 @@
 
 
         await archiveSession(
-
           sessionId,
-
           finalSession
-
         );
 
 
@@ -2232,7 +2520,7 @@
 
         );
 
-      };
+    };
 
 
     window.showWaiterDashboard =
@@ -2260,7 +2548,7 @@
 
         listenToWaiterSessions();
 
-      };
+    };
 
 
     function listenToWaiterSessions() {
@@ -2276,13 +2564,10 @@
 
       const sessionsRef =
         ref(
-
           database,
-
           "venues/" +
           DEMO_VENUE.id +
           "/activeSessions"
-
         );
 
 
@@ -2352,7 +2637,9 @@
             );
 
 
-          if (sessions.length === 0) {
+          if (
+            sessions.length === 0
+          ) {
 
             sessionsContainer.innerHTML =
               "<div class='small-text'>" +
@@ -2369,9 +2656,38 @@
 
               function(a, b) {
 
+                const aPending =
+                  countPendingRequests(
+                    a
+                  );
+
+                const bPending =
+                  countPendingRequests(
+                    b
+                  );
+
+
+                if (
+                  aPending !== bPending
+                ) {
+
+                  return (
+                    bPending -
+                    aPending
+                  );
+
+                }
+
+
                 return (
-                  Number(a.openedAt || 0) -
-                  Number(b.openedAt || 0)
+                  Number(
+                    a.openedAt ||
+                    0
+                  ) -
+                  Number(
+                    b.openedAt ||
+                    0
+                  )
                 );
 
               }
@@ -2382,11 +2698,8 @@
               function(session) {
 
                 renderWaiterSessionCard(
-
                   session,
-
                   sessionsContainer
-
                 );
 
               }
@@ -2396,6 +2709,33 @@
         }
 
       );
+
+    }
+
+
+    function countPendingRequests(
+      session
+    ) {
+
+      if (!session.requests) {
+        return 0;
+      }
+
+
+      return Object.values(
+        session.requests
+      ).filter(
+
+        function(request) {
+
+          return (
+            request.status ===
+            "pending"
+          );
+
+        }
+
+      ).length;
 
     }
 
@@ -2468,7 +2808,10 @@
         "";
 
 
-      if (pendingRequests.length > 0) {
+      if (
+        pendingRequests.length >
+        0
+      ) {
 
         badgesHtml += `
 
@@ -2505,7 +2848,9 @@
       }
 
 
-      if (session.billFinalised) {
+      if (
+        session.billFinalised
+      ) {
 
         badgesHtml += `
 
@@ -2522,7 +2867,9 @@
         "";
 
 
-      if (pendingRequests.length === 0) {
+      if (
+        pendingRequests.length === 0
+      ) {
 
         requestsHtml =
           "<div class='small-text'>" +
@@ -2531,38 +2878,59 @@
 
       } else {
 
-        pendingRequests.forEach(
+        pendingRequests
+          .sort(
 
-          function(request) {
+            function(a, b) {
 
-            requestsHtml += `
+              return (
+                Number(
+                  a.createdAt ||
+                  0
+                ) -
+                Number(
+                  b.createdAt ||
+                  0
+                )
+              );
 
-              <div class="request-card">
+            }
 
-                <strong>
-                  ${escapeHtml(
-                    request.message
-                  )}
-                </strong>
+          )
+          .forEach(
 
-                <button
-                  onclick="
-                    acknowledgeRequest(
-                      '${session.sessionId}',
-                      '${request.requestId}'
-                    )
-                  "
-                >
-                  Acknowledge
-                </button>
+            function(request) {
 
-              </div>
+              requestsHtml += `
 
-            `;
+                <div class="request-card">
 
-          }
+                  <div class="request-message">
+                    <strong>
+                      ${escapeHtml(
+                        request.message
+                      )}
+                    </strong>
+                  </div>
 
-        );
+                  <button
+                    onclick="
+                      acknowledgeRequest(
+                        '${session.sessionId}',
+                        '${request.requestId}'
+                      )
+                    "
+                  >
+                    Acknowledge
+                  </button>
+
+                </div>
+
+              `;
+
+            }
+
+          );
 
       }
 
@@ -2751,10 +3119,8 @@
 
         const details =
           document.getElementById(
-
             "details-" +
             sessionId
-
           );
 
 
@@ -2777,11 +3143,9 @@
 
         const snapshot =
           await get(
-
             activeSessionRef(
               sessionId
             )
-
           );
 
 
@@ -2794,7 +3158,9 @@
           snapshot.val();
 
 
-        if (session.billFinalised) {
+        if (
+          session.billFinalised
+        ) {
 
           alert(
             "This bill has already been finalised."
@@ -2871,7 +3237,9 @@
         price
       ) {
 
-        if (!currentAddItemSessionId) {
+        if (
+          !currentAddItemSessionId
+        ) {
           return;
         }
 
@@ -2881,13 +3249,9 @@
 
 
         await addItem(
-
           sessionId,
-
           itemName,
-
           price
-
         );
 
 
@@ -2903,10 +3267,8 @@
 
         const input =
           document.getElementById(
-
             "location-" +
             sessionId
-
           );
 
 
@@ -2953,7 +3315,9 @@
         );
 
 
-      if (!snapshot.exists()) {
+      if (
+        !snapshot.exists()
+      ) {
         return;
       }
 
@@ -2962,7 +3326,9 @@
         snapshot.val();
 
 
-      if (session.billFinalised) {
+      if (
+        session.billFinalised
+      ) {
 
         alert(
           "This bill has already been finalised."
@@ -2977,15 +3343,12 @@
         push(
 
           ref(
-
             database,
-
             "venues/" +
             DEMO_VENUE.id +
             "/activeSessions/" +
             sessionId +
             "/items"
-
           )
 
         );
@@ -3004,7 +3367,9 @@
             itemName,
 
           price:
-            Number(price),
+            Number(
+              price
+            ),
 
           createdAt:
             Date.now()
@@ -3017,28 +3382,24 @@
       await runTransaction(
 
         ref(
-
           database,
-
           "venues/" +
           DEMO_VENUE.id +
           "/activeSessions/" +
           sessionId +
           "/runningTotal"
-
         ),
 
         function(currentTotal) {
 
           return (
-
             Number(
               currentTotal ||
               0
             ) +
-
-            Number(price)
-
+            Number(
+              price
+            )
           );
 
         }
@@ -3057,16 +3418,13 @@
         await update(
 
           ref(
-
             database,
-
             "venues/" +
             DEMO_VENUE.id +
             "/activeSessions/" +
             sessionId +
             "/requests/" +
             requestId
-
           ),
 
           {
@@ -3091,15 +3449,15 @@
 
         const snapshot =
           await get(
-
             activeSessionRef(
               sessionId
             )
-
           );
 
 
-        if (!snapshot.exists()) {
+        if (
+          !snapshot.exists()
+        ) {
           return;
         }
 
@@ -3115,7 +3473,9 @@
           );
 
 
-        if (total <= 0) {
+        if (
+          total <= 0
+        ) {
 
           alert(
             "There is no bill to finalise."
@@ -3126,7 +3486,9 @@
         }
 
 
-        if (!session.billRequested) {
+        if (
+          !session.billRequested
+        ) {
 
           alert(
             "The patron has not requested the bill yet."
@@ -3142,30 +3504,28 @@
 
 
         updates[
-
           "venues/" +
           DEMO_VENUE.id +
           "/activeSessions/" +
           sessionId +
           "/billFinalised"
-
         ] =
           true;
 
 
         updates[
-
           "venues/" +
           DEMO_VENUE.id +
           "/activeSessions/" +
           sessionId +
           "/billFinalisedAt"
-
         ] =
           Date.now();
 
 
-        if (session.requests) {
+        if (
+          session.requests
+        ) {
 
           Object.values(
             session.requests
@@ -3179,7 +3539,6 @@
               ) {
 
                 updates[
-
                   "venues/" +
                   DEMO_VENUE.id +
                   "/activeSessions/" +
@@ -3187,13 +3546,11 @@
                   "/requests/" +
                   request.requestId +
                   "/status"
-
                 ] =
                   "acknowledged";
 
 
                 updates[
-
                   "venues/" +
                   DEMO_VENUE.id +
                   "/activeSessions/" +
@@ -3201,7 +3558,6 @@
                   "/requests/" +
                   request.requestId +
                   "/acknowledgedAt"
-
                 ] =
                   Date.now();
 
@@ -3215,11 +3571,8 @@
 
 
         await update(
-
           ref(database),
-
           updates
-
         );
 
     };
@@ -3232,15 +3585,15 @@
 
         const snapshot =
           await get(
-
             activeSessionRef(
               sessionId
             )
-
           );
 
 
-        if (!snapshot.exists()) {
+        if (
+          !snapshot.exists()
+        ) {
           return;
         }
 
@@ -3305,33 +3658,26 @@
 
 
       updates[
-
         "venues/" +
         DEMO_VENUE.id +
         "/sessionHistory/" +
         sessionId
-
       ] =
         finalSession;
 
 
       updates[
-
         "venues/" +
         DEMO_VENUE.id +
         "/activeSessions/" +
         sessionId
-
       ] =
         null;
 
 
       await update(
-
         ref(database),
-
         updates
-
       );
 
     }
@@ -3341,28 +3687,25 @@
       value
     ) {
 
-      return String(value)
-
+      return String(
+        value
+      )
         .replaceAll(
           "&",
           "&amp;"
         )
-
         .replaceAll(
           "<",
           "&lt;"
         )
-
         .replaceAll(
           ">",
           "&gt;"
         )
-
         .replaceAll(
           '"',
           "&quot;"
         )
-
         .replaceAll(
           "'",
           "&#039;"
