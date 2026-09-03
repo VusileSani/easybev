@@ -67,9 +67,10 @@
       border-radius: 12px;
     }
 
-    .developer-buttons {
+    .developer-buttons,
+    .compact-actions {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: 1fr 1fr;
       gap: 8px;
     }
 
@@ -98,6 +99,11 @@
 
     .secondary {
       background: #3677d8;
+      color: white;
+    }
+
+    .muted-button {
+      background: #333;
       color: white;
     }
 
@@ -225,35 +231,110 @@
       font-weight: bold;
     }
 
+    .dashboard-summary {
+      padding: 12px 14px;
+      margin-bottom: 15px;
+      background: #252525;
+      border-radius: 8px;
+      border: 1px solid #444;
+    }
+
+
+    /* ========================================
+       V4.1 COMPACT PATRON CARDS
+       ======================================== */
+
     .session-card {
       background: #252525;
       border: 1px solid #444;
-      border-radius: 12px;
+      border-radius: 14px;
       padding: 16px;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
 
-    .session-card h3 {
-      margin-bottom: 8px;
+    .patron-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
     }
 
     .patron-name {
-      font-size: 20px;
+      font-size: 19px;
       font-weight: bold;
     }
 
     .location-label {
       display: inline-block;
-      margin-top: 7px;
       padding: 5px 9px;
       border-radius: 20px;
       background: #333;
       color: #ddd;
       font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .patron-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .patron-total {
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .badge-area {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .badge {
+      padding: 5px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: bold;
+      letter-spacing: 0.3px;
+    }
+
+    .badge-request {
+      background: #f2b84b;
+      color: #111;
+    }
+
+    .badge-bill {
+      background: #3677d8;
+      color: white;
+    }
+
+    .badge-ready {
+      background: #21c063;
+      color: #07150c;
+    }
+
+    .patron-details {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid #3c3c3c;
+    }
+
+    .detail-heading {
+      margin: 15px 0 8px;
+      color: #aaa;
+      font-size: 12px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
     }
 
     .request-card {
-      margin: 10px 0;
+      margin: 8px 0;
       padding: 10px;
       border: 1px solid #555;
       border-radius: 8px;
@@ -264,13 +345,68 @@
       margin-top: 8px;
     }
 
-    .dashboard-summary {
-      padding: 12px;
-      margin-bottom: 15px;
-      background: #252525;
-      border-radius: 8px;
-      border: 1px solid #444;
+
+    /* ========================================
+       ADD ITEM MODAL
+       ======================================== */
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(0, 0, 0, 0.78);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
     }
+
+    .modal-card {
+      width: 100%;
+      max-width: 430px;
+      max-height: 90vh;
+      overflow-y: auto;
+      background: #1d1d1d;
+      border: 1px solid #444;
+      border-radius: 16px;
+      padding: 20px;
+    }
+
+    .modal-title {
+      margin-bottom: 4px;
+    }
+
+    .menu-list {
+      margin-top: 18px;
+    }
+
+    .menu-item {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+      align-items: center;
+      background: #292929;
+      color: white;
+      border: 1px solid #444;
+      padding: 14px;
+      margin-bottom: 8px;
+      border-radius: 9px;
+      text-align: left;
+    }
+
+    .menu-item:hover {
+      background: #333;
+    }
+
+    .menu-price {
+      font-weight: bold;
+    }
+
+
+    /* ========================================
+       FOOTER
+       ======================================== */
 
     .app-footer {
       max-width: 1000px;
@@ -301,8 +437,13 @@
 
     @media (max-width: 700px) {
 
-      .developer-buttons {
-        grid-template-columns: 1fr;
+      .developer-buttons,
+      .compact-actions {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .patron-summary {
+        align-items: flex-start;
       }
 
     }
@@ -328,7 +469,7 @@
   >
 
     <strong>
-      EasyBev V4 Developer Controls
+      EasyBev V4.1 Developer Controls
     </strong>
 
     <div class="developer-buttons">
@@ -387,8 +528,6 @@
       ></div>
 
 
-      <!-- LOGIN -->
-
       <div id="guestLogin">
 
         <h3>
@@ -413,8 +552,6 @@
 
       </div>
 
-
-      <!-- OTP -->
 
       <div
         id="otpArea"
@@ -446,8 +583,6 @@
       </div>
 
 
-      <!-- ACTIVE SESSION -->
-
       <div
         id="activeGuestSession"
         class="hidden"
@@ -473,10 +608,8 @@
             id="guestLocationRow"
             class="hidden"
           >
-
             Location:
             <span id="activeLocation"></span>
-
           </div>
 
           Account:
@@ -568,8 +701,6 @@
       </div>
 
 
-      <!-- COMPLETE -->
-
       <div
         id="sessionComplete"
         class="completion-box hidden"
@@ -628,6 +759,86 @@
       <div id="waiterSessions">
         Waiting for patrons...
       </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- ADD ITEM MODAL -->
+
+  <div
+    id="addItemModal"
+    class="modal-overlay hidden"
+    onclick="modalBackgroundClick(event)"
+  >
+
+    <div class="modal-card">
+
+      <h2 class="modal-title">
+        Add Item
+      </h2>
+
+      <div
+        id="addItemPatronName"
+        class="small-text"
+      ></div>
+
+      <div class="menu-list">
+
+        <button
+          class="menu-item"
+          onclick="addSelectedItem('Beer', 35)"
+        >
+          <span>Beer</span>
+          <span class="menu-price">R35</span>
+        </button>
+
+
+        <button
+          class="menu-item"
+          onclick="addSelectedItem('Cocktail', 85)"
+        >
+          <span>Cocktail</span>
+          <span class="menu-price">R85</span>
+        </button>
+
+
+        <button
+          class="menu-item"
+          onclick="addSelectedItem('Shot', 45)"
+        >
+          <span>Shot</span>
+          <span class="menu-price">R45</span>
+        </button>
+
+
+        <button
+          class="menu-item"
+          onclick="addSelectedItem('Round of 10 Shots', 450)"
+        >
+          <span>10 Shots</span>
+          <span class="menu-price">R450</span>
+        </button>
+
+
+        <button
+          class="menu-item"
+          onclick="addSelectedItem('Burger', 120)"
+        >
+          <span>Burger</span>
+          <span class="menu-price">R120</span>
+        </button>
+
+      </div>
+
+
+      <button
+        class="muted-button"
+        onclick="closeAddItemMenu()"
+      >
+        Cancel
+      </button>
 
     </div>
 
@@ -709,18 +920,13 @@
 
   <script type="module">
 
-
     import {
-
       initializeApp
-
     } from
-
       "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
 
 
     import {
-
       getDatabase,
       ref,
       get,
@@ -729,15 +935,8 @@
       push,
       onValue,
       runTransaction
-
     } from
-
       "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
-
-
-    // ========================================
-    // FIREBASE
-    // ========================================
 
 
     const firebaseConfig = {
@@ -767,20 +966,11 @@
 
 
     const app =
-      initializeApp(
-        firebaseConfig
-      );
+      initializeApp(firebaseConfig);
 
 
     const database =
-      getDatabase(
-        app
-      );
-
-
-    // ========================================
-    // DEMO VENUE
-    // ========================================
+      getDatabase(app);
 
 
     const DEMO_VENUE = {
@@ -792,11 +982,6 @@
         "EasyBev Demo Venue"
 
     };
-
-
-    // ========================================
-    // WAITER QR OWNERS
-    // ========================================
 
 
     const DEMO_WAITERS = {
@@ -817,46 +1002,35 @@
     };
 
 
-    // ========================================
-    // DEVICE STATE
-    // ========================================
-
-
     let currentVenueId =
       DEMO_VENUE.id;
-
 
     let currentWaiterToken =
       null;
 
-
     let currentWaiter =
       null;
-
 
     let currentSessionId =
       null;
 
-
     let pendingGuestName =
       "";
-
 
     let pendingGuestPhone =
       "";
 
-
     let unsubscribeGuestSession =
       null;
-
 
     let sessionEndedLocally =
       false;
 
+    let waiterDashboardStarted =
+      false;
 
-    // ========================================
-    // DATABASE HELPERS
-    // ========================================
+    let currentAddItemSessionId =
+      null;
 
 
     function waiterRef() {
@@ -893,11 +1067,6 @@
     }
 
 
-    // ========================================
-    // LOCAL STORAGE
-    // ========================================
-
-
     function sessionStorageKey() {
 
       return (
@@ -918,11 +1087,8 @@
     ) {
 
       localStorage.setItem(
-
         sessionStorageKey(),
-
         sessionId
-
       );
 
     }
@@ -931,9 +1097,7 @@
     function getLocalSession() {
 
       return localStorage.getItem(
-
         sessionStorageKey()
-
       );
 
     }
@@ -942,46 +1106,25 @@
     function clearLocalSession() {
 
       localStorage.removeItem(
-
         sessionStorageKey()
-
       );
 
     }
 
 
-    // ========================================
-    // VIEW HELPERS
-    // ========================================
-
-
     function hideAllViews() {
 
       document
-        .getElementById(
-          "landingView"
-        )
-        .classList.add(
-          "hidden"
-        );
-
+        .getElementById("landingView")
+        .classList.add("hidden");
 
       document
-        .getElementById(
-          "guestView"
-        )
-        .classList.add(
-          "hidden"
-        );
-
+        .getElementById("guestView")
+        .classList.add("hidden");
 
       document
-        .getElementById(
-          "waiterView"
-        )
-        .classList.add(
-          "hidden"
-        );
+        .getElementById("waiterView")
+        .classList.add("hidden");
 
     }
 
@@ -989,39 +1132,20 @@
     function hideGuestSections() {
 
       document
-        .getElementById(
-          "guestLogin"
-        )
-        .classList.add(
-          "hidden"
-        );
-
+        .getElementById("guestLogin")
+        .classList.add("hidden");
 
       document
-        .getElementById(
-          "otpArea"
-        )
-        .classList.add(
-          "hidden"
-        );
-
+        .getElementById("otpArea")
+        .classList.add("hidden");
 
       document
-        .getElementById(
-          "activeGuestSession"
-        )
-        .classList.add(
-          "hidden"
-        );
-
+        .getElementById("activeGuestSession")
+        .classList.add("hidden");
 
       document
-        .getElementById(
-          "sessionComplete"
-        )
-        .classList.add(
-          "hidden"
-        );
+        .getElementById("sessionComplete")
+        .classList.add("hidden");
 
     }
 
@@ -1030,15 +1154,9 @@
 
       hideGuestSections();
 
-
       document
-        .getElementById(
-          "guestLogin"
-        )
-        .classList.remove(
-          "hidden"
-        );
-
+        .getElementById("guestLogin")
+        .classList.remove("hidden");
 
       document.getElementById(
         "guestHeading"
@@ -1055,33 +1173,24 @@
 
       hideGuestSections();
 
-
       document
-        .getElementById(
-          "sessionComplete"
-        )
-        .classList.remove(
-          "hidden"
-        );
-
+        .getElementById("sessionComplete")
+        .classList.remove("hidden");
 
       document.getElementById(
         "guestHeading"
       ).innerText =
         "Thanks for stopping by";
 
-
       document.getElementById(
         "completionTitle"
       ).innerText =
         title;
 
-
       document.getElementById(
         "completionMessage"
       ).innerText =
         message;
-
 
       document.getElementById(
         "guestStatus"
@@ -1091,11 +1200,6 @@
     }
 
 
-    // ========================================
-    // ROUTING
-    // ========================================
-
-
     async function readRouteFromURL() {
 
       const params =
@@ -1103,48 +1207,32 @@
           window.location.search
         );
 
-
       const dev =
-        params.get(
-          "dev"
-        );
-
+        params.get("dev");
 
       const venueId =
-        params.get(
-          "v"
-        );
-
+        params.get("v");
 
       const waiterToken =
-        params.get(
-          "w"
-        );
+        params.get("w");
 
 
-      if (
-        dev === "1"
-      ) {
+      if (dev === "1") {
 
         document
           .getElementById(
             "developerControls"
           )
-          .classList.remove(
-            "hidden"
-          );
+          .classList.remove("hidden");
 
       }
 
 
-      if (
-        waiterToken
-      ) {
+      if (waiterToken) {
 
         if (
           venueId &&
-          venueId !==
-          DEMO_VENUE.id
+          venueId !== DEMO_VENUE.id
         ) {
 
           showError(
@@ -1155,7 +1243,6 @@
 
         }
 
-
         await openWaiterQR(
           waiterToken
         );
@@ -1163,11 +1250,6 @@
       }
 
     }
-
-
-    // ========================================
-    // DEV WAITER QR
-    // ========================================
 
 
     window.openDemoWaiter =
@@ -1178,18 +1260,15 @@
             window.location.href
           );
 
-
         url.searchParams.set(
           "v",
           DEMO_VENUE.id
         );
 
-
         url.searchParams.set(
           "w",
           "THABO7X"
         );
-
 
         history.replaceState(
           {},
@@ -1197,17 +1276,11 @@
           url
         );
 
-
         await openWaiterQR(
           "THABO7X"
         );
 
       };
-
-
-    // ========================================
-    // OPEN WAITER QR
-    // ========================================
 
 
     async function openWaiterQR(
@@ -1220,9 +1293,7 @@
         ];
 
 
-      if (
-        !waiter
-      ) {
+      if (!waiter) {
 
         showError(
           "This EasyBev waiter QR is not recognised."
@@ -1236,14 +1307,11 @@
       currentWaiterToken =
         waiterToken;
 
-
       currentWaiter =
         waiter;
 
-
       currentSessionId =
         null;
-
 
       sessionEndedLocally =
         false;
@@ -1254,14 +1322,9 @@
 
       hideAllViews();
 
-
       document
-        .getElementById(
-          "guestView"
-        )
-        .classList.remove(
-          "hidden"
-        );
+        .getElementById("guestView")
+        .classList.remove("hidden");
 
 
       document.getElementById(
@@ -1285,23 +1348,17 @@
         getLocalSession();
 
 
-      if (
-        savedSessionId
-      ) {
+      if (savedSessionId) {
 
         const snapshot =
           await get(
-
             activeSessionRef(
               savedSessionId
             )
-
           );
 
 
-        if (
-          snapshot.exists()
-        ) {
+        if (snapshot.exists()) {
 
           const session =
             snapshot.val();
@@ -1315,9 +1372,7 @@
             currentSessionId =
               savedSessionId;
 
-
             listenToGuestSession();
-
 
             return;
 
@@ -1340,11 +1395,6 @@
         "Enter your details to get started.";
 
     }
-
-
-    // ========================================
-    // ENSURE WAITER RECORD
-    // ========================================
 
 
     async function ensureWaiterRecord() {
@@ -1375,18 +1425,14 @@
       };
 
 
-      if (
-        snapshot.exists()
-      ) {
+      if (snapshot.exists()) {
 
         await update(
           waiterRef(),
           data
         );
 
-      }
-
-      else {
+      } else {
 
         await set(
           waiterRef(),
@@ -1398,41 +1444,27 @@
     }
 
 
-    // ========================================
-    // ERROR VIEW
-    // ========================================
-
-
     function showError(
       message
     ) {
 
       hideAllViews();
 
-
       document
-        .getElementById(
-          "guestView"
-        )
-        .classList.remove(
-          "hidden"
-        );
-
+        .getElementById("guestView")
+        .classList.remove("hidden");
 
       hideGuestSections();
-
 
       document.getElementById(
         "guestHeading"
       ).innerText =
         "Hmm…";
 
-
       document.getElementById(
         "waiterIntro"
       ).innerText =
         "";
-
 
       document.getElementById(
         "guestStatus"
@@ -1442,28 +1474,18 @@
     }
 
 
-    // ========================================
-    // OTP
-    // ========================================
-
-
     window.sendOTP =
       function() {
 
         const name =
           document
-            .getElementById(
-              "guestName"
-            )
+            .getElementById("guestName")
             .value
             .trim();
 
-
         const phone =
           document
-            .getElementById(
-              "guestPhone"
-            )
+            .getElementById("guestPhone")
             .value
             .trim();
 
@@ -1478,7 +1500,6 @@
           ).innerText =
             "Enter your name and mobile number.";
 
-
           return;
 
         }
@@ -1487,27 +1508,17 @@
         pendingGuestName =
           name;
 
-
         pendingGuestPhone =
           phone;
 
 
         document
-          .getElementById(
-            "guestLogin"
-          )
-          .classList.add(
-            "hidden"
-          );
-
+          .getElementById("guestLogin")
+          .classList.add("hidden");
 
         document
-          .getElementById(
-            "otpArea"
-          )
-          .classList.remove(
-            "hidden"
-          );
+          .getElementById("otpArea")
+          .classList.remove("hidden");
 
 
         document.getElementById(
@@ -1523,22 +1534,17 @@
 
         const otp =
           document
-            .getElementById(
-              "otpInput"
-            )
+            .getElementById("otpInput")
             .value
             .trim();
 
 
-        if (
-          otp !== "1234"
-        ) {
+        if (otp !== "1234") {
 
           document.getElementById(
             "guestStatus"
           ).innerText =
             "Incorrect OTP.";
-
 
           return;
 
@@ -1548,11 +1554,6 @@
         await createPatronSession();
 
       };
-
-
-    // ========================================
-    // CREATE PATRON SESSION
-    // ========================================
 
 
     async function createPatronSession() {
@@ -1668,28 +1669,15 @@
     }
 
 
-    // ========================================
-    // GUEST SESSION LISTENER
-    // ========================================
-
-
     function listenToGuestSession() {
 
-      if (
-        !currentSessionId
-      ) {
-
+      if (!currentSessionId) {
         return;
-
       }
 
 
-      if (
-        unsubscribeGuestSession
-      ) {
-
+      if (unsubscribeGuestSession) {
         unsubscribeGuestSession();
-
       }
 
 
@@ -1700,16 +1688,11 @@
 
           function(snapshot) {
 
-            if (
-              !snapshot.exists()
-            ) {
+            if (!snapshot.exists()) {
 
               clearLocalSession();
 
-
-              if (
-                !sessionEndedLocally
-              ) {
+              if (!sessionEndedLocally) {
 
                 showSessionComplete(
 
@@ -1720,7 +1703,6 @@
                 );
 
               }
-
 
               return;
 
@@ -1738,25 +1720,17 @@
     }
 
 
-    // ========================================
-    // RENDER GUEST SESSION
-    // ========================================
-
-
     function renderGuestSession(
       session
     ) {
 
       hideGuestSections();
 
-
       document
         .getElementById(
           "activeGuestSession"
         )
-        .classList.remove(
-          "hidden"
-        );
+        .classList.remove("hidden");
 
 
       document.getElementById(
@@ -1785,23 +1759,18 @@
         );
 
 
-      if (
-        session.locationLabel
-      ) {
+      if (session.locationLabel) {
 
         document.getElementById(
           "activeLocation"
         ).innerText =
           session.locationLabel;
 
-
         locationRow.classList.remove(
           "hidden"
         );
 
-      }
-
-      else {
+      } else {
 
         locationRow.classList.add(
           "hidden"
@@ -1829,18 +1798,15 @@
           "requestBillButton"
         );
 
-
       const payButton =
         document.getElementById(
           "payButton"
         );
 
-
       const drinksButton =
         document.getElementById(
           "drinksButton"
         );
-
 
       const foodButton =
         document.getElementById(
@@ -1848,85 +1814,47 @@
         );
 
 
-      if (
-        session.billFinalised
-      ) {
+      drinksButton.disabled =
+        !!session.billFinalised;
 
-        drinksButton.disabled =
-          true;
-
-
-        foodButton.disabled =
-          true;
-
-      }
-
-      else {
-
-        drinksButton.disabled =
-          false;
+      foodButton.disabled =
+        !!session.billFinalised;
 
 
-        foodButton.disabled =
-          false;
-
-      }
-
-
-      if (
-        total === 0
-      ) {
+      if (total === 0) {
 
         requestBillButton
-          .classList.add(
-            "hidden"
-          );
-
+          .classList.add("hidden");
 
         payButton
-          .classList.add(
-            "hidden"
-          );
-
+          .classList.add("hidden");
 
         document.getElementById(
           "guestBillState"
         ).innerText =
           "No charges yet.";
 
-      }
-
-      else {
+      } else {
 
         requestBillButton
-          .classList.remove(
-            "hidden"
-          );
-
+          .classList.remove("hidden");
 
         requestBillButton.disabled =
           session.billRequested ||
           session.billFinalised;
 
 
-        if (
-          session.billFinalised
-        ) {
+        if (session.billFinalised) {
 
           payButton
-            .classList.remove(
-              "hidden"
-            );
-
+            .classList.remove("hidden");
 
           payButton.disabled =
             false;
 
-
           payButton.innerText =
             "Pay R" +
             total.toFixed(2);
-
 
           document.getElementById(
             "guestBillState"
@@ -1936,32 +1864,20 @@
             "Bill finalised — ready for payment" +
             "</span>";
 
-        }
-
-        else if (
-          session.billRequested
-        ) {
+        } else if (session.billRequested) {
 
           payButton
-            .classList.add(
-              "hidden"
-            );
-
+            .classList.add("hidden");
 
           document.getElementById(
             "guestBillState"
           ).innerText =
             "Bill requested. Waiting for your waiter.";
 
-        }
-
-        else {
+        } else {
 
           payButton
-            .classList.add(
-              "hidden"
-            );
-
+            .classList.add("hidden");
 
           document.getElementById(
             "guestBillState"
@@ -1980,11 +1896,6 @@
     }
 
 
-    // ========================================
-    // GUEST ITEMS
-    // ========================================
-
-
     function renderGuestItems(
       items
     ) {
@@ -1999,85 +1910,70 @@
         "";
 
 
-      if (
-        !items
-      ) {
+      if (!items) {
 
         box.innerHTML =
-
           "<div class='small-text'>" +
           "No items added yet." +
           "</div>";
-
 
         return;
 
       }
 
 
-      Object.values(
-        items
-      ).forEach(
+      Object.values(items)
+        .forEach(
 
-        function(item) {
+          function(item) {
 
-          const row =
-            document.createElement(
-              "div"
+            const row =
+              document.createElement(
+                "div"
+              );
+
+            row.className =
+              "item-row";
+
+
+            const name =
+              document.createElement(
+                "span"
+              );
+
+            name.textContent =
+              item.name;
+
+
+            const price =
+              document.createElement(
+                "strong"
+              );
+
+            price.textContent =
+              "R" +
+              Number(
+                item.price
+              ).toFixed(2);
+
+
+            row.appendChild(
+              name
             );
 
-
-          row.className =
-            "item-row";
-
-
-          const name =
-            document.createElement(
-              "span"
+            row.appendChild(
+              price
             );
 
-
-          name.textContent =
-            item.name;
-
-
-          const price =
-            document.createElement(
-              "strong"
+            box.appendChild(
+              row
             );
 
+          }
 
-          price.textContent =
-            "R" +
-            Number(
-              item.price
-            ).toFixed(2);
-
-
-          row.appendChild(
-            name
-          );
-
-
-          row.appendChild(
-            price
-          );
-
-
-          box.appendChild(
-            row
-          );
-
-        }
-
-      );
+        );
 
     }
-
-
-    // ========================================
-    // REQUEST QUEUE
-    // ========================================
 
 
     window.sendGuestRequest =
@@ -2086,12 +1982,8 @@
         message
       ) {
 
-        if (
-          !currentSessionId
-        ) {
-
+        if (!currentSessionId) {
           return;
-
         }
 
 
@@ -2152,20 +2044,11 @@
       };
 
 
-    // ========================================
-    // REQUEST BILL
-    // ========================================
-
-
     window.requestBill =
       async function() {
 
-        if (
-          !currentSessionId
-        ) {
-
+        if (!currentSessionId) {
           return;
-
         }
 
 
@@ -2175,12 +2058,8 @@
           );
 
 
-        if (
-          !snapshot.exists()
-        ) {
-
+        if (!snapshot.exists()) {
           return;
-
         }
 
 
@@ -2195,21 +2074,13 @@
           );
 
 
-        if (
-          total <= 0
-        ) {
-
+        if (total <= 0) {
           return;
-
         }
 
 
-        if (
-          session.billRequested
-        ) {
-
+        if (session.billRequested) {
           return;
-
         }
 
 
@@ -2249,20 +2120,11 @@
       };
 
 
-    // ========================================
-    // PAYMENT
-    // ========================================
-
-
     window.payBill =
       async function() {
 
-        if (
-          !currentSessionId
-        ) {
-
+        if (!currentSessionId) {
           return;
-
         }
 
 
@@ -2272,20 +2134,14 @@
 
         const snapshot =
           await get(
-
             activeSessionRef(
               sessionId
             )
-
           );
 
 
-        if (
-          !snapshot.exists()
-        ) {
-
+        if (!snapshot.exists()) {
           return;
-
         }
 
 
@@ -2324,12 +2180,8 @@
           );
 
 
-        if (
-          !approved
-        ) {
-
+        if (!approved) {
           return;
-
         }
 
 
@@ -2383,17 +2235,11 @@
       };
 
 
-    // ========================================
-    // WAITER DASHBOARD
-    // ========================================
-
-
     window.showWaiterDashboard =
       function() {
 
         currentWaiter =
           DEMO_WAITERS.THABO7X;
-
 
         currentWaiterToken =
           "THABO7X";
@@ -2401,14 +2247,9 @@
 
         hideAllViews();
 
-
         document
-          .getElementById(
-            "waiterView"
-          )
-          .classList.remove(
-            "hidden"
-          );
+          .getElementById("waiterView")
+          .classList.remove("hidden");
 
 
         document.getElementById(
@@ -2422,18 +2263,10 @@
       };
 
 
-    let waiterDashboardStarted =
-      false;
-
-
     function listenToWaiterSessions() {
 
-      if (
-        waiterDashboardStarted
-      ) {
-
+      if (waiterDashboardStarted) {
         return;
-
       }
 
 
@@ -2464,7 +2297,6 @@
               "waiterSessions"
             );
 
-
           const summary =
             document.getElementById(
               "dashboardSummary"
@@ -2475,20 +2307,15 @@
             "";
 
 
-          if (
-            !snapshot.exists()
-          ) {
+          if (!snapshot.exists()) {
 
             summary.innerText =
               "0 active patrons";
 
-
             sessionsContainer.innerHTML =
-
               "<div class='small-text'>" +
               "No active EasyBev patrons." +
               "</div>";
-
 
             return;
 
@@ -2507,10 +2334,8 @@
               function(session) {
 
                 return (
-
                   session.waiterId ===
                   currentWaiter.waiterId
-
                 );
 
               }
@@ -2527,16 +2352,12 @@
             );
 
 
-          if (
-            sessions.length === 0
-          ) {
+          if (sessions.length === 0) {
 
             sessionsContainer.innerHTML =
-
               "<div class='small-text'>" +
               "No active EasyBev patrons." +
               "</div>";
-
 
             return;
 
@@ -2549,23 +2370,13 @@
               function(a, b) {
 
                 return (
-
-                  Number(
-                    a.openedAt ||
-                    0
-                  ) -
-
-                  Number(
-                    b.openedAt ||
-                    0
-                  )
-
+                  Number(a.openedAt || 0) -
+                  Number(b.openedAt || 0)
                 );
 
               }
 
             )
-
             .forEach(
 
               function(session) {
@@ -2587,11 +2398,6 @@
       );
 
     }
-
-
-    // ========================================
-    // WAITER SESSION CARD
-    // ========================================
 
 
     function renderWaiterSessionCard(
@@ -2636,10 +2442,8 @@
               function(request) {
 
                 return (
-
                   request.status ===
                   "pending"
-
                 );
 
               }
@@ -2660,23 +2464,72 @@
         session.paid;
 
 
+      let badgesHtml =
+        "";
+
+
+      if (pendingRequests.length > 0) {
+
+        badgesHtml += `
+
+          <span class="badge badge-request">
+
+            ${pendingRequests.length}
+
+            ${
+              pendingRequests.length === 1
+                ? " REQUEST"
+                : " REQUESTS"
+            }
+
+          </span>
+
+        `;
+
+      }
+
+
+      if (
+        session.billRequested &&
+        !session.billFinalised
+      ) {
+
+        badgesHtml += `
+
+          <span class="badge badge-bill">
+            BILL REQUESTED
+          </span>
+
+        `;
+
+      }
+
+
+      if (session.billFinalised) {
+
+        badgesHtml += `
+
+          <span class="badge badge-ready">
+            READY TO PAY
+          </span>
+
+        `;
+
+      }
+
+
       let requestsHtml =
         "";
 
 
-      if (
-        pendingRequests.length === 0
-      ) {
+      if (pendingRequests.length === 0) {
 
         requestsHtml =
-
           "<div class='small-text'>" +
-          "No pending requests" +
+          "No pending requests." +
           "</div>";
 
-      }
-
-      else {
+      } else {
 
         pendingRequests.forEach(
 
@@ -2716,174 +2569,170 @@
 
       card.innerHTML = `
 
-        <div class="patron-name">
-          ${escapeHtml(
-            guestName
-          )}
+        <div class="patron-top">
+
+          <div class="patron-name">
+            ${escapeHtml(
+              guestName
+            )}
+          </div>
+
+          <span class="location-label">
+            ${escapeHtml(
+              location
+            )}
+          </span>
+
         </div>
 
-        <span class="location-label">
-          ${escapeHtml(
-            location
-          )}
-        </span>
 
-        <br><br>
+        <div class="patron-summary">
 
-        <div>
-          Bill:
-          <strong>
+          <div class="patron-total">
             R${total.toFixed(2)}
-          </strong>
+          </div>
+
+          <div class="badge-area">
+            ${badgesHtml}
+          </div>
+
         </div>
 
-        <div>
-          Mobile:
-          <span class="small-text">
+
+        <div class="compact-actions">
+
+          <button
+            class="muted-button"
+            onclick="
+              togglePatronDetails(
+                '${session.sessionId}'
+              )
+            "
+          >
+            Open
+          </button>
+
+
+          <button
+            onclick="
+              showAddItemMenu(
+                '${session.sessionId}'
+              )
+            "
+            ${
+              session.billFinalised
+                ? "disabled"
+                : ""
+            }
+          >
+            + Add Item
+          </button>
+
+        </div>
+
+
+        <div
+          id="details-${session.sessionId}"
+          class="patron-details hidden"
+        >
+
+          <div class="detail-heading">
+            Requests
+          </div>
+
+          ${requestsHtml}
+
+
+          <div class="detail-heading">
+            Patron details
+          </div>
+
+          <div class="small-text">
+            Mobile:
             ${escapeHtml(
               session.guest?.phone ||
               ""
             )}
-          </span>
+          </div>
+
+
+          <br>
+
+
+          <input
+            id="location-${session.sessionId}"
+            type="text"
+            placeholder="Table 7, VIP Booth, Outside..."
+            value="${escapeAttribute(
+              session.locationLabel ||
+              ""
+            )}"
+          >
+
+          <button
+            class="secondary"
+            onclick="
+              setLocation(
+                '${session.sessionId}'
+              )
+            "
+          >
+            Save Location
+          </button>
+
+
+          <div class="detail-heading">
+            Bill
+          </div>
+
+          <div>
+            Current total:
+            <strong>
+              R${total.toFixed(2)}
+            </strong>
+          </div>
+
+
+          <button
+            class="warning-button"
+            onclick="
+              finaliseBill(
+                '${session.sessionId}'
+              )
+            "
+            ${
+              canFinalise
+                ? ""
+                : "disabled"
+            }
+          >
+            Finalise Bill
+          </button>
+
+
+          <button
+            class="danger"
+            onclick="
+              closeSession(
+                '${session.sessionId}'
+              )
+            "
+            ${
+              canClose
+                ? ""
+                : "disabled"
+            }
+          >
+
+            ${
+              total === 0
+                ? "Close Session — No Bill"
+                : "Close Session"
+            }
+
+          </button>
+
         </div>
-
-        <br>
-
-        <strong>
-          Requests
-        </strong>
-
-        ${requestsHtml}
-
-        <br>
-
-        <input
-          id="location-${session.sessionId}"
-          type="text"
-          placeholder="Table 7, VIP Booth, Outside..."
-          value="${escapeAttribute(
-            session.locationLabel ||
-            ""
-          )}"
-        >
-
-        <button
-          class="secondary"
-          onclick="
-            setLocation(
-              '${session.sessionId}'
-            )
-          "
-        >
-          Save Location
-        </button>
-
-
-        <button
-          onclick="
-            addItem(
-              '${session.sessionId}',
-              'Beer',
-              35
-            )
-          "
-        >
-          + Beer R35
-        </button>
-
-
-        <button
-          onclick="
-            addItem(
-              '${session.sessionId}',
-              'Cocktail',
-              85
-            )
-          "
-        >
-          + Cocktail R85
-        </button>
-
-
-        <button
-          onclick="
-            addItem(
-              '${session.sessionId}',
-              'Shot',
-              45
-            )
-          "
-        >
-          + Shot R45
-        </button>
-
-
-        <button
-          onclick="
-            addItem(
-              '${session.sessionId}',
-              'Round of 10 Shots',
-              450
-            )
-          "
-        >
-          + 10 Shots R450
-        </button>
-
-
-        <button
-          onclick="
-            addItem(
-              '${session.sessionId}',
-              'Burger',
-              120
-            )
-          "
-        >
-          + Burger R120
-        </button>
-
-
-        <button
-          class="warning-button"
-          onclick="
-            finaliseBill(
-              '${session.sessionId}'
-            )
-          "
-          ${
-            canFinalise
-              ? ""
-              : "disabled"
-          }
-        >
-          Finalise Bill
-        </button>
-
-
-        <button
-          class="danger"
-          onclick="
-            closeSession(
-              '${session.sessionId}'
-            )
-          "
-          ${
-            canClose
-              ? ""
-              : "disabled"
-          }
-        >
-
-          ${
-            total === 0
-
-              ? "Close Session — No Bill"
-
-              : "Close Session"
-          }
-
-        </button>
 
       `;
 
@@ -2895,9 +2744,156 @@
     }
 
 
-    // ========================================
-    // WAITER LOCATION MANAGEMENT
-    // ========================================
+    window.togglePatronDetails =
+      function(
+        sessionId
+      ) {
+
+        const details =
+          document.getElementById(
+
+            "details-" +
+            sessionId
+
+          );
+
+
+        if (!details) {
+          return;
+        }
+
+
+        details.classList.toggle(
+          "hidden"
+        );
+
+    };
+
+
+    window.showAddItemMenu =
+      async function(
+        sessionId
+      ) {
+
+        const snapshot =
+          await get(
+
+            activeSessionRef(
+              sessionId
+            )
+
+          );
+
+
+        if (!snapshot.exists()) {
+          return;
+        }
+
+
+        const session =
+          snapshot.val();
+
+
+        if (session.billFinalised) {
+
+          alert(
+            "This bill has already been finalised."
+          );
+
+          return;
+
+        }
+
+
+        currentAddItemSessionId =
+          sessionId;
+
+
+        document.getElementById(
+          "addItemPatronName"
+        ).innerText =
+
+          "Adding to " +
+
+          (
+            session.guest?.name ||
+            "Guest"
+          );
+
+
+        document
+          .getElementById(
+            "addItemModal"
+          )
+          .classList.remove(
+            "hidden"
+          );
+
+    };
+
+
+    window.closeAddItemMenu =
+      function() {
+
+        currentAddItemSessionId =
+          null;
+
+
+        document
+          .getElementById(
+            "addItemModal"
+          )
+          .classList.add(
+            "hidden"
+          );
+
+    };
+
+
+    window.modalBackgroundClick =
+      function(event) {
+
+        if (
+          event.target.id ===
+          "addItemModal"
+        ) {
+
+          window.closeAddItemMenu();
+
+        }
+
+    };
+
+
+    window.addSelectedItem =
+      async function(
+        itemName,
+        price
+      ) {
+
+        if (!currentAddItemSessionId) {
+          return;
+        }
+
+
+        const sessionId =
+          currentAddItemSessionId;
+
+
+        await addItem(
+
+          sessionId,
+
+          itemName,
+
+          price
+
+        );
+
+
+        window.closeAddItemMenu();
+
+    };
 
 
     window.setLocation =
@@ -2936,104 +2932,49 @@
 
         );
 
-      };
+    };
 
 
-    // ========================================
-    // ADD ITEM
-    // ========================================
+    async function addItem(
+      sessionId,
+      itemName,
+      price
+    ) {
 
-
-    window.addItem =
-      async function(
-        sessionId,
-        itemName,
-        price
-      ) {
-
-        const sessionReference =
-          activeSessionRef(
-            sessionId
-          );
-
-
-        const snapshot =
-          await get(
-            sessionReference
-          );
-
-
-        if (
-          !snapshot.exists()
-        ) {
-
-          return;
-
-        }
-
-
-        const session =
-          snapshot.val();
-
-
-        if (
-          session.billFinalised
-        ) {
-
-          alert(
-            "This bill has already been finalised."
-          );
-
-
-          return;
-
-        }
-
-
-        const itemRef =
-          push(
-
-            ref(
-
-              database,
-
-              "venues/" +
-              DEMO_VENUE.id +
-              "/activeSessions/" +
-              sessionId +
-              "/items"
-
-            )
-
-          );
-
-
-        await set(
-
-          itemRef,
-
-          {
-
-            itemId:
-              itemRef.key,
-
-            name:
-              itemName,
-
-            price:
-              Number(
-                price
-              ),
-
-            createdAt:
-              Date.now()
-
-          }
-
+      const sessionReference =
+        activeSessionRef(
+          sessionId
         );
 
 
-        await runTransaction(
+      const snapshot =
+        await get(
+          sessionReference
+        );
+
+
+      if (!snapshot.exists()) {
+        return;
+      }
+
+
+      const session =
+        snapshot.val();
+
+
+      if (session.billFinalised) {
+
+        alert(
+          "This bill has already been finalised."
+        );
+
+        return;
+
+      }
+
+
+      const itemRef =
+        push(
 
           ref(
 
@@ -3043,35 +2984,68 @@
             DEMO_VENUE.id +
             "/activeSessions/" +
             sessionId +
-            "/runningTotal"
+            "/items"
 
-          ),
-
-          function(currentTotal) {
-
-            return (
-
-              Number(
-                currentTotal ||
-                0
-              ) +
-
-              Number(
-                price
-              )
-
-            );
-
-          }
+          )
 
         );
 
-      };
+
+      await set(
+
+        itemRef,
+
+        {
+
+          itemId:
+            itemRef.key,
+
+          name:
+            itemName,
+
+          price:
+            Number(price),
+
+          createdAt:
+            Date.now()
+
+        }
+
+      );
 
 
-    // ========================================
-    // ACKNOWLEDGE REQUEST
-    // ========================================
+      await runTransaction(
+
+        ref(
+
+          database,
+
+          "venues/" +
+          DEMO_VENUE.id +
+          "/activeSessions/" +
+          sessionId +
+          "/runningTotal"
+
+        ),
+
+        function(currentTotal) {
+
+          return (
+
+            Number(
+              currentTotal ||
+              0
+            ) +
+
+            Number(price)
+
+          );
+
+        }
+
+      );
+
+    }
 
 
     window.acknowledgeRequest =
@@ -3107,12 +3081,7 @@
 
         );
 
-      };
-
-
-    // ========================================
-    // FINALISE BILL
-    // ========================================
+    };
 
 
     window.finaliseBill =
@@ -3130,12 +3099,8 @@
           );
 
 
-        if (
-          !snapshot.exists()
-        ) {
-
+        if (!snapshot.exists()) {
           return;
-
         }
 
 
@@ -3150,28 +3115,22 @@
           );
 
 
-        if (
-          total <= 0
-        ) {
+        if (total <= 0) {
 
           alert(
             "There is no bill to finalise."
           );
-
 
           return;
 
         }
 
 
-        if (
-          !session.billRequested
-        ) {
+        if (!session.billRequested) {
 
           alert(
             "The patron has not requested the bill yet."
           );
-
 
           return;
 
@@ -3206,9 +3165,7 @@
           Date.now();
 
 
-        if (
-          session.requests
-        ) {
+        if (session.requests) {
 
           Object.values(
             session.requests
@@ -3259,20 +3216,13 @@
 
         await update(
 
-          ref(
-            database
-          ),
+          ref(database),
 
           updates
 
         );
 
-      };
-
-
-    // ========================================
-    // WAITER CLOSE SESSION
-    // ========================================
+    };
 
 
     window.closeSession =
@@ -3290,12 +3240,8 @@
           );
 
 
-        if (
-          !snapshot.exists()
-        ) {
-
+        if (!snapshot.exists()) {
           return;
-
         }
 
 
@@ -3318,7 +3264,6 @@
           alert(
             "Payment must be completed before this session can close."
           );
-
 
           return;
 
@@ -3347,12 +3292,7 @@
 
         );
 
-      };
-
-
-    // ========================================
-    // ARCHIVE SESSION
-    // ========================================
+    };
 
 
     async function archiveSession(
@@ -3388,9 +3328,7 @@
 
       await update(
 
-        ref(
-          database
-        ),
+        ref(database),
 
         updates
 
@@ -3399,18 +3337,11 @@
     }
 
 
-    // ========================================
-    // ESCAPING
-    // ========================================
-
-
     function escapeHtml(
       value
     ) {
 
-      return String(
-        value
-      )
+      return String(value)
 
         .replaceAll(
           "&",
@@ -3451,20 +3382,10 @@
     }
 
 
-    // ========================================
-    // FOOTER
-    // ========================================
-
-
     document.getElementById(
       "footerYear"
     ).innerText =
       new Date().getFullYear();
-
-
-    // ========================================
-    // START
-    // ========================================
 
 
     readRouteFromURL();
@@ -3472,5 +3393,4 @@
   </script>
 
 </body>
-
 </html>
