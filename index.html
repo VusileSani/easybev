@@ -569,6 +569,81 @@
     .actor-nav button { flex: 1; min-width: 0; }
   }
 
+
+
+.manager-menu-panel { margin-top: 14px; }
+.manager-menu-add { display:grid; grid-template-columns:minmax(0,1fr) 130px auto; gap:8px; margin:16px 0; }
+.manager-menu-add button { width:auto; margin:0; }
+.manager-menu-list { display:grid; gap:8px; }
+.manager-menu-row { display:flex; justify-content:space-between; gap:12px; align-items:center; padding:11px 12px; border:1px solid var(--line); border-radius:12px; background:#f8faf9; }
+.manager-menu-main { display:flex; align-items:baseline; gap:10px; min-width:0; }
+.manager-menu-actions { display:flex; gap:7px; flex-wrap:wrap; }
+.manager-menu-actions button { width:auto; margin:0; padding:8px 10px; }
+@media (max-width:640px) {
+  .manager-menu-add { grid-template-columns:1fr 100px; }
+  .manager-menu-add button { grid-column:1 / -1; }
+  .manager-menu-row { align-items:flex-start; flex-direction:column; }
+}
+
+/* =========================================================
+   FAST WAITER ORDER PAD
+   ========================================================= */
+.order-pad-hint {
+  margin: -4px 0 12px;
+  font-size: 13px;
+  color: #6b7280;
+}
+.quick-item-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 10px 0 14px;
+}
+.quick-item-grid button {
+  min-height: 46px;
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 14px;
+}
+.quick-item-grid button small {
+  display: block;
+  margin-top: 2px;
+  opacity: .72;
+}
+.order-pad-row {
+  display: grid;
+  grid-template-columns: 1fr 110px 86px;
+  gap: 8px;
+}
+.order-pad-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+.order-pad-actions button {
+  min-height: 46px;
+}
+.order-pad-section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+.order-pad-section-title strong {
+  font-size: 14px;
+}
+#repeatLastRoundButton.hidden { display: none; }
+@media (max-width: 640px) {
+  .order-pad-row {
+    grid-template-columns: 1fr 96px;
+  }
+  .order-pad-row #itemQty {
+    grid-column: 1 / -1;
+  }
+}
+
 </style>
 
 </head>
@@ -856,6 +931,14 @@
         <div id="guestBillStatus"></div>
 
         <button
+          id="guestBillButton"
+          class="warning"
+          onclick="requestBill()"
+        >
+          Request Bill
+        </button>
+
+        <button
           id="guestPayButton"
           class="success hidden"
           onclick="payBill()"
@@ -947,12 +1030,14 @@
 
       <div class="manager-toolbar">
         <button class="warning" onclick="addWaiterSlot()">+ Add Waiter Slot</button>
+        <button class="secondary" onclick="toggleManagerMenuItems()">Menu Items</button>
         <button class="secondary" onclick="toggleManagerReports()">Reports</button>
         <span class="muted">Slots are permanent. Deactivate rather than delete.</span>
       </div>
 
     </div>
 
+    <div id="managerMenuItems" class="card manager-menu-panel hidden"></div>
     <div id="managerReports" class="card manager-report-panel hidden"></div>
     <div id="managerWaiterSlots"></div>
 
@@ -998,34 +1083,49 @@
       <span id="itemModalGuest"></span>
     </h2>
 
-    <input
-      id="itemName"
-      type="text"
-      placeholder="Item name e.g. Castle Lite"
-    />
+    <p class="order-pad-hint">Fast capture: type an item, or enter something like <strong>6 Corona</strong>. Known prices are filled automatically.</p>
 
-    <input
-      id="itemPrice"
-      type="number"
-      min="0"
-      step="0.01"
-      placeholder="Price"
-    />
+    <div class="order-pad-row">
+      <input
+        id="itemName"
+        type="text"
+        autocomplete="off"
+        list="menuItemSuggestions"
+        placeholder="Item or quantity + item"
+        oninput="handleFastItemInput()"
+        onkeydown="handleFastItemKey(event)"
+      />
+      <datalist id="menuItemSuggestions"></datalist>
 
-    <input
-      id="itemQty"
-      type="number"
-      min="1"
-      value="1"
-      placeholder="Quantity"
-    />
+      <input
+        id="itemPrice"
+        type="number"
+        min="0"
+        step="0.01"
+        placeholder="Price"
+      />
 
-    <button
-      class="blue"
-      onclick="addItemToBill()"
-    >
-      Add Item
-    </button>
+      <input
+        id="itemQty"
+        type="number"
+        min="1"
+        value="1"
+        placeholder="Qty"
+      />
+    </div>
+
+    <div class="order-pad-actions">
+      <button class="blue" onclick="addItemToBill()">Add Item</button>
+      <button id="repeatLastRoundButton" class="secondary hidden" onclick="repeatLastRound()">Repeat Last Round</button>
+    </div>
+
+    <div class="order-pad-section-title">
+      <strong>Quick Items</strong>
+      <span class="muted">Managed by the venue</span>
+    </div>
+    <div id="quickItems" class="quick-item-grid">
+      <span class="muted">Quick items will appear when management adds venue items.</span>
+    </div>
 
 
     <div class="added-items">
@@ -1155,6 +1255,7 @@ if (
 let managerSelectedSlot = null;
 let latestManagerWaiters = {};
 let latestManagerSessions = {};
+let latestManagerMenuItems = {};
 
 let currentGuestUserId = null;
 let currentGuestProfile = null;
@@ -1166,6 +1267,9 @@ let currentGuestWaiterName = null;
 let itemModalSessionId = null;
 let itemModalGuestLabel = null;
 let itemModalWaiterName = null;
+let itemModalCatalog = [];
+let itemModalLastRound = [];
+let itemModalBatchId = null;
 
 
 /* Lightweight attention state. Unread state stays local to the waiter device. */
@@ -4446,6 +4550,12 @@ async function openItemModal(
       "1";
 
 
+  itemModalBatchId = `round-${Date.now()}`;
+
+  await loadOrderPadContext();
+  renderQuickItems();
+  updateRepeatLastRoundButton();
+
   refreshModalBill();
 
 
@@ -4485,6 +4595,10 @@ function closeItemModal() {
 
   itemModalWaiterName =
     null;
+
+  itemModalCatalog = [];
+  itemModalLastRound = [];
+  itemModalBatchId = null;
 
 }
 
@@ -4592,6 +4706,9 @@ async function addItemToBill() {
       itemModalWaiterName ||
       "Waiter",
 
+    batchId:
+      itemModalBatchId || `round-${Date.now()}`,
+
     addedAt:
       firebase.database
         .ServerValue
@@ -4668,10 +4785,192 @@ async function addItemToBill() {
     .focus();
 
 
+  await loadOrderPadContext();
+  renderQuickItems();
+  updateRepeatLastRoundButton();
   refreshModalBill();
 
 }
 
+
+/* =========================================================
+   FAST ORDER PAD HELPERS
+   ========================================================= */
+
+async function loadOrderPadContext() {
+  const [menuSnap, sessionsSnap] = await Promise.all([
+    db.ref("menuItems").once("value"),
+    db.ref("sessions").once("value")
+  ]);
+
+  const menuItems = menuSnap.val() || {};
+  const sessions = sessionsSnap.val() || {};
+  const usage = new Map();
+  const currentItems = [];
+
+  Object.entries(sessions).forEach(([sessionId, session]) => {
+    const items = Object.values((session && session.items) || {});
+
+    items.forEach(item => {
+      const name = String(item.name || "").trim();
+      if (!name) return;
+
+      const key = name.toLowerCase();
+      const stats = usage.get(key) || { uses: 0, lastUsedAt: 0 };
+      stats.uses += Number(item.qty || 1);
+      stats.lastUsedAt = Math.max(stats.lastUsedAt, Number(item.addedAt || 0));
+      usage.set(key, stats);
+
+      if (sessionId === itemModalSessionId) currentItems.push(item);
+    });
+  });
+
+  itemModalCatalog = Object.entries(menuItems)
+    .filter(([, item]) => item && item.active !== false)
+    .map(([id, item]) => {
+      const name = String(item.name || "").trim();
+      const price = Number(item.price);
+      const stats = usage.get(name.toLowerCase()) || { uses: 0, lastUsedAt: 0 };
+      return { id, name, price, uses: stats.uses, lastUsedAt: stats.lastUsedAt };
+    })
+    .filter(item => item.name && Number.isFinite(item.price))
+    .sort((a, b) => (b.uses - a.uses) || (b.lastUsedAt - a.lastUsedAt) || a.name.localeCompare(b.name));
+
+  const grouped = new Map();
+  currentItems.forEach(item => {
+    if (!item.batchId) return;
+    if (!grouped.has(item.batchId)) grouped.set(item.batchId, []);
+    grouped.get(item.batchId).push(item);
+  });
+
+  const rounds = Array.from(grouped.entries())
+    .map(([batchId, items]) => ({
+      batchId,
+      items,
+      time: Math.max(...items.map(item => Number(item.addedAt || 0)))
+    }))
+    .filter(round => round.batchId !== itemModalBatchId)
+    .sort((a, b) => b.time - a.time);
+
+  itemModalLastRound = rounds.length ? rounds[0].items : [];
+
+  const datalist = document.getElementById("menuItemSuggestions");
+  if (datalist) {
+    datalist.innerHTML = itemModalCatalog
+      .map(item => `<option value="${escapeHtml(item.name)}">${money(item.price)}</option>`)
+      .join("");
+  }
+}
+
+function renderQuickItems() {
+  const container = document.getElementById("quickItems");
+  if (!container) return;
+
+  if (!itemModalCatalog.length) {
+    container.innerHTML = '<span class="muted">Quick items will appear as EasyBev learns the venue\'s regular items.</span>';
+    return;
+  }
+
+  container.innerHTML = itemModalCatalog
+    .slice(0, 8)
+    .map(item => `
+      <button type="button" class="secondary" onclick="selectQuickItem('${escapeJsString(item.name)}', ${Number(item.price)})">
+        <strong>${escapeHtml(item.name)}</strong>
+        <small>${money(item.price)} · tap to add</small>
+      </button>
+    `)
+    .join("");
+}
+
+function escapeJsString(value) {
+  return String(value || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "\\'")
+    .replace(/\r/g, "")
+    .replace(/\n/g, " ");
+}
+
+function selectQuickItem(name, price) {
+  document.getElementById("itemName").value = name;
+  document.getElementById("itemPrice").value = Number(price).toFixed(2);
+  document.getElementById("itemQty").value = "1";
+  addItemToBill();
+}
+
+function handleFastItemInput() {
+  const input = document.getElementById("itemName");
+  const priceInput = document.getElementById("itemPrice");
+  const qtyInput = document.getElementById("itemQty");
+  if (!input || !priceInput || !qtyInput) return;
+
+  const raw = input.value.trim();
+  const match = raw.match(/^(\d+)\s*[x×]?\s+(.+)$/i);
+  const lookupName = match ? match[2].trim() : raw;
+
+  if (match) {
+    qtyInput.value = String(Math.max(1, Number(match[1]) || 1));
+  }
+
+  const known = itemModalCatalog.find(item =>
+    item.name.toLowerCase() === lookupName.toLowerCase()
+  );
+
+  if (known) {
+    if (match) input.value = known.name;
+    priceInput.value = Number(known.price).toFixed(2);
+  }
+}
+
+function handleFastItemKey(event) {
+  if (event.key !== "Enter") return;
+  event.preventDefault();
+  addItemToBill();
+}
+
+function updateRepeatLastRoundButton() {
+  const button = document.getElementById("repeatLastRoundButton");
+  if (!button) return;
+
+  if (!itemModalLastRound.length) {
+    button.classList.add("hidden");
+    return;
+  }
+
+  const units = itemModalLastRound.reduce((sum, item) => sum + Number(item.qty || 1), 0);
+  button.textContent = `Repeat Last Round (${units})`;
+  button.classList.remove("hidden");
+}
+
+async function repeatLastRound() {
+  if (!itemModalSessionId || !itemModalLastRound.length) return;
+
+  const root = db.ref(`sessions/${itemModalSessionId}/items`);
+  const updates = {};
+  const nowBatch = itemModalBatchId || `round-${Date.now()}`;
+
+  itemModalLastRound.forEach(item => {
+    const key = root.push().key;
+    updates[key] = {
+      name: item.name,
+      price: Number(item.price),
+      qty: Number(item.qty || 1),
+      addedBy: itemModalWaiterName || "Waiter",
+      batchId: nowBatch,
+      addedAt: firebase.database.ServerValue.TIMESTAMP
+    };
+  });
+
+  await root.update(updates);
+
+  const snap = await root.once("value");
+  await db.ref(`sessions/${itemModalSessionId}`).update({
+    total: calculateTotal(snap.val()),
+    lastActivityAt: firebase.database.ServerValue.TIMESTAMP
+  });
+
+  refreshModalBill();
+  showEasyBevToast("Last round added.", "success");
+}
 
 /* =========================================================
    REFRESH MODAL BILL
@@ -5171,6 +5470,11 @@ function startManagerDashboard() {
       if (!document.getElementById("managerReports")?.classList.contains("hidden")) renderManagerReports();
     });
 
+    db.ref("menuItems").on("value", snap => {
+      latestManagerMenuItems = snap.val() || {};
+      if (!document.getElementById("managerMenuItems")?.classList.contains("hidden")) renderManagerMenuItems();
+    });
+
   }
   catch (error) {
     console.error(error);
@@ -5252,6 +5556,128 @@ function renderManagerReports() {
   `;
 }
 
+
+/* =========================================================
+   MANAGER MENU ITEMS
+   ========================================================= */
+
+function toggleManagerMenuItems() {
+  const panel = document.getElementById("managerMenuItems");
+  if (!panel) return;
+  panel.classList.toggle("hidden");
+  if (!panel.classList.contains("hidden")) renderManagerMenuItems();
+}
+
+function renderManagerMenuItems() {
+  const panel = document.getElementById("managerMenuItems");
+  if (!panel) return;
+
+  const rows = Object.entries(latestManagerMenuItems || {})
+    .sort((a, b) => String(a[1]?.name || "").localeCompare(String(b[1]?.name || "")));
+
+  const itemRows = rows.length
+    ? rows.map(([id, item]) => {
+        const active = item && item.active !== false;
+        return `
+          <div class="manager-menu-row">
+            <div class="manager-menu-main">
+              <strong>${escapeHtml(String(item?.name || "Unnamed item"))}</strong>
+              <span class="muted">${money(Number(item?.price || 0))}</span>
+            </div>
+            <div class="manager-menu-actions">
+              <button class="secondary" onclick="editManagerMenuItem('${escapeJsString(id)}')">Edit</button>
+              <button class="${active ? "danger" : "blue"}" onclick="toggleManagerMenuItem('${escapeJsString(id)}', ${active})">${active ? "Disable" : "Enable"}</button>
+            </div>
+          </div>`;
+      }).join("")
+    : `<p class="muted">No venue items yet. Add the first item below.</p>`;
+
+  panel.innerHTML = `
+    <div class="heading-row">
+      <div>
+        <h3 style="margin-bottom:3px">Menu Items</h3>
+        <p class="muted" style="margin:0">Management maintains the item catalogue. Waiters use it for fast suggestions and automatic pricing.</p>
+      </div>
+      <button class="secondary" onclick="toggleManagerMenuItems()">Close</button>
+    </div>
+
+    <div class="manager-menu-add">
+      <input id="managerMenuItemName" type="text" placeholder="Item name e.g. Corona" />
+      <input id="managerMenuItemPrice" type="number" min="0" step="0.01" placeholder="Price" />
+      <button class="warning" onclick="addManagerMenuItem()">+ Add Item</button>
+    </div>
+
+    <div class="manager-menu-list">${itemRows}</div>
+  `;
+}
+
+async function addManagerMenuItem() {
+  const nameInput = document.getElementById("managerMenuItemName");
+  const priceInput = document.getElementById("managerMenuItemPrice");
+  const name = String(nameInput?.value || "").trim();
+  const price = Number(priceInput?.value);
+
+  if (!name || !Number.isFinite(price) || price < 0) {
+    alert("Enter an item name and valid price.");
+    return;
+  }
+
+  const duplicate = Object.values(latestManagerMenuItems || {}).some(item =>
+    String(item?.name || "").trim().toLowerCase() === name.toLowerCase()
+  );
+  if (duplicate) {
+    alert("That item already exists. Edit the existing item instead.");
+    return;
+  }
+
+  const ref = db.ref("menuItems").push();
+  await ref.set({
+    name,
+    price,
+    active: true,
+    createdAt: firebase.database.ServerValue.TIMESTAMP,
+    updatedAt: firebase.database.ServerValue.TIMESTAMP
+  });
+
+  if (nameInput) nameInput.value = "";
+  if (priceInput) priceInput.value = "";
+  showEasyBevToast("Menu item added", `${name} · ${money(price)}`);
+}
+
+async function editManagerMenuItem(id) {
+  const item = latestManagerMenuItems[id];
+  if (!item) return;
+
+  const name = prompt("Item name", String(item.name || ""));
+  if (name === null) return;
+  const cleanName = name.trim();
+  if (!cleanName) return;
+
+  const priceText = prompt("Price", Number(item.price || 0).toFixed(2));
+  if (priceText === null) return;
+  const price = Number(priceText);
+  if (!Number.isFinite(price) || price < 0) {
+    alert("Enter a valid price.");
+    return;
+  }
+
+  await db.ref(`menuItems/${id}`).update({
+    name: cleanName,
+    price,
+    updatedAt: firebase.database.ServerValue.TIMESTAMP
+  });
+  showEasyBevToast("Menu item updated", `${cleanName} · ${money(price)}`);
+}
+
+async function toggleManagerMenuItem(id, currentlyActive) {
+  const item = latestManagerMenuItems[id];
+  if (!item) return;
+  await db.ref(`menuItems/${id}`).update({
+    active: !currentlyActive,
+    updatedAt: firebase.database.ServerValue.TIMESTAMP
+  });
+  showEasyBevToast(!currentlyActive ? "Item enabled" : "Item disabled", String(item.name || "Menu item"));
+}
 
 /* =========================================================
    MANAGER WAITER SLOTS
