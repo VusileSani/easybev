@@ -9,7 +9,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
   <style>
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
@@ -33,7 +35,9 @@
       font-size: 22px;
     }
 
-    header small { opacity: 0.75; }
+    header small {
+      opacity: 0.75;
+    }
 
     .container {
       max-width: 960px;
@@ -49,9 +53,14 @@
       box-shadow: 0 2px 10px rgba(0,0,0,0.07);
     }
 
-    .hidden { display: none !important; }
+    .hidden {
+      display: none !important;
+    }
 
-    h2, h3 { margin-top: 0; }
+    h2,
+    h3 {
+      margin-top: 0;
+    }
 
     button {
       border: 0;
@@ -64,7 +73,9 @@
       margin: 4px;
     }
 
-    button:hover { opacity: 0.9; }
+    button:hover {
+      opacity: 0.9;
+    }
 
     button:disabled {
       opacity: 0.4;
@@ -76,12 +87,24 @@
       color: #111827;
     }
 
-    button.success { background: #15803d; }
-    button.warning { background: #d97706; }
-    button.danger { background: #b91c1c; }
-    button.blue { background: #2563eb; }
+    button.success {
+      background: #15803d;
+    }
 
-    input, select {
+    button.warning {
+      background: #d97706;
+    }
+
+    button.danger {
+      background: #b91c1c;
+    }
+
+    button.blue {
+      background: #2563eb;
+    }
+
+    input,
+    select {
       width: 100%;
       border: 1px solid #d1d5db;
       border-radius: 9px;
@@ -112,9 +135,18 @@
       background: #eef2ff;
     }
 
-    .status.success { background: #dcfce7; }
-    .status.warning { background: #fef3c7; }
-    .status.danger { background: #fee2e2; }
+    .status.success {
+      background: #dcfce7;
+    }
+
+    .status.warning {
+      background: #fef3c7;
+    }
+
+    .status.danger {
+      background: #fee2e2;
+      color: #7f1d1d;
+    }
 
     .bill-row,
     .item-row,
@@ -127,7 +159,9 @@
       border-bottom: 1px solid #eee;
     }
 
-    .manager-row input { margin: 0; }
+    .manager-row input {
+      margin: 0;
+    }
 
     .total {
       font-size: 25px;
@@ -142,6 +176,7 @@
       border-radius: 12px;
       padding: 16px;
       margin-bottom: 14px;
+      background: white;
     }
 
     .session-card.active {
@@ -220,9 +255,10 @@
       font-family: Consolas, Monaco, monospace;
       background: #f3f4f6;
       border-radius: 7px;
-      padding: 7px 9px;
+      padding: 9px;
       word-break: break-all;
       font-size: 13px;
+      margin: 7px 0;
     }
 
     .slot-name {
@@ -247,6 +283,7 @@
 </head>
 
 <body>
+
 <header>
   <h1>EasyBev</h1>
   <small id="headerMode"></small>
@@ -254,30 +291,90 @@
 
 <div class="container">
 
-  <!-- HOME -->
+  <!-- =====================================================
+       HOME
+       ===================================================== -->
+
   <section id="homeView" class="card hidden">
     <h2>EasyBev Prototype</h2>
+
     <p class="muted">
-      Guest QR codes are linked to waiter slots. The manager assigns the real waiter name to each slot.
+      Guest QR codes are linked to waiter slots.
+      The manager assigns the actual staff member to each slot.
     </p>
 
     <div class="home-grid">
-      <button onclick="location.href='?guest=1'">Guest QR – Waiter 1</button>
-      <button onclick="location.href='?guest=2'">Guest QR – Waiter 2</button>
-      <button class="blue" onclick="location.href='?waiter=1'">Waiter Dashboard – Slot 1</button>
-      <button class="blue" onclick="location.href='?waiter=2'">Waiter Dashboard – Slot 2</button>
-      <button class="success" onclick="location.href='?manager=1'">Management Dashboard</button>
+
+      <button onclick="location.href='?guest=1'">
+        Guest QR – Waiter 1
+      </button>
+
+      <button onclick="location.href='?guest=2'">
+        Guest QR – Waiter 2
+      </button>
+
+      <button
+        class="blue"
+        onclick="location.href='?waiter=1'"
+      >
+        Waiter Dashboard – Slot 1
+      </button>
+
+      <button
+        class="blue"
+        onclick="location.href='?waiter=2'"
+      >
+        Waiter Dashboard – Slot 2
+      </button>
+
+      <button
+        class="success"
+        onclick="location.href='?manager=1'"
+      >
+        Management Dashboard
+      </button>
+
     </div>
   </section>
 
 
-  <!-- GUEST VIEW -->
+  <!-- =====================================================
+       STARTUP ERROR
+       ===================================================== -->
+
+  <section id="startupErrorView" class="card hidden">
+
+    <h2>EasyBev</h2>
+
+    <div class="status danger">
+      EasyBev could not connect to Firebase.
+    </div>
+
+    <p id="startupErrorMessage">
+      Check the Firebase configuration in index.html.
+    </p>
+
+    <p class="muted">
+      No Firebase Console changes are required.
+    </p>
+
+  </section>
+
+
+  <!-- =====================================================
+       GUEST VIEW
+       ===================================================== -->
+
   <section id="guestView" class="hidden">
 
     <div class="card">
-      <h2 id="guestServiceHeading">EasyBev Service</h2>
+
+      <h2 id="guestServiceHeading">
+        EasyBev Service
+      </h2>
 
       <div id="guestVerification">
+
         <p id="verificationMessage">
           Verify your mobile number to start your service session.
         </p>
@@ -288,9 +385,12 @@
           placeholder="Mobile number e.g. 0821234567"
         />
 
-        <button onclick="requestOtp()">Send OTP</button>
+        <button onclick="requestOtp()">
+          Send OTP
+        </button>
 
         <div id="otpArea" class="hidden">
+
           <input
             id="guestOtp"
             type="number"
@@ -298,34 +398,70 @@
           />
 
           <p class="muted">
-            Demo OTP: <strong>123456</strong>
+            Demo OTP:
+            <strong>123456</strong>
           </p>
 
-          <button class="success" onclick="verifyOtp()">Verify</button>
+          <button
+            class="success"
+            onclick="verifyOtp()"
+          >
+            Verify
+          </button>
+
         </div>
 
         <div id="verificationStatus"></div>
+
       </div>
 
-      <div id="guestSessionInfo" class="hidden">
+
+      <div
+        id="guestSessionInfo"
+        class="hidden"
+      >
+
         <div class="status success">
-          Connected to <strong id="connectedWaiter"></strong>
-          <br />
-          <span class="muted">Session: <strong id="guestSessionCode"></strong></span>
+
+          Connected to
+          <strong id="connectedWaiter"></strong>
+
+          <br>
+
+          <span class="muted">
+            Session:
+            <strong id="guestSessionCode"></strong>
+          </span>
+
         </div>
+
       </div>
+
     </div>
 
 
-    <div id="guestControls" class="hidden">
+    <div
+      id="guestControls"
+      class="hidden"
+    >
 
       <div class="card">
+
         <h3>What do you need?</h3>
 
         <div class="request-grid">
-          <button onclick="sendRequest('assistance')">Call Waiter</button>
-          <button onclick="sendRequest('drinks')">Order Drinks</button>
-          <button onclick="sendRequest('food')">Order Food</button>
+
+          <button onclick="sendRequest('assistance')">
+            Call Waiter
+          </button>
+
+          <button onclick="sendRequest('drinks')">
+            Order Drinks
+          </button>
+
+          <button onclick="sendRequest('food')">
+            Order Food
+          </button>
 
           <button
             id="guestBillButton"
@@ -334,19 +470,23 @@
           >
             Request Bill
           </button>
+
         </div>
 
         <div id="guestRequestStatus"></div>
+
       </div>
 
 
       <div class="card">
+
         <h3>Your Bill</h3>
 
         <div id="guestBillItems"></div>
 
         <div class="total">
-          Total: <span id="guestTotal">R0.00</span>
+          Total:
+          <span id="guestTotal">R0.00</span>
         </div>
 
         <div id="guestBillStatus"></div>
@@ -358,28 +498,52 @@
         >
           Pay
         </button>
+
       </div>
 
     </div>
 
 
-    <div id="guestClosedView" class="card hidden">
+    <div
+      id="guestClosedView"
+      class="card hidden"
+    >
+
       <h2>Session ended</h2>
-      <p>This EasyBev service session has been closed.</p>
-      <button onclick="restartGuestSession()">Start New Session</button>
+
+      <p>
+        This EasyBev service session has been closed.
+      </p>
+
+      <button onclick="restartGuestSession()">
+        Start New Session
+      </button>
+
     </div>
 
   </section>
 
 
-  <!-- WAITER VIEW -->
-  <section id="waiterView" class="hidden">
+  <!-- =====================================================
+       WAITER VIEW
+       ===================================================== -->
+
+  <section
+    id="waiterView"
+    class="hidden"
+  >
 
     <div class="card">
-      <h2 id="waiterDashboardTitle">Waiter Dashboard</h2>
+
+      <h2 id="waiterDashboardTitle">
+        Waiter Dashboard
+      </h2>
+
       <p class="muted">
-        All active guest sessions assigned to this waiter QR appear here.
+        All active guest sessions assigned to this waiter
+        appear here.
       </p>
+
     </div>
 
     <div id="waiterSessions"></div>
@@ -387,21 +551,35 @@
   </section>
 
 
-  <!-- MANAGER VIEW -->
-  <section id="managerView" class="hidden">
+  <!-- =====================================================
+       MANAGER VIEW
+       ===================================================== -->
+
+  <section
+    id="managerView"
+    class="hidden"
+  >
 
     <div class="card">
+
       <h2>Management Dashboard</h2>
+
       <p class="muted">
-        Assign staff names to permanent waiter slots. Guest QR links remain unchanged when staff change.
+        Assign staff names to permanent waiter slots.
+        Guest QR links remain unchanged when staff change.
       </p>
+
     </div>
 
     <div id="managerWaiterSlots"></div>
 
+
     <div class="card">
+
       <h3>Active Sessions</h3>
+
       <div id="managerActiveSessions"></div>
+
     </div>
 
   </section>
@@ -409,12 +587,20 @@
 </div>
 
 
-<!-- ADD ITEMS MODAL -->
-<div id="itemModal" class="modal hidden">
+<!-- =========================================================
+     ADD ITEMS MODAL
+     ========================================================= -->
+
+<div
+  id="itemModal"
+  class="modal hidden"
+>
+
   <div class="modal-content">
 
     <h2>
-      Add Items – <span id="itemModalGuest"></span>
+      Add Items –
+      <span id="itemModalGuest"></span>
     </h2>
 
     <input
@@ -439,72 +625,141 @@
       placeholder="Quantity"
     />
 
-    <button class="blue" onclick="addItemToBill()">Add Item</button>
+    <button
+      class="blue"
+      onclick="addItemToBill()"
+    >
+      Add Item
+    </button>
+
 
     <div class="added-items">
+
       <strong>Current Bill</strong>
+
       <div id="modalBillItems"></div>
-      <div class="total" id="modalTotal">R0.00</div>
+
+      <div
+        class="total"
+        id="modalTotal"
+      >
+        R0.00
+      </div>
+
     </div>
 
+
     <div class="modal-actions">
-      <button class="secondary" onclick="closeItemModal()">Cancel</button>
-      <button class="success" onclick="doneAddingItems()">Done</button>
+
+      <button
+        class="secondary"
+        onclick="closeItemModal()"
+      >
+        Cancel
+      </button>
+
+      <button
+        class="success"
+        onclick="doneAddingItems()"
+      >
+        Done
+      </button>
+
     </div>
 
   </div>
+
 </div>
 
 
 <script>
+
 /* =========================================================
-   FIREBASE
+   FIREBASE CONFIGURATION
 
-   IMPORTANT:
-   Keep the exact Firebase configuration values from your
-   CURRENT WORKING EasyBev index.html here.
+   IMPORTANT
 
-   No Firebase Console changes are required for this build.
+   PUT YOUR EXISTING REAL EASYBEV FIREBASE VALUES HERE.
+
+   DO NOT CREATE A NEW FIREBASE PROJECT.
+   DO NOT CHANGE ANYTHING IN THE FIREBASE CONSOLE.
    ========================================================= */
 
 const firebaseConfig = {
-  apiKey: "PASTE_YOUR_EXISTING_API_KEY",
-  authDomain: "PASTE_YOUR_EXISTING_AUTH_DOMAIN",
-  databaseURL: "PASTE_YOUR_EXISTING_DATABASE_URL",
-  projectId: "PASTE_YOUR_EXISTING_PROJECT_ID",
-  storageBucket: "PASTE_YOUR_EXISTING_STORAGE_BUCKET",
-  messagingSenderId: "PASTE_YOUR_EXISTING_MESSAGING_SENDER_ID",
-  appId: "PASTE_YOUR_EXISTING_APP_ID"
-};
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+  apiKey:
+    "AIzaSyDydmFMOw3Kd5lTXq_n0WGRIamM5cgO08o",
+
+  authDomain:
+    "easybev-prototype.firebaseapp.com",
+
+  databaseURL:
+    "https://easybev-prototype-default-rtdb.firebaseio.com/",
+
+  projectId:
+    "easybev-prototype",
+
+  storageBucket:
+    "easybev-prototype.firebasestorage.app",
+
+  messagingSenderId:
+    "1006818240163",
+
+  appId:
+    "1:1006818240163:web:765843bafcd931ff98c116"
+
+};
 
 
 /* =========================================================
-   GENERAL
+   APP STATE
    ========================================================= */
 
-const params = new URLSearchParams(window.location.search);
+let db = null;
 
-const managerMode = params.get("manager") === "1";
-const waiterSlot = params.get("waiter");
-let guestSlot = params.get("guest");
+const params =
+  new URLSearchParams(
+    window.location.search
+  );
+
+const managerMode =
+  params.get("manager") === "1";
+
+const waiterSlot =
+  params.get("waiter");
+
+let guestSlot =
+  params.get("guest");
+
 
 /*
-  Backward compatibility for the old prototype links.
-  Old Table 7 becomes Waiter Slot 1.
-  Old Table 8 becomes Waiter Slot 2.
+  OLD PROTOTYPE LINK COMPATIBILITY
 
-  Nothing under /tables is required by the new architecture.
+  ?table=7 -> waiter slot 1
+  ?table=8 -> waiter slot 2
+
+  This lets the old test links continue working temporarily.
 */
-const legacyTable = params.get("table");
 
-if (!guestSlot && legacyTable) {
-  guestSlot = legacyTable === "8" ? "2" : "1";
+const legacyTable =
+  params.get("table");
+
+if (
+  !guestSlot &&
+  legacyTable
+) {
+
+  guestSlot =
+    legacyTable === "8"
+      ? "2"
+      : "1";
+
 }
 
-const WAITER_SLOTS = ["1", "2", "3", "4", "5", "6"];
+
+const WAITER_SLOTS =
+  ["1", "2", "3", "4", "5", "6"];
+
 
 let currentSessionId = null;
 let currentSession = null;
@@ -514,98 +769,438 @@ let itemModalSessionId = null;
 let itemModalGuestLabel = null;
 let itemModalWaiterName = null;
 
+
+/* =========================================================
+   GENERAL HELPERS
+   ========================================================= */
+
 function money(value) {
-  return "R" + Number(value || 0).toFixed(2);
+
+  return "R" +
+    Number(value || 0)
+      .toFixed(2);
+
 }
 
+
 function cleanPhone(phone) {
+
   return String(phone || "")
     .replace(/\s+/g, "")
     .replace(/-/g, "");
+
 }
 
+
 function escapeHtml(value) {
+
   return String(value || "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+
 }
+
 
 function calculateTotal(items) {
-  if (!items) return 0;
 
-  return Object.values(items).reduce((total, item) => {
-    return total +
-      Number(item.price || 0) *
-      Number(item.qty || 1);
-  }, 0);
+  if (!items)
+    return 0;
+
+  return Object
+    .values(items)
+    .reduce(
+      (total, item) => {
+
+        return (
+          total +
+          Number(item.price || 0) *
+          Number(item.qty || 1)
+        );
+
+      },
+      0
+    );
+
 }
 
-function makeSessionCode(sessionId) {
-  const raw = String(sessionId || "")
-    .replace(/[^a-zA-Z0-9]/g, "")
-    .slice(-5)
-    .toUpperCase();
 
-  return raw ? `G-${raw}` : "GUEST";
+function makeSessionCode(
+  sessionId
+) {
+
+  const raw =
+    String(sessionId || "")
+      .replace(
+        /[^a-zA-Z0-9]/g,
+        ""
+      )
+      .slice(-5)
+      .toUpperCase();
+
+  return raw
+    ? `G-${raw}`
+    : "GUEST";
+
 }
 
-function waiterFallbackName(slot) {
-  return `Waiter ${slot}`;
-}
 
-function guestLabel(sessionId, session) {
-  return session && session.sessionCode
+function guestLabel(
+  sessionId,
+  session
+) {
+
+  return (
+    session &&
+    session.sessionCode
+  )
     ? session.sessionCode
-    : makeSessionCode(sessionId);
+    : makeSessionCode(
+        sessionId
+      );
+
 }
 
-function sessionStorageKey(slot) {
-  return `easybev_guest_session_${slot}`;
+
+function waiterFallbackName(
+  slot
+) {
+
+  return `Waiter ${slot}`;
+
 }
 
-function phoneStorageKey(slot) {
-  return `easybev_guest_phone_${slot}`;
+
+function getWaiterDisplayName(
+  waiter
+) {
+
+  if (
+    waiter &&
+    waiter.name
+  ) {
+
+    return waiter.name;
+
+  }
+
+  return waiterFallbackName(
+    waiter
+      ? waiter.slot
+      : ""
+  );
+
 }
 
-async function getWaiter(slot) {
-  const snap = await db.ref(`waiters/${slot}`).once("value");
-  const waiter = snap.val() || {};
 
-  return {
-    slot: String(slot),
-    name: String(waiter.name || "").trim(),
-    active: waiter.active !== false
-  };
+function sessionStorageKey(
+  slot
+) {
+
+  return (
+    `easybev_guest_session_${slot}`
+  );
+
 }
 
-function getWaiterDisplayName(waiter) {
-  return waiter && waiter.name
-    ? waiter.name
-    : waiterFallbackName(waiter ? waiter.slot : "");
+
+function phoneStorageKey(
+  slot
+) {
+
+  return (
+    `easybev_guest_phone_${slot}`
+  );
+
 }
+
+
+/* =========================================================
+   FIREBASE STARTUP CHECK
+   ========================================================= */
+
+function firebaseConfigLooksValid() {
+
+  const requiredValues = [
+
+    firebaseConfig.apiKey,
+    firebaseConfig.authDomain,
+    firebaseConfig.databaseURL,
+    firebaseConfig.projectId,
+    firebaseConfig.appId
+
+  ];
+
+  return requiredValues.every(
+    value => {
+
+      const text =
+        String(value || "");
+
+      return (
+        text.length > 0 &&
+        !text.includes(
+          "PASTE_YOUR"
+        )
+      );
+
+    }
+  );
+
+}
+
+
+function showStartupError(
+  message
+) {
+
+  console.error(
+    "EasyBev startup error:",
+    message
+  );
+
+  document
+    .getElementById(
+      "homeView"
+    )
+    .classList
+    .add(
+      "hidden"
+    );
+
+  document
+    .getElementById(
+      "guestView"
+    )
+    .classList
+    .add(
+      "hidden"
+    );
+
+  document
+    .getElementById(
+      "waiterView"
+    )
+    .classList
+    .add(
+      "hidden"
+    );
+
+  document
+    .getElementById(
+      "managerView"
+    )
+    .classList
+    .add(
+      "hidden"
+    );
+
+  document
+    .getElementById(
+      "startupErrorView"
+    )
+    .classList
+    .remove(
+      "hidden"
+    );
+
+  document
+    .getElementById(
+      "headerMode"
+    )
+    .textContent =
+      "Connection Error";
+
+  document
+    .getElementById(
+      "startupErrorMessage"
+    )
+    .textContent =
+      message;
+
+}
+
+
+/* =========================================================
+   FIREBASE INITIALISATION
+   ========================================================= */
+
+async function initialiseEasyBev() {
+
+  try {
+
+    /*
+      FIRST CHECK:
+
+      Prevent the old blank-screen behaviour
+      when placeholder Firebase details remain
+      in the code.
+    */
+
+    if (
+      !firebaseConfigLooksValid()
+    ) {
+
+      throw new Error(
+        "Firebase configuration is missing. Copy the real firebaseConfig values from your existing working EasyBev file into the Firebase configuration section."
+      );
+
+    }
+
+
+    /*
+      INITIALISE FIREBASE
+    */
+
+    firebase.initializeApp(
+      firebaseConfig
+    );
+
+    db =
+      firebase.database();
+
+
+    /*
+      QUICK CONNECTION TEST
+
+      This forces Firebase to establish
+      a Realtime Database connection/read.
+    */
+
+    await db
+      .ref(".info/connected")
+      .once("value");
+
+
+    /*
+      MAKE SURE OUR WAITER SLOTS EXIST
+    */
+
+    await ensureWaiterSlots();
+
+
+    /*
+      ONLY AFTER SUCCESSFUL STARTUP
+      ROUTE TO THE CORRECT VIEW.
+    */
+
+    routeApplication();
+
+  }
+  catch (error) {
+
+    console.error(error);
+
+    showStartupError(
+      error &&
+      error.message
+        ? error.message
+        : "EasyBev could not connect to Firebase."
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   WAITER CONFIGURATION
+   ========================================================= */
 
 async function ensureWaiterSlots() {
-  const snap = await db.ref("waiters").once("value");
-  const existing = snap.val() || {};
+
+  const snap =
+    await db
+      .ref("waiters")
+      .once("value");
+
+  const existing =
+    snap.val() || {};
+
   const updates = {};
 
-  WAITER_SLOTS.forEach(slot => {
-    if (!existing[slot]) {
-      updates[`waiters/${slot}`] = {
-        slot,
-        name: "",
-        active: true,
-        createdAt: firebase.database.ServerValue.TIMESTAMP
-      };
-    }
-  });
 
-  if (Object.keys(updates).length) {
-    await db.ref().update(updates);
+  WAITER_SLOTS.forEach(
+    slot => {
+
+      if (
+        !existing[slot]
+      ) {
+
+        updates[
+          `waiters/${slot}`
+        ] = {
+
+          slot,
+
+          name: "",
+
+          active: true,
+
+          createdAt:
+            firebase.database
+              .ServerValue
+              .TIMESTAMP
+
+        };
+
+      }
+
+    }
+  );
+
+
+  if (
+    Object.keys(
+      updates
+    ).length
+  ) {
+
+    await db
+      .ref()
+      .update(
+        updates
+      );
+
   }
+
+}
+
+
+async function getWaiter(
+  slot
+) {
+
+  const snap =
+    await db
+      .ref(
+        `waiters/${slot}`
+      )
+      .once(
+        "value"
+      );
+
+  const waiter =
+    snap.val() || {};
+
+  return {
+
+    slot:
+      String(slot),
+
+    name:
+      String(
+        waiter.name || ""
+      )
+        .trim(),
+
+    active:
+      waiter.active !== false
+
+  };
+
 }
 
 
@@ -613,32 +1208,115 @@ async function ensureWaiterSlots() {
    ROUTING
    ========================================================= */
 
-(async function route() {
-  await ensureWaiterSlots();
+function routeApplication() {
 
-  if (managerMode) {
-    document.getElementById("managerView").classList.remove("hidden");
-    document.getElementById("headerMode").textContent = "Management";
-    startManagerDashboard();
-    return;
+  try {
+
+    if (
+      managerMode
+    ) {
+
+      document
+        .getElementById(
+          "managerView"
+        )
+        .classList
+        .remove(
+          "hidden"
+        );
+
+      document
+        .getElementById(
+          "headerMode"
+        )
+        .textContent =
+          "Management";
+
+      startManagerDashboard();
+
+      return;
+
+    }
+
+
+    if (
+      waiterSlot
+    ) {
+
+      document
+        .getElementById(
+          "waiterView"
+        )
+        .classList
+        .remove(
+          "hidden"
+        );
+
+      document
+        .getElementById(
+          "headerMode"
+        )
+        .textContent =
+          "Waiter";
+
+      startWaiterDashboard(
+        waiterSlot
+      );
+
+      return;
+
+    }
+
+
+    if (
+      guestSlot
+    ) {
+
+      document
+        .getElementById(
+          "guestView"
+        )
+        .classList
+        .remove(
+          "hidden"
+        );
+
+      document
+        .getElementById(
+          "headerMode"
+        )
+        .textContent =
+          "Guest";
+
+      startGuestFlow();
+
+      return;
+
+    }
+
+
+    document
+      .getElementById(
+        "homeView"
+      )
+      .classList
+      .remove(
+        "hidden"
+      );
+
+  }
+  catch (error) {
+
+    console.error(error);
+
+    showStartupError(
+      error.message ||
+      "EasyBev could not start."
+    );
+
   }
 
-  if (waiterSlot) {
-    document.getElementById("waiterView").classList.remove("hidden");
-    document.getElementById("headerMode").textContent = "Waiter";
-    startWaiterDashboard(waiterSlot);
-    return;
-  }
-
-  if (guestSlot) {
-    document.getElementById("guestView").classList.remove("hidden");
-    document.getElementById("headerMode").textContent = "Guest";
-    startGuestFlow();
-    return;
-  }
-
-  document.getElementById("homeView").classList.remove("hidden");
-})();
+}
 
 
 /* =========================================================
@@ -646,66 +1324,197 @@ async function ensureWaiterSlots() {
    ========================================================= */
 
 async function startGuestFlow() {
-  const waiter = await getWaiter(guestSlot);
-  currentGuestWaiterName = getWaiterDisplayName(waiter);
 
-  document.getElementById("guestServiceHeading").textContent =
-    `Service by ${currentGuestWaiterName}`;
+  try {
 
-  if (!waiter.active) {
-    document.getElementById("guestVerification").innerHTML = `
-      <div class="status warning">
-        This waiter service slot is currently unavailable.
-        Please ask a staff member for assistance.
-      </div>
-    `;
-    return;
-  }
+    const waiter =
+      await getWaiter(
+        guestSlot
+      );
 
-  const rememberedPhone =
-    localStorage.getItem(phoneStorageKey(guestSlot));
+    currentGuestWaiterName =
+      getWaiterDisplayName(
+        waiter
+      );
 
-  if (rememberedPhone) {
-    document.getElementById("guestPhone").value = rememberedPhone;
-  }
 
-  const rememberedSessionId =
-    localStorage.getItem(sessionStorageKey(guestSlot));
+    document
+      .getElementById(
+        "guestServiceHeading"
+      )
+      .textContent =
+        `Service by ${currentGuestWaiterName}`;
 
-  if (rememberedSessionId) {
-    const snap = await db.ref(
-      `sessions/${rememberedSessionId}`
-    ).once("value");
-
-    const session = snap.val();
 
     if (
-      session &&
-      session.status === "active" &&
-      String(session.waiterSlot) === String(guestSlot)
+      !waiter.active
     ) {
-      currentSessionId = rememberedSessionId;
 
-      document.getElementById("verificationMessage").innerHTML = `
-        <strong>An active EasyBev session was found on this device.</strong><br><br>
-        Verify with the same mobile number to reconnect.
-      `;
+      document
+        .getElementById(
+          "guestVerification"
+        )
+        .innerHTML = `
 
-      if (
-        rememberedPhone &&
-        cleanPhone(session.guestPhone) === cleanPhone(rememberedPhone)
-      ) {
-        connectGuestToSession(rememberedSessionId);
-      }
+          <div class="status warning">
+
+            This waiter service slot
+            is currently unavailable.
+
+            <br><br>
+
+            Please ask a staff member
+            for assistance.
+
+          </div>
+
+        `;
 
       return;
+
     }
 
-    localStorage.removeItem(sessionStorageKey(guestSlot));
+
+    const rememberedPhone =
+      localStorage.getItem(
+        phoneStorageKey(
+          guestSlot
+        )
+      );
+
+
+    if (
+      rememberedPhone
+    ) {
+
+      document
+        .getElementById(
+          "guestPhone"
+        )
+        .value =
+          rememberedPhone;
+
+    }
+
+
+    const rememberedSessionId =
+      localStorage.getItem(
+        sessionStorageKey(
+          guestSlot
+        )
+      );
+
+
+    if (
+      rememberedSessionId
+    ) {
+
+      const snap =
+        await db
+          .ref(
+            `sessions/${rememberedSessionId}`
+          )
+          .once(
+            "value"
+          );
+
+      const session =
+        snap.val();
+
+
+      if (
+
+        session &&
+
+        session.status ===
+          "active" &&
+
+        String(
+          session.waiterSlot
+        ) ===
+          String(
+            guestSlot
+          )
+
+      ) {
+
+        currentSessionId =
+          rememberedSessionId;
+
+
+        document
+          .getElementById(
+            "verificationMessage"
+          )
+          .innerHTML = `
+
+            <strong>
+              An active EasyBev
+              session was found
+              on this device.
+            </strong>
+
+            <br><br>
+
+            Verify with the same
+            mobile number to reconnect.
+
+          `;
+
+
+        if (
+
+          rememberedPhone &&
+
+          cleanPhone(
+            session.guestPhone
+          ) ===
+
+          cleanPhone(
+            rememberedPhone
+          )
+
+        ) {
+
+          connectGuestToSession(
+            rememberedSessionId
+          );
+
+        }
+
+        return;
+
+      }
+
+
+      localStorage.removeItem(
+        sessionStorageKey(
+          guestSlot
+        )
+      );
+
+    }
+
+
+    document
+      .getElementById(
+        "verificationMessage"
+      )
+      .textContent =
+        `Verify your mobile number to connect to ${currentGuestWaiterName}.`;
+
+  }
+  catch (error) {
+
+    console.error(error);
+
+    showStartupError(
+      error.message ||
+      "Could not start the guest session."
+    );
+
   }
 
-  document.getElementById("verificationMessage").textContent =
-    `Verify your mobile number to connect to ${currentGuestWaiterName}.`;
 }
 
 
@@ -714,103 +1523,306 @@ async function startGuestFlow() {
    ========================================================= */
 
 function requestOtp() {
-  const phone = cleanPhone(
-    document.getElementById("guestPhone").value
+
+  const phone =
+    cleanPhone(
+      document
+        .getElementById(
+          "guestPhone"
+        )
+        .value
+    );
+
+
+  if (
+    phone.length < 9
+  ) {
+
+    document
+      .getElementById(
+        "verificationStatus"
+      )
+      .innerHTML = `
+
+        <div class="status danger">
+          Enter a valid mobile number.
+        </div>
+
+      `;
+
+    return;
+
+  }
+
+
+  sessionStorage.setItem(
+    "easybev_pending_phone",
+    phone
   );
 
-  if (phone.length < 9) {
-    document.getElementById("verificationStatus").innerHTML =
-      `<div class="status danger">Enter a valid mobile number.</div>`;
-    return;
-  }
 
-  sessionStorage.setItem("easybev_pending_phone", phone);
+  document
+    .getElementById(
+      "otpArea"
+    )
+    .classList
+    .remove(
+      "hidden"
+    );
 
-  document.getElementById("otpArea")
-    .classList.remove("hidden");
 
-  document.getElementById("verificationStatus").innerHTML =
-    `<div class="status">OTP sent. Demo code is 123456.</div>`;
+  document
+    .getElementById(
+      "verificationStatus"
+    )
+    .innerHTML = `
+
+      <div class="status">
+        OTP sent.
+        Demo code is 123456.
+      </div>
+
+    `;
+
 }
 
-async function verifyOtp() {
-  const otp = document.getElementById("guestOtp").value;
-  const phone = sessionStorage.getItem("easybev_pending_phone");
 
-  if (otp !== "123456") {
-    document.getElementById("verificationStatus").innerHTML =
-      `<div class="status danger">Incorrect OTP.</div>`;
+async function verifyOtp() {
+
+  const otp =
+    document
+      .getElementById(
+        "guestOtp"
+      )
+      .value;
+
+
+  const phone =
+    sessionStorage.getItem(
+      "easybev_pending_phone"
+    );
+
+
+  if (
+    otp !== "123456"
+  ) {
+
+    document
+      .getElementById(
+        "verificationStatus"
+      )
+      .innerHTML = `
+
+        <div class="status danger">
+          Incorrect OTP.
+        </div>
+
+      `;
+
     return;
+
   }
 
-  if (!phone) return;
 
-  localStorage.setItem(phoneStorageKey(guestSlot), phone);
+  if (
+    !phone
+  ) {
 
-  await findOrCreateGuestSession(phone);
+    return;
+
+  }
+
+
+  localStorage.setItem(
+    phoneStorageKey(
+      guestSlot
+    ),
+    phone
+  );
+
+
+  await findOrCreateGuestSession(
+    phone
+  );
+
 }
 
 
 /* =========================================================
    FIND OR CREATE GUEST SESSION
 
-   A waiter slot can have MANY simultaneous active sessions.
-   That is the key change from the old table architecture.
+   IMPORTANT:
+
+   A waiter can serve multiple
+   simultaneous guest sessions.
+
+   There is NO table lock here.
    ========================================================= */
 
-async function findOrCreateGuestSession(phone) {
-  const sessionsSnap = await db.ref("sessions").once("value");
-  const sessions = sessionsSnap.val() || {};
+async function findOrCreateGuestSession(
+  phone
+) {
 
-  const existing = Object.entries(sessions).find(
-    ([, session]) =>
-      session &&
-      session.status === "active" &&
-      String(session.waiterSlot) === String(guestSlot) &&
-      cleanPhone(session.guestPhone) === cleanPhone(phone)
-  );
+  const sessionsSnap =
+    await db
+      .ref(
+        "sessions"
+      )
+      .once(
+        "value"
+      );
 
-  if (existing) {
-    const [existingSessionId] = existing;
+
+  const sessions =
+    sessionsSnap.val() || {};
+
+
+  const existing =
+    Object.entries(
+      sessions
+    )
+    .find(
+      ([, session]) =>
+
+        session &&
+
+        session.status ===
+          "active" &&
+
+        String(
+          session.waiterSlot
+        ) ===
+          String(
+            guestSlot
+          ) &&
+
+        cleanPhone(
+          session.guestPhone
+        ) ===
+          cleanPhone(
+            phone
+          )
+
+    );
+
+
+  if (
+    existing
+  ) {
+
+    const [
+      existingSessionId
+    ] = existing;
+
 
     localStorage.setItem(
-      sessionStorageKey(guestSlot),
+
+      sessionStorageKey(
+        guestSlot
+      ),
+
+      existingSessionId
+
+    );
+
+
+    connectGuestToSession(
       existingSessionId
     );
 
-    connectGuestToSession(existingSessionId);
     return;
+
   }
 
-  const sessionRef = db.ref("sessions").push();
-  const newSessionId = sessionRef.key;
-  const sessionCode = makeSessionCode(newSessionId);
 
-  const waiter = await getWaiter(guestSlot);
+  const sessionRef =
+    db
+      .ref(
+        "sessions"
+      )
+      .push();
+
+
+  const newSessionId =
+    sessionRef.key;
+
+
+  const sessionCode =
+    makeSessionCode(
+      newSessionId
+    );
+
+
+  const waiter =
+    await getWaiter(
+      guestSlot
+    );
+
 
   const newSession = {
-    waiterSlot: String(guestSlot),
-    waiterNameAtStart: getWaiterDisplayName(waiter),
-    guestPhone: phone,
+
+    waiterSlot:
+      String(
+        guestSlot
+      ),
+
+    waiterNameAtStart:
+      getWaiterDisplayName(
+        waiter
+      ),
+
+    guestPhone:
+      phone,
+
     sessionCode,
-    status: "active",
-    createdAt: firebase.database.ServerValue.TIMESTAMP,
-    lastActivityAt: firebase.database.ServerValue.TIMESTAMP,
-    latestRequest: null,
+
+    status:
+      "active",
+
+    createdAt:
+      firebase.database
+        .ServerValue
+        .TIMESTAMP,
+
+    lastActivityAt:
+      firebase.database
+        .ServerValue
+        .TIMESTAMP,
+
+    latestRequest:
+      null,
+
     bill: {
-      status: "open"
+      status:
+        "open"
     },
-    total: 0
+
+    total:
+      0
+
   };
 
-  await sessionRef.set(newSession);
+
+  await sessionRef.set(
+    newSession
+  );
+
 
   localStorage.setItem(
-    sessionStorageKey(guestSlot),
+
+    sessionStorageKey(
+      guestSlot
+    ),
+
+    newSessionId
+
+  );
+
+
+  connectGuestToSession(
     newSessionId
   );
 
-  connectGuestToSession(newSessionId);
 }
 
 
@@ -818,67 +1830,194 @@ async function findOrCreateGuestSession(phone) {
    CONNECT GUEST
    ========================================================= */
 
-function connectGuestToSession(sessionId) {
-  currentSessionId = sessionId;
+function connectGuestToSession(
+  sessionId
+) {
 
-  document.getElementById("guestVerification")
-    .classList.add("hidden");
+  currentSessionId =
+    sessionId;
 
-  document.getElementById("guestSessionInfo")
-    .classList.remove("hidden");
 
-  document.getElementById("guestControls")
-    .classList.remove("hidden");
+  document
+    .getElementById(
+      "guestVerification"
+    )
+    .classList
+    .add(
+      "hidden"
+    );
 
-  document.getElementById("guestClosedView")
-    .classList.add("hidden");
 
-  db.ref(`sessions/${sessionId}`).on("value", async snap => {
-    const session = snap.val();
+  document
+    .getElementById(
+      "guestSessionInfo"
+    )
+    .classList
+    .remove(
+      "hidden"
+    );
 
-    if (!session || session.status !== "active") {
-      showGuestSessionEnded();
-      return;
-    }
 
-    currentSession = session;
+  document
+    .getElementById(
+      "guestControls"
+    )
+    .classList
+    .remove(
+      "hidden"
+    );
 
-    const waiter = await getWaiter(session.waiterSlot);
-    const waiterName = getWaiterDisplayName(waiter);
 
-    currentGuestWaiterName = waiterName;
+  document
+    .getElementById(
+      "guestClosedView"
+    )
+    .classList
+    .add(
+      "hidden"
+    );
 
-    document.getElementById("connectedWaiter")
-      .textContent = waiterName;
 
-    document.getElementById("guestSessionCode")
-      .textContent = guestLabel(sessionId, session);
+  db
+    .ref(
+      `sessions/${sessionId}`
+    )
+    .on(
+      "value",
+      async snap => {
 
-    renderGuestSession(session);
-  });
+        const session =
+          snap.val();
+
+
+        if (
+
+          !session ||
+
+          session.status !==
+            "active"
+
+        ) {
+
+          showGuestSessionEnded();
+
+          return;
+
+        }
+
+
+        currentSession =
+          session;
+
+
+        const waiter =
+          await getWaiter(
+            session.waiterSlot
+          );
+
+
+        const waiterName =
+          getWaiterDisplayName(
+            waiter
+          );
+
+
+        currentGuestWaiterName =
+          waiterName;
+
+
+        document
+          .getElementById(
+            "connectedWaiter"
+          )
+          .textContent =
+            waiterName;
+
+
+        document
+          .getElementById(
+            "guestSessionCode"
+          )
+          .textContent =
+            guestLabel(
+              sessionId,
+              session
+            );
+
+
+        renderGuestSession(
+          session
+        );
+
+      }
+    );
+
 }
+
 
 function showGuestSessionEnded() {
-  if (guestSlot) {
-    localStorage.removeItem(sessionStorageKey(guestSlot));
+
+  if (
+    guestSlot
+  ) {
+
+    localStorage.removeItem(
+      sessionStorageKey(
+        guestSlot
+      )
+    );
+
   }
 
-  document.getElementById("guestControls")
-    .classList.add("hidden");
 
-  document.getElementById("guestSessionInfo")
-    .classList.add("hidden");
+  document
+    .getElementById(
+      "guestControls"
+    )
+    .classList
+    .add(
+      "hidden"
+    );
 
-  document.getElementById("guestClosedView")
-    .classList.remove("hidden");
+
+  document
+    .getElementById(
+      "guestSessionInfo"
+    )
+    .classList
+    .add(
+      "hidden"
+    );
+
+
+  document
+    .getElementById(
+      "guestClosedView"
+    )
+    .classList
+    .remove(
+      "hidden"
+    );
+
 }
 
+
 function restartGuestSession() {
-  if (guestSlot) {
-    localStorage.removeItem(sessionStorageKey(guestSlot));
+
+  if (
+    guestSlot
+  ) {
+
+    localStorage.removeItem(
+      sessionStorageKey(
+        guestSlot
+      )
+    );
+
   }
 
   location.reload();
+
 }
 
 
@@ -886,71 +2025,214 @@ function restartGuestSession() {
    GUEST REQUESTS
    ========================================================= */
 
-async function sendRequest(type) {
-  if (!currentSessionId) return;
+async function sendRequest(
+  type
+) {
 
-  const labels = {
-    assistance: "Waiter assistance",
-    drinks: "Drinks requested",
-    food: "Food requested"
-  };
+  if (
+    !currentSessionId
+  ) {
 
-  await db.ref(`sessions/${currentSessionId}`).update({
-    latestRequest: {
-      type,
-      label: labels[type],
-      status: "new",
-      createdAt: firebase.database.ServerValue.TIMESTAMP
-    },
-    lastActivityAt: firebase.database.ServerValue.TIMESTAMP
-  });
-}
-
-async function requestBill() {
-  if (!currentSessionId) return;
-
-  const total = calculateTotal(
-    currentSession && currentSession.items
-  );
-
-  if (total <= 0) {
-    alert("There are no items on this bill yet.");
     return;
+
   }
 
-  await db.ref(`sessions/${currentSessionId}`).update({
-    latestRequest: {
-      type: "bill",
-      label: "Bill requested",
-      status: "new",
-      createdAt: firebase.database.ServerValue.TIMESTAMP
-    },
-    "bill/status": "requested",
-    "bill/requestedAt": firebase.database.ServerValue.TIMESTAMP,
-    lastActivityAt: firebase.database.ServerValue.TIMESTAMP
-  });
+
+  const labels = {
+
+    assistance:
+      "Waiter assistance",
+
+    drinks:
+      "Drinks requested",
+
+    food:
+      "Food requested"
+
+  };
+
+
+  await db
+    .ref(
+      `sessions/${currentSessionId}`
+    )
+    .update({
+
+      latestRequest: {
+
+        type,
+
+        label:
+          labels[type],
+
+        status:
+          "new",
+
+        createdAt:
+          firebase.database
+            .ServerValue
+            .TIMESTAMP
+
+      },
+
+      lastActivityAt:
+        firebase.database
+          .ServerValue
+          .TIMESTAMP
+
+    });
+
 }
 
+
+/* =========================================================
+   REQUEST BILL
+   ========================================================= */
+
+async function requestBill() {
+
+  if (
+    !currentSessionId
+  ) {
+
+    return;
+
+  }
+
+
+  const total =
+    calculateTotal(
+
+      currentSession &&
+      currentSession.items
+
+    );
+
+
+  if (
+    total <= 0
+  ) {
+
+    alert(
+      "There are no items on this bill yet."
+    );
+
+    return;
+
+  }
+
+
+  await db
+    .ref(
+      `sessions/${currentSessionId}`
+    )
+    .update({
+
+      latestRequest: {
+
+        type:
+          "bill",
+
+        label:
+          "Bill requested",
+
+        status:
+          "new",
+
+        createdAt:
+          firebase.database
+            .ServerValue
+            .TIMESTAMP
+
+      },
+
+      "bill/status":
+        "requested",
+
+      "bill/requestedAt":
+        firebase.database
+          .ServerValue
+          .TIMESTAMP,
+
+      lastActivityAt:
+        firebase.database
+          .ServerValue
+          .TIMESTAMP
+
+    });
+
+}
+
+
+/* =========================================================
+   PAYMENT DEMO
+   ========================================================= */
+
 async function payBill() {
-  if (!currentSessionId) return;
 
-  const confirmPayment = confirm(
-    "Demo payment: mark this bill as paid?"
-  );
+  if (
+    !currentSessionId
+  ) {
 
-  if (!confirmPayment) return;
+    return;
 
-  await db.ref(`sessions/${currentSessionId}`).update({
-    "bill/status": "paid",
-    "bill/paidAt": firebase.database.ServerValue.TIMESTAMP,
-    latestRequest: {
-      type: "payment",
-      label: "Payment completed",
-      status: "new",
-      createdAt: firebase.database.ServerValue.TIMESTAMP
-    },
-    lastActivityAt: firebase.database.ServerValue.TIMESTAMP
-  });
+  }
+
+
+  const confirmPayment =
+    confirm(
+      "Demo payment: mark this bill as paid?"
+    );
+
+
+  if (
+    !confirmPayment
+  ) {
+
+    return;
+
+  }
+
+
+  await db
+    .ref(
+      `sessions/${currentSessionId}`
+    )
+    .update({
+
+      "bill/status":
+        "paid",
+
+      "bill/paidAt":
+        firebase.database
+          .ServerValue
+          .TIMESTAMP,
+
+      latestRequest: {
+
+        type:
+          "payment",
+
+        label:
+          "Payment completed",
+
+        status:
+          "new",
+
+        createdAt:
+          firebase.database
+            .ServerValue
+            .TIMESTAMP
+
+      },
+
+      lastActivityAt:
+        firebase.database
+          .ServerValue
+          .TIMESTAMP
+
+    });
+
 }
 
 
@@ -958,99 +2240,288 @@ async function payBill() {
    RENDER GUEST
    ========================================================= */
 
-function renderGuestSession(session) {
-  const items = session.items || {};
-  const total = calculateTotal(items);
+function renderGuestSession(
+  session
+) {
 
-  const itemsDiv = document.getElementById("guestBillItems");
-  const entries = Object.values(items);
+  const items =
+    session.items || {};
 
-  if (!entries.length) {
+
+  const total =
+    calculateTotal(
+      items
+    );
+
+
+  const itemsDiv =
+    document.getElementById(
+      "guestBillItems"
+    );
+
+
+  const entries =
+    Object.values(
+      items
+    );
+
+
+  if (
+    !entries.length
+  ) {
+
+    itemsDiv.innerHTML = `
+
+      <p class="muted">
+        No items added yet.
+      </p>
+
+    `;
+
+  }
+  else {
+
     itemsDiv.innerHTML =
-      `<p class="muted">No items added yet.</p>`;
-  } else {
-    itemsDiv.innerHTML = entries.map(item => {
-      const subtotal =
-        Number(item.price) *
-        Number(item.qty || 1);
+      entries
+        .map(
+          item => {
 
-      return `
-        <div class="bill-row">
-          <span>
-            ${escapeHtml(item.name)}
-            × ${item.qty || 1}
-          </span>
-          <strong>${money(subtotal)}</strong>
-        </div>
-      `;
-    }).join("");
+            const subtotal =
+
+              Number(
+                item.price
+              ) *
+
+              Number(
+                item.qty || 1
+              );
+
+
+            return `
+
+              <div class="bill-row">
+
+                <span>
+
+                  ${escapeHtml(
+                    item.name
+                  )}
+
+                  ×
+                  ${item.qty || 1}
+
+                </span>
+
+                <strong>
+                  ${money(
+                    subtotal
+                  )}
+                </strong>
+
+              </div>
+
+            `;
+
+          }
+        )
+        .join("");
+
   }
 
-  document.getElementById("guestTotal")
-    .textContent = money(total);
 
-  document.getElementById("guestBillButton")
-    .disabled = total <= 0;
+  document
+    .getElementById(
+      "guestTotal"
+    )
+    .textContent =
+      money(
+        total
+      );
 
-  const request = session.latestRequest;
+
+  document
+    .getElementById(
+      "guestBillButton"
+    )
+    .disabled =
+      total <= 0;
+
+
+  const request =
+    session.latestRequest;
+
+
   const requestStatus =
-    document.getElementById("guestRequestStatus");
+    document.getElementById(
+      "guestRequestStatus"
+    );
 
-  if (request) {
-    let message = escapeHtml(request.label || "");
 
-    if (request.status === "acknowledged") {
-      message += ` — ${escapeHtml(currentGuestWaiterName || "Waiter")} acknowledged`;
+  if (
+    request
+  ) {
+
+    let message =
+      escapeHtml(
+        request.label || ""
+      );
+
+
+    if (
+      request.status ===
+        "acknowledged"
+    ) {
+
+      message +=
+        ` — ${escapeHtml(
+          currentGuestWaiterName ||
+          "Waiter"
+        )} acknowledged`;
+
     }
 
-    if (request.status === "completed") {
-      message += " — completed";
+
+    if (
+      request.status ===
+        "completed"
+    ) {
+
+      message +=
+        " — completed";
+
     }
+
+
+    requestStatus.innerHTML = `
+
+      <div class="status">
+        ${message}
+      </div>
+
+    `;
+
+  }
+  else {
 
     requestStatus.innerHTML =
-      `<div class="status">${message}</div>`;
-  } else {
-    requestStatus.innerHTML = "";
+      "";
+
   }
+
 
   const billStatus =
-    session.bill && session.bill.status
+
+    session.bill &&
+    session.bill.status
+
       ? session.bill.status
+
       : "open";
 
+
   const billStatusDiv =
-    document.getElementById("guestBillStatus");
+    document.getElementById(
+      "guestBillStatus"
+    );
+
 
   const payButton =
-    document.getElementById("guestPayButton");
+    document.getElementById(
+      "guestPayButton"
+    );
 
-  if (billStatus === "requested") {
+
+  if (
+    billStatus ===
+      "requested"
+  ) {
+
     billStatusDiv.innerHTML = `
+
       <div class="status warning">
-        Bill requested. Waiting for
-        ${escapeHtml(currentGuestWaiterName || "your waiter")}
+
+        Bill requested.
+
+        Waiting for
+        ${escapeHtml(
+          currentGuestWaiterName ||
+          "your waiter"
+        )}
         to finalise it.
+
       </div>
+
     `;
 
-    payButton.classList.add("hidden");
-  } else if (billStatus === "finalized") {
-    billStatusDiv.innerHTML =
-      `<div class="status success">Bill finalised.</div>`;
 
-    payButton.classList.remove("hidden");
-  } else if (billStatus === "paid") {
-    billStatusDiv.innerHTML = `
-      <div class="status success">
-        Payment received. Waiting for the session to be closed.
-      </div>
-    `;
+    payButton
+      .classList
+      .add(
+        "hidden"
+      );
 
-    payButton.classList.add("hidden");
-  } else {
-    billStatusDiv.innerHTML = "";
-    payButton.classList.add("hidden");
   }
+  else if (
+    billStatus ===
+      "finalized"
+  ) {
+
+    billStatusDiv.innerHTML = `
+
+      <div class="status success">
+        Bill finalised.
+      </div>
+
+    `;
+
+
+    payButton
+      .classList
+      .remove(
+        "hidden"
+      );
+
+  }
+  else if (
+    billStatus ===
+      "paid"
+  ) {
+
+    billStatusDiv.innerHTML = `
+
+      <div class="status success">
+
+        Payment received.
+
+        Waiting for the session
+        to be closed.
+
+      </div>
+
+    `;
+
+
+    payButton
+      .classList
+      .add(
+        "hidden"
+      );
+
+  }
+  else {
+
+    billStatusDiv.innerHTML =
+      "";
+
+
+    payButton
+      .classList
+      .add(
+        "hidden"
+      );
+
+  }
+
 }
 
 
@@ -1058,156 +2529,417 @@ function renderGuestSession(session) {
    WAITER DASHBOARD
    ========================================================= */
 
-async function startWaiterDashboard(slot) {
-  const waiter = await getWaiter(slot);
-  const waiterName = getWaiterDisplayName(waiter);
+async function startWaiterDashboard(
+  slot
+) {
 
-  document.getElementById("waiterDashboardTitle")
-    .textContent = `${waiterName}'s Guests`;
+  try {
 
-  db.ref(`waiters/${slot}`).on("value", snap => {
-    const latest = snap.val() || {};
-    const name = String(latest.name || "").trim()
-      || waiterFallbackName(slot);
+    const waiter =
+      await getWaiter(
+        slot
+      );
 
-    document.getElementById("waiterDashboardTitle")
-      .textContent = `${name}'s Guests`;
-  });
 
-  db.ref("sessions").on("value", snap => {
-    const sessions = snap.val() || {};
-    renderWaiterDashboard(slot, sessions);
-  });
-}
+    const waiterName =
+      getWaiterDisplayName(
+        waiter
+      );
 
-function renderWaiterDashboard(slot, sessions) {
-  const container =
-    document.getElementById("waiterSessions");
 
-  const activeSessions = Object.entries(sessions)
-    .filter(([, session]) =>
-      session &&
-      session.status === "active" &&
-      String(session.waiterSlot) === String(slot)
-    )
-    .sort((a, b) =>
-      Number(b[1].lastActivityAt || b[1].createdAt || 0) -
-      Number(a[1].lastActivityAt || a[1].createdAt || 0)
+    document
+      .getElementById(
+        "waiterDashboardTitle"
+      )
+      .textContent =
+        `${waiterName}'s Guests`;
+
+
+    /*
+      LIVE WAITER NAME UPDATE
+    */
+
+    db
+      .ref(
+        `waiters/${slot}`
+      )
+      .on(
+        "value",
+        snap => {
+
+          const latest =
+            snap.val() || {};
+
+
+          const name =
+
+            String(
+              latest.name || ""
+            )
+              .trim()
+
+            ||
+
+            waiterFallbackName(
+              slot
+            );
+
+
+          document
+            .getElementById(
+              "waiterDashboardTitle"
+            )
+            .textContent =
+              `${name}'s Guests`;
+
+        }
+      );
+
+
+    /*
+      LIVE GUEST SESSION UPDATE
+    */
+
+    db
+      .ref(
+        "sessions"
+      )
+      .on(
+        "value",
+        snap => {
+
+          const sessions =
+            snap.val() || {};
+
+
+          renderWaiterDashboard(
+            slot,
+            sessions
+          );
+
+        }
+      );
+
+  }
+  catch (error) {
+
+    console.error(error);
+
+    showStartupError(
+      error.message ||
+      "Could not load waiter dashboard."
     );
 
-  if (!activeSessions.length) {
-    container.innerHTML = `
-      <div class="card">
-        <p class="muted">No active guest sessions.</p>
-      </div>
-    `;
-    return;
   }
 
-  container.innerHTML = activeSessions.map(
-    ([sessionId, session]) =>
-      waiterSessionHtml(sessionId, session)
-  ).join("");
 }
 
-function waiterSessionHtml(sessionId, session) {
-  const items = session.items || {};
-  const total = calculateTotal(items);
-  const request = session.latestRequest;
+
+function renderWaiterDashboard(
+  slot,
+  sessions
+) {
+
+  const container =
+    document.getElementById(
+      "waiterSessions"
+    );
+
+
+  const activeSessions =
+
+    Object.entries(
+      sessions
+    )
+
+      .filter(
+        ([, session]) =>
+
+          session &&
+
+          session.status ===
+            "active" &&
+
+          String(
+            session.waiterSlot
+          ) ===
+            String(
+              slot
+            )
+
+      )
+
+      .sort(
+        (a, b) =>
+
+          Number(
+            b[1].lastActivityAt ||
+            b[1].createdAt ||
+            0
+          )
+
+          -
+
+          Number(
+            a[1].lastActivityAt ||
+            a[1].createdAt ||
+            0
+          )
+      );
+
+
+  if (
+    !activeSessions.length
+  ) {
+
+    container.innerHTML = `
+
+      <div class="card">
+
+        <p class="muted">
+          No active guest sessions.
+        </p>
+
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  container.innerHTML =
+
+    activeSessions
+      .map(
+
+        ([sessionId, session]) =>
+
+          waiterSessionHtml(
+            sessionId,
+            session
+          )
+
+      )
+      .join("");
+
+}
+
+
+/* =========================================================
+   WAITER SESSION CARD
+   ========================================================= */
+
+function waiterSessionHtml(
+  sessionId,
+  session
+) {
+
+  const items =
+    session.items || {};
+
+
+  const total =
+    calculateTotal(
+      items
+    );
+
+
+  const request =
+    session.latestRequest;
+
 
   const billStatus =
-    session.bill && session.bill.status
+
+    session.bill &&
+    session.bill.status
+
       ? session.bill.status
+
       : "open";
 
-  const label = guestLabel(sessionId, session);
 
-  let requestHtml = "";
+  const label =
+    guestLabel(
+      sessionId,
+      session
+    );
 
-  if (request && request.status !== "completed") {
+
+  let requestHtml =
+    "";
+
+
+  if (
+
+    request &&
+
+    request.status !==
+      "completed"
+
+  ) {
+
     requestHtml = `
+
       <div class="status ${
-        request.status === "new" ? "danger" : ""
+        request.status === "new"
+          ? "danger"
+          : ""
       }">
-        <strong>${escapeHtml(request.label || "")}</strong>
+
+        <strong>
+          ${escapeHtml(
+            request.label || ""
+          )}
+        </strong>
+
         <br>
-        Status: ${escapeHtml(request.status)}
+
+        Status:
+        ${escapeHtml(
+          request.status
+        )}
+
         <br><br>
+
 
         ${
           request.status === "new"
+
             ? `
+
               <button
                 class="blue"
                 onclick="acknowledgeRequest('${sessionId}')"
               >
                 Accept
               </button>
+
             `
+
             : ""
         }
+
 
         ${
           request.status === "acknowledged" &&
           request.type !== "bill"
+
             ? `
+
               <button
                 class="success"
                 onclick="completeRequest('${sessionId}')"
               >
                 Delivered / Done
               </button>
+
             `
+
             : ""
         }
+
       </div>
+
     `;
+
   }
 
-  let billAction = "";
 
-  if (billStatus === "requested") {
+  let billAction =
+    "";
+
+
+  if (
+    billStatus ===
+      "requested"
+  ) {
+
     billAction = `
+
       <button
         class="success"
         onclick="finalizeBill('${sessionId}')"
       >
         Done – Finalise Bill
       </button>
+
     `;
-  } else if (billStatus === "finalized") {
+
+  }
+  else if (
+    billStatus ===
+      "finalized"
+  ) {
+
     billAction = `
+
       <span class="badge active">
         Bill Finalised – Awaiting Payment
       </span>
+
     `;
-  } else if (billStatus === "paid") {
+
+  }
+  else if (
+    billStatus ===
+      "paid"
+  ) {
+
     billAction = `
+
       <button
         class="success"
         onclick="closePaidSession('${sessionId}')"
       >
         Close Session
       </button>
+
     `;
+
   }
 
+
   return `
+
     <div class="session-card active">
 
       <div class="heading-row">
-        <h3>${escapeHtml(label)}</h3>
-        <span class="badge active">Active</span>
+
+        <h3>
+          ${escapeHtml(
+            label
+          )}
+        </h3>
+
+        <span class="badge active">
+          Active
+        </span>
+
       </div>
+
 
       ${requestHtml}
 
+
       <div>
-        <strong>Current total</strong>
-        <div class="big-number">${money(total)}</div>
+
+        <strong>
+          Current total
+        </strong>
+
+        <div class="big-number">
+          ${money(
+            total
+          )}
+        </div>
+
       </div>
 
+
       <br>
+
 
       <button
         class="blue"
@@ -1219,23 +2951,41 @@ function waiterSessionHtml(sessionId, session) {
         Add Items
       </button>
 
+
       ${billAction}
 
-      <hr style="border:0;border-top:1px solid #eee;margin:18px 0;">
+
+      <hr
+        style="
+          border:0;
+          border-top:1px solid #eee;
+          margin:18px 0;
+        "
+      >
+
 
       <button
         class="danger"
-        onclick="endSessionOverride('${sessionId}', 'waiter_override')"
+        onclick="endSessionOverride(
+          '${sessionId}',
+          'waiter_override'
+        )"
       >
         End Session
       </button>
 
+
       <p class="muted">
-        Use End Session for abandoned, broken or stuck guest sessions.
+
+        Use End Session for abandoned,
+        broken or stuck guest sessions.
+
       </p>
 
     </div>
+
   `;
+
 }
 
 
@@ -1243,166 +2993,484 @@ function waiterSessionHtml(sessionId, session) {
    REQUEST MANAGEMENT
    ========================================================= */
 
-async function acknowledgeRequest(sessionId) {
-  await db.ref(
-    `sessions/${sessionId}/latestRequest`
-  ).update({
-    status: "acknowledged",
-    acknowledgedAt:
-      firebase.database.ServerValue.TIMESTAMP
-  });
+async function acknowledgeRequest(
+  sessionId
+) {
+
+  await db
+    .ref(
+      `sessions/${sessionId}/latestRequest`
+    )
+    .update({
+
+      status:
+        "acknowledged",
+
+      acknowledgedAt:
+        firebase.database
+          .ServerValue
+          .TIMESTAMP
+
+    });
+
 }
 
-async function completeRequest(sessionId) {
-  await db.ref(
-    `sessions/${sessionId}/latestRequest`
-  ).update({
-    status: "completed",
-    completedAt:
-      firebase.database.ServerValue.TIMESTAMP
-  });
+
+async function completeRequest(
+  sessionId
+) {
+
+  await db
+    .ref(
+      `sessions/${sessionId}/latestRequest`
+    )
+    .update({
+
+      status:
+        "completed",
+
+      completedAt:
+        firebase.database
+          .ServerValue
+          .TIMESTAMP
+
+    });
+
 }
 
 
 /* =========================================================
-   ITEM MODAL
+   ADD ITEMS MODAL
    ========================================================= */
 
-async function openItemModal(sessionId, label) {
-  itemModalSessionId = sessionId;
-  itemModalGuestLabel = label;
+async function openItemModal(
+  sessionId,
+  label
+) {
 
-  const sessionSnap = await db.ref(
-    `sessions/${sessionId}`
-  ).once("value");
+  itemModalSessionId =
+    sessionId;
 
-  const session = sessionSnap.val() || {};
-  const waiter = await getWaiter(session.waiterSlot);
 
-  itemModalWaiterName = getWaiterDisplayName(waiter);
+  itemModalGuestLabel =
+    label;
 
-  document.getElementById("itemModalGuest")
-    .textContent = label;
 
-  document.getElementById("itemModal")
-    .classList.remove("hidden");
+  const sessionSnap =
+    await db
+      .ref(
+        `sessions/${sessionId}`
+      )
+      .once(
+        "value"
+      );
 
-  document.getElementById("itemName").value = "";
-  document.getElementById("itemPrice").value = "";
-  document.getElementById("itemQty").value = "1";
+
+  const session =
+    sessionSnap.val() || {};
+
+
+  const waiter =
+    await getWaiter(
+      session.waiterSlot
+    );
+
+
+  itemModalWaiterName =
+    getWaiterDisplayName(
+      waiter
+    );
+
+
+  document
+    .getElementById(
+      "itemModalGuest"
+    )
+    .textContent =
+      label;
+
+
+  document
+    .getElementById(
+      "itemModal"
+    )
+    .classList
+    .remove(
+      "hidden"
+    );
+
+
+  document
+    .getElementById(
+      "itemName"
+    )
+    .value =
+      "";
+
+
+  document
+    .getElementById(
+      "itemPrice"
+    )
+    .value =
+      "";
+
+
+  document
+    .getElementById(
+      "itemQty"
+    )
+    .value =
+      "1";
+
 
   refreshModalBill();
 
-  setTimeout(() => {
-    document.getElementById("itemName").focus();
-  }, 100);
+
+  setTimeout(
+    () => {
+
+      document
+        .getElementById(
+          "itemName"
+        )
+        .focus();
+
+    },
+    100
+  );
+
 }
+
 
 function closeItemModal() {
-  document.getElementById("itemModal")
-    .classList.add("hidden");
 
-  itemModalSessionId = null;
-  itemModalGuestLabel = null;
-  itemModalWaiterName = null;
+  document
+    .getElementById(
+      "itemModal"
+    )
+    .classList
+    .add(
+      "hidden"
+    );
+
+
+  itemModalSessionId =
+    null;
+
+  itemModalGuestLabel =
+    null;
+
+  itemModalWaiterName =
+    null;
+
 }
+
+
+/*
+  IMPORTANT:
+
+  ADD ITEM DOES NOT CLOSE THE WINDOW.
+
+  The waiter can add multiple items.
+
+  Only Done closes the modal.
+*/
 
 async function addItemToBill() {
-  if (!itemModalSessionId) return;
-
-  const name =
-    document.getElementById("itemName")
-      .value.trim();
-
-  const price =
-    Number(document.getElementById("itemPrice").value);
-
-  const qty =
-    Number(document.getElementById("itemQty").value || 1);
 
   if (
-    !name ||
-    !Number.isFinite(price) ||
-    price < 0 ||
-    !Number.isFinite(qty) ||
-    qty < 1
+    !itemModalSessionId
   ) {
-    alert("Enter an item name, valid price and quantity.");
+
     return;
+
   }
 
-  const itemRef = db.ref(
-    `sessions/${itemModalSessionId}/items`
-  ).push();
+
+  const name =
+    document
+      .getElementById(
+        "itemName"
+      )
+      .value
+      .trim();
+
+
+  const price =
+    Number(
+
+      document
+        .getElementById(
+          "itemPrice"
+        )
+        .value
+
+    );
+
+
+  const qty =
+    Number(
+
+      document
+        .getElementById(
+          "itemQty"
+        )
+        .value
+
+      || 1
+
+    );
+
+
+  if (
+
+    !name ||
+
+    !Number.isFinite(
+      price
+    ) ||
+
+    price < 0 ||
+
+    !Number.isFinite(
+      qty
+    ) ||
+
+    qty < 1
+
+  ) {
+
+    alert(
+      "Enter an item name, valid price and quantity."
+    );
+
+    return;
+
+  }
+
+
+  const itemRef =
+    db
+      .ref(
+        `sessions/${itemModalSessionId}/items`
+      )
+      .push();
+
 
   await itemRef.set({
+
     name,
+
     price,
+
     qty,
-    addedBy: itemModalWaiterName || "Waiter",
-    addedAt: firebase.database.ServerValue.TIMESTAMP
+
+    addedBy:
+      itemModalWaiterName ||
+      "Waiter",
+
+    addedAt:
+      firebase.database
+        .ServerValue
+        .TIMESTAMP
+
   });
 
-  const snap = await db.ref(
-    `sessions/${itemModalSessionId}/items`
-  ).once("value");
 
-  const total = calculateTotal(snap.val());
+  const snap =
+    await db
+      .ref(
+        `sessions/${itemModalSessionId}/items`
+      )
+      .once(
+        "value"
+      );
 
-  await db.ref(
-    `sessions/${itemModalSessionId}`
-  ).update({
-    total,
-    lastActivityAt:
-      firebase.database.ServerValue.TIMESTAMP
-  });
 
-  document.getElementById("itemName").value = "";
-  document.getElementById("itemPrice").value = "";
-  document.getElementById("itemQty").value = "1";
-  document.getElementById("itemName").focus();
+  const total =
+    calculateTotal(
+      snap.val()
+    );
+
+
+  await db
+    .ref(
+      `sessions/${itemModalSessionId}`
+    )
+    .update({
+
+      total,
+
+      lastActivityAt:
+        firebase.database
+          .ServerValue
+          .TIMESTAMP
+
+    });
+
+
+  /*
+    CLEAR THE ENTRY FIELDS
+    BUT KEEP THE MODAL OPEN.
+  */
+
+  document
+    .getElementById(
+      "itemName"
+    )
+    .value =
+      "";
+
+
+  document
+    .getElementById(
+      "itemPrice"
+    )
+    .value =
+      "";
+
+
+  document
+    .getElementById(
+      "itemQty"
+    )
+    .value =
+      "1";
+
+
+  document
+    .getElementById(
+      "itemName"
+    )
+    .focus();
+
 
   refreshModalBill();
+
 }
+
+
+/* =========================================================
+   REFRESH MODAL BILL
+   ========================================================= */
 
 async function refreshModalBill() {
-  if (!itemModalSessionId) return;
 
-  const snap = await db.ref(
-    `sessions/${itemModalSessionId}/items`
-  ).once("value");
+  if (
+    !itemModalSessionId
+  ) {
 
-  const items = snap.val() || {};
-  const entries = Object.values(items);
+    return;
 
-  const list = document.getElementById("modalBillItems");
-
-  if (!entries.length) {
-    list.innerHTML =
-      `<p class="muted">No items yet.</p>`;
-  } else {
-    list.innerHTML = entries.map(item => `
-      <div class="item-row">
-        <span>
-          ${escapeHtml(item.name)}
-          × ${item.qty || 1}
-        </span>
-        <strong>
-          ${money(
-            Number(item.price) *
-            Number(item.qty || 1)
-          )}
-        </strong>
-      </div>
-    `).join("");
   }
 
-  document.getElementById("modalTotal")
-    .textContent = money(calculateTotal(items));
+
+  const snap =
+    await db
+      .ref(
+        `sessions/${itemModalSessionId}/items`
+      )
+      .once(
+        "value"
+      );
+
+
+  const items =
+    snap.val() || {};
+
+
+  const entries =
+    Object.values(
+      items
+    );
+
+
+  const list =
+    document.getElementById(
+      "modalBillItems"
+    );
+
+
+  if (
+    !entries.length
+  ) {
+
+    list.innerHTML = `
+
+      <p class="muted">
+        No items yet.
+      </p>
+
+    `;
+
+  }
+  else {
+
+    list.innerHTML =
+      entries
+        .map(
+          item => `
+
+            <div class="item-row">
+
+              <span>
+
+                ${escapeHtml(
+                  item.name
+                )}
+
+                ×
+                ${item.qty || 1}
+
+              </span>
+
+              <strong>
+
+                ${money(
+
+                  Number(
+                    item.price
+                  )
+
+                  *
+
+                  Number(
+                    item.qty || 1
+                  )
+
+                )}
+
+              </strong>
+
+            </div>
+
+          `
+        )
+        .join("");
+
+  }
+
+
+  document
+    .getElementById(
+      "modalTotal"
+    )
+    .textContent =
+
+      money(
+        calculateTotal(
+          items
+        )
+      );
+
 }
 
+
 function doneAddingItems() {
+
   closeItemModal();
+
 }
 
 
@@ -1410,37 +3478,93 @@ function doneAddingItems() {
    BILL FINALISATION
    ========================================================= */
 
-async function finalizeBill(sessionId) {
-  const snap = await db.ref(
-    `sessions/${sessionId}`
-  ).once("value");
+async function finalizeBill(
+  sessionId
+) {
 
-  const session = snap.val();
+  const snap =
+    await db
+      .ref(
+        `sessions/${sessionId}`
+      )
+      .once(
+        "value"
+      );
 
-  if (!session) return;
 
-  const total = calculateTotal(session.items || {});
+  const session =
+    snap.val();
 
-  if (total <= 0) {
-    alert("There are no billable items.");
+
+  if (
+    !session
+  ) {
+
     return;
+
   }
 
-  await db.ref(`sessions/${sessionId}`).update({
-    total,
-    "bill/status": "finalized",
-    "bill/finalizedAt":
-      firebase.database.ServerValue.TIMESTAMP,
-    latestRequest: {
-      type: "bill",
-      label: "Bill finalised",
-      status: "completed",
-      completedAt:
-        firebase.database.ServerValue.TIMESTAMP
-    },
-    lastActivityAt:
-      firebase.database.ServerValue.TIMESTAMP
-  });
+
+  const total =
+    calculateTotal(
+      session.items || {}
+    );
+
+
+  if (
+    total <= 0
+  ) {
+
+    alert(
+      "There are no billable items."
+    );
+
+    return;
+
+  }
+
+
+  await db
+    .ref(
+      `sessions/${sessionId}`
+    )
+    .update({
+
+      total,
+
+      "bill/status":
+        "finalized",
+
+      "bill/finalizedAt":
+        firebase.database
+          .ServerValue
+          .TIMESTAMP,
+
+      latestRequest: {
+
+        type:
+          "bill",
+
+        label:
+          "Bill finalised",
+
+        status:
+          "completed",
+
+        completedAt:
+          firebase.database
+            .ServerValue
+            .TIMESTAMP
+
+      },
+
+      lastActivityAt:
+        firebase.database
+          .ServerValue
+          .TIMESTAMP
+
+    });
+
 }
 
 
@@ -1448,114 +3572,260 @@ async function finalizeBill(sessionId) {
    NORMAL PAID SESSION CLOSURE
    ========================================================= */
 
-async function closePaidSession(sessionId) {
-  const snap = await db.ref(
-    `sessions/${sessionId}`
-  ).once("value");
+async function closePaidSession(
+  sessionId
+) {
 
-  const session = snap.val();
+  const snap =
+    await db
+      .ref(
+        `sessions/${sessionId}`
+      )
+      .once(
+        "value"
+      );
+
+
+  const session =
+    snap.val();
+
 
   if (
+
     !session ||
+
     !session.bill ||
-    session.bill.status !== "paid"
+
+    session.bill.status !==
+      "paid"
+
   ) {
+
     alert(
       "The session can only be closed normally after payment."
     );
+
     return;
+
   }
 
-  const label = guestLabel(sessionId, session);
 
-  const confirmed = confirm(
-    `Close ${label} and end this paid session?`
+  const label =
+    guestLabel(
+      sessionId,
+      session
+    );
+
+
+  const confirmed =
+    confirm(
+      `Close ${label} and end this paid session?`
+    );
+
+
+  if (
+    !confirmed
+  ) {
+
+    return;
+
+  }
+
+
+  await closeSessionAtomic(
+    sessionId,
+    "paid"
   );
 
-  if (!confirmed) return;
-
-  await closeSessionAtomic(sessionId, "paid");
 }
 
 
 /* =========================================================
-   WAITER / MANAGER OVERRIDE
+   WAITER / MANAGER SESSION OVERRIDE
    ========================================================= */
 
 async function endSessionOverride(
   sessionId,
   reason = "waiter_override"
 ) {
-  const snap = await db.ref(
-    `sessions/${sessionId}`
-  ).once("value");
 
-  const session = snap.val();
+  const snap =
+    await db
+      .ref(
+        `sessions/${sessionId}`
+      )
+      .once(
+        "value"
+      );
 
-  if (!session) return;
 
-  const label = guestLabel(sessionId, session);
+  const session =
+    snap.val();
 
-  const confirmed = confirm(
-    `End the active session for ${label}?\n\n` +
-    `Use this for an abandoned, broken or stuck session.`
+
+  if (
+    !session
+  ) {
+
+    return;
+
+  }
+
+
+  const label =
+    guestLabel(
+      sessionId,
+      session
+    );
+
+
+  const confirmed =
+    confirm(
+
+      `End the active session for ${label}?\n\n` +
+
+      `Use this for an abandoned, broken or stuck session.`
+
+    );
+
+
+  if (
+    !confirmed
+  ) {
+
+    return;
+
+  }
+
+
+  const secondConfirm =
+    confirm(
+      `Confirm: end ${label} now?`
+    );
+
+
+  if (
+    !secondConfirm
+  ) {
+
+    return;
+
+  }
+
+
+  await closeSessionAtomic(
+    sessionId,
+    reason
   );
 
-  if (!confirmed) return;
-
-  const secondConfirm = confirm(
-    `Confirm: end ${label} now?`
-  );
-
-  if (!secondConfirm) return;
-
-  await closeSessionAtomic(sessionId, reason);
 }
 
 
 /* =========================================================
    SESSION CLOSURE
 
-   No table is released because the new architecture does
-   not lock a table. Each guest session stands independently.
+   THERE IS NO TABLE RECORD TO RELEASE.
+
+   EACH GUEST SESSION IS INDEPENDENT.
    ========================================================= */
 
-async function closeSessionAtomic(sessionId, reason) {
-  const sessionSnap = await db.ref(
-    `sessions/${sessionId}`
-  ).once("value");
+async function closeSessionAtomic(
+  sessionId,
+  reason
+) {
 
-  const session = sessionSnap.val();
+  const sessionSnap =
+    await db
+      .ref(
+        `sessions/${sessionId}`
+      )
+      .once(
+        "value"
+      );
 
-  if (!session) return;
+
+  const session =
+    sessionSnap.val();
+
+
+  if (
+    !session
+  ) {
+
+    return;
+
+  }
+
 
   const finalStatus =
-    reason === "paid" ? "closed" : "ended";
+
+    reason === "paid"
+
+      ? "closed"
+
+      : "ended";
+
 
   const updates = {};
 
-  updates[`sessions/${sessionId}/status`] =
+
+  updates[
+    `sessions/${sessionId}/status`
+  ] =
     finalStatus;
 
-  updates[`sessions/${sessionId}/endedAt`] =
-    firebase.database.ServerValue.TIMESTAMP;
 
-  updates[`sessions/${sessionId}/closeReason`] =
+  updates[
+    `sessions/${sessionId}/endedAt`
+  ] =
+    firebase.database
+      .ServerValue
+      .TIMESTAMP;
+
+
+  updates[
+    `sessions/${sessionId}/closeReason`
+  ] =
     reason;
 
-  updates[`sessions/${sessionId}/latestRequest`] =
+
+  updates[
+    `sessions/${sessionId}/latestRequest`
+  ] =
     null;
 
-  updates[`sessions/${sessionId}/lastActivityAt`] =
-    firebase.database.ServerValue.TIMESTAMP;
 
-  await db.ref().update(updates);
+  updates[
+    `sessions/${sessionId}/lastActivityAt`
+  ] =
+    firebase.database
+      .ServerValue
+      .TIMESTAMP;
+
+
+  await db
+    .ref()
+    .update(
+      updates
+    );
+
 
   alert(
+
     reason === "paid"
-      ? `${guestLabel(sessionId, session)} closed successfully.`
-      : `${guestLabel(sessionId, session)} session ended.`
+
+      ? `${guestLabel(
+          sessionId,
+          session
+        )} closed successfully.`
+
+      : `${guestLabel(
+          sessionId,
+          session
+        )} session ended.`
+
   );
+
 }
 
 
@@ -1564,201 +3834,578 @@ async function closeSessionAtomic(sessionId, reason) {
    ========================================================= */
 
 function startManagerDashboard() {
-  db.ref("waiters").on("value", snap => {
-    const waiters = snap.val() || {};
-    renderManagerWaiterSlots(waiters);
-  });
 
-  db.ref("sessions").on("value", snap => {
-    const sessions = snap.val() || {};
-    renderManagerActiveSessions(sessions);
-  });
-}
-
-function renderManagerWaiterSlots(waiters) {
-  const container =
-    document.getElementById("managerWaiterSlots");
-
-  container.innerHTML = WAITER_SLOTS.map(slot => {
-    const waiter = waiters[slot] || {};
-    const name = String(waiter.name || "");
-    const active = waiter.active !== false;
-
-    const guestLink =
-      `${window.location.origin}${window.location.pathname}?guest=${slot}`;
-
-    const waiterLink =
-      `${window.location.origin}${window.location.pathname}?waiter=${slot}`;
-
-    return `
-      <div class="waiter-slot-card">
-        <div class="heading-row">
-          <div>
-            <div class="slot-name">Waiter ${escapeHtml(slot)}</div>
-            <div class="muted">
-              Permanent QR/service slot
-            </div>
-          </div>
-
-          <span class="badge ${active ? "active" : ""}">
-            ${active ? "Enabled" : "Disabled"}
-          </span>
-        </div>
-
-        <br>
-
-        <label>
-          Assigned staff name
-          <input
-            id="managerWaiterName${slot}"
-            type="text"
-            value="${escapeHtml(name)}"
-            placeholder="e.g. Thabo"
-          />
-        </label>
-
-        <button
-          class="success"
-          onclick="saveWaiterName('${slot}')"
-        >
-          Save Name
-        </button>
-
-        <button
-          class="${active ? "danger" : "blue"}"
-          onclick="toggleWaiterSlot('${slot}', ${active})"
-        >
-          ${active ? "Disable Slot" : "Enable Slot"}
-        </button>
-
-        <p class="muted">Guest QR link</p>
-        <div class="code">${escapeHtml(guestLink)}</div>
-
-        <button
-          class="secondary"
-          onclick="copyText('${escapeHtml(guestLink)}')"
-        >
-          Copy Guest Link
-        </button>
-
-        <button
-          class="blue"
-          onclick="location.href='?waiter=${slot}'"
-        >
-          Open Waiter Dashboard
-        </button>
-
-        <p class="muted">Waiter dashboard link</p>
-        <div class="code">${escapeHtml(waiterLink)}</div>
-      </div>
-    `;
-  }).join("");
-}
-
-async function saveWaiterName(slot) {
-  const input =
-    document.getElementById(`managerWaiterName${slot}`);
-
-  const name = input.value.trim();
-
-  await db.ref(`waiters/${slot}`).update({
-    slot: String(slot),
-    name,
-    updatedAt:
-      firebase.database.ServerValue.TIMESTAMP
-  });
-
-  alert(
-    name
-      ? `Waiter ${slot} is now assigned to ${name}.`
-      : `Waiter ${slot} returned to its placeholder name.`
-  );
-}
-
-async function toggleWaiterSlot(slot, currentlyActive) {
-  await db.ref(`waiters/${slot}`).update({
-    active: !currentlyActive,
-    updatedAt:
-      firebase.database.ServerValue.TIMESTAMP
-  });
-}
-
-async function copyText(text) {
   try {
-    await navigator.clipboard.writeText(text);
-    alert("Link copied.");
-  } catch (error) {
-    prompt("Copy this link:", text);
+
+    db
+      .ref(
+        "waiters"
+      )
+      .on(
+        "value",
+        snap => {
+
+          const waiters =
+            snap.val() || {};
+
+
+          renderManagerWaiterSlots(
+            waiters
+          );
+
+        }
+      );
+
+
+    db
+      .ref(
+        "sessions"
+      )
+      .on(
+        "value",
+        snap => {
+
+          const sessions =
+            snap.val() || {};
+
+
+          renderManagerActiveSessions(
+            sessions
+          );
+
+        }
+      );
+
   }
-}
+  catch (error) {
 
-function renderManagerActiveSessions(sessions) {
-  const container =
-    document.getElementById("managerActiveSessions");
+    console.error(error);
 
-  const active = Object.entries(sessions)
-    .filter(([, session]) =>
-      session && session.status === "active"
-    )
-    .sort((a, b) =>
-      Number(b[1].lastActivityAt || b[1].createdAt || 0) -
-      Number(a[1].lastActivityAt || a[1].createdAt || 0)
+    showStartupError(
+      error.message ||
+      "Could not load management dashboard."
     );
 
-  if (!active.length) {
-    container.innerHTML =
-      `<p class="muted">No active guest sessions.</p>`;
-    return;
   }
 
-  Promise.all(active.map(async ([sessionId, session]) => {
-    const waiter = await getWaiter(session.waiterSlot);
-    const waiterName = getWaiterDisplayName(waiter);
-    const label = guestLabel(sessionId, session);
-    const total = calculateTotal(session.items || {});
-    const request = session.latestRequest;
+}
 
-    return `
-      <div class="session-card">
-        <div class="heading-row">
-          <div>
-            <strong>${escapeHtml(label)}</strong>
-            <div class="muted">
-              ${escapeHtml(waiterName)}
-              · Waiter slot ${escapeHtml(session.waiterSlot || "?")}
-            </div>
-          </div>
-          <strong>${money(total)}</strong>
-        </div>
 
-        ${
-          request && request.status !== "completed"
-            ? `
-              <div class="status ${
-                request.status === "new" ? "danger" : ""
-              }">
-                ${escapeHtml(request.label || "")}
-                — ${escapeHtml(request.status || "")}
+/* =========================================================
+   MANAGER WAITER SLOTS
+   ========================================================= */
+
+function renderManagerWaiterSlots(
+  waiters
+) {
+
+  const container =
+    document.getElementById(
+      "managerWaiterSlots"
+    );
+
+
+  container.innerHTML =
+
+    WAITER_SLOTS
+      .map(
+        slot => {
+
+          const waiter =
+            waiters[slot] || {};
+
+
+          const name =
+            String(
+              waiter.name || ""
+            );
+
+
+          const active =
+            waiter.active !== false;
+
+
+          const guestLink =
+
+            `${window.location.origin}` +
+
+            `${window.location.pathname}` +
+
+            `?guest=${slot}`;
+
+
+          const waiterLink =
+
+            `${window.location.origin}` +
+
+            `${window.location.pathname}` +
+
+            `?waiter=${slot}`;
+
+
+          return `
+
+            <div class="waiter-slot-card">
+
+              <div class="heading-row">
+
+                <div>
+
+                  <div class="slot-name">
+                    Waiter ${escapeHtml(
+                      slot
+                    )}
+                  </div>
+
+                  <div class="muted">
+                    Permanent QR/service slot
+                  </div>
+
+                </div>
+
+
+                <span
+                  class="badge ${
+                    active
+                      ? "active"
+                      : ""
+                  }"
+                >
+
+                  ${
+                    active
+                      ? "Enabled"
+                      : "Disabled"
+                  }
+
+                </span>
+
               </div>
-            `
-            : ""
+
+
+              <br>
+
+
+              <label>
+
+                Assigned staff name
+
+                <input
+                  id="managerWaiterName${slot}"
+                  type="text"
+                  value="${escapeHtml(name)}"
+                  placeholder="e.g. Thabo"
+                />
+
+              </label>
+
+
+              <button
+                class="success"
+                onclick="saveWaiterName('${slot}')"
+              >
+                Save Name
+              </button>
+
+
+              <button
+                class="${
+                  active
+                    ? "danger"
+                    : "blue"
+                }"
+                onclick="toggleWaiterSlot(
+                  '${slot}',
+                  ${active}
+                )"
+              >
+
+                ${
+                  active
+                    ? "Disable Slot"
+                    : "Enable Slot"
+                }
+
+              </button>
+
+
+              <p class="muted">
+                Guest QR link
+              </p>
+
+
+              <div class="code">
+                ${escapeHtml(
+                  guestLink
+                )}
+              </div>
+
+
+              <button
+                class="secondary"
+                onclick="copyText(
+                  '${escapeHtml(
+                    guestLink
+                  )}'
+                )"
+              >
+                Copy Guest Link
+              </button>
+
+
+              <button
+                class="blue"
+                onclick="location.href='?waiter=${slot}'"
+              >
+                Open Waiter Dashboard
+              </button>
+
+
+              <p class="muted">
+                Waiter dashboard link
+              </p>
+
+
+              <div class="code">
+                ${escapeHtml(
+                  waiterLink
+                )}
+              </div>
+
+            </div>
+
+          `;
+
+        }
+      )
+      .join("");
+
+}
+
+
+/* =========================================================
+   SAVE WAITER NAME
+   ========================================================= */
+
+async function saveWaiterName(
+  slot
+) {
+
+  const input =
+    document.getElementById(
+      `managerWaiterName${slot}`
+    );
+
+
+  const name =
+    input.value.trim();
+
+
+  await db
+    .ref(
+      `waiters/${slot}`
+    )
+    .update({
+
+      slot:
+        String(slot),
+
+      name,
+
+      updatedAt:
+        firebase.database
+          .ServerValue
+          .TIMESTAMP
+
+    });
+
+
+  alert(
+
+    name
+
+      ? `Waiter ${slot} is now assigned to ${name}.`
+
+      : `Waiter ${slot} returned to its placeholder name.`
+
+  );
+
+}
+
+
+/* =========================================================
+   ENABLE / DISABLE WAITER SLOT
+   ========================================================= */
+
+async function toggleWaiterSlot(
+  slot,
+  currentlyActive
+) {
+
+  await db
+    .ref(
+      `waiters/${slot}`
+    )
+    .update({
+
+      active:
+        !currentlyActive,
+
+      updatedAt:
+        firebase.database
+          .ServerValue
+          .TIMESTAMP
+
+    });
+
+}
+
+
+/* =========================================================
+   COPY LINK
+   ========================================================= */
+
+async function copyText(
+  text
+) {
+
+  try {
+
+    await navigator
+      .clipboard
+      .writeText(
+        text
+      );
+
+
+    alert(
+      "Link copied."
+    );
+
+  }
+  catch (error) {
+
+    prompt(
+      "Copy this link:",
+      text
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   MANAGER ACTIVE SESSIONS
+   ========================================================= */
+
+async function renderManagerActiveSessions(
+  sessions
+) {
+
+  const container =
+    document.getElementById(
+      "managerActiveSessions"
+    );
+
+
+  const active =
+
+    Object.entries(
+      sessions
+    )
+
+      .filter(
+        ([, session]) =>
+
+          session &&
+
+          session.status ===
+            "active"
+
+      )
+
+      .sort(
+        (a, b) =>
+
+          Number(
+            b[1].lastActivityAt ||
+            b[1].createdAt ||
+            0
+          )
+
+          -
+
+          Number(
+            a[1].lastActivityAt ||
+            a[1].createdAt ||
+            0
+          )
+      );
+
+
+  if (
+    !active.length
+  ) {
+
+    container.innerHTML = `
+
+      <p class="muted">
+        No active guest sessions.
+      </p>
+
+    `;
+
+    return;
+
+  }
+
+
+  const cards =
+    await Promise.all(
+
+      active.map(
+
+        async (
+          [sessionId, session]
+        ) => {
+
+          const waiter =
+            await getWaiter(
+              session.waiterSlot
+            );
+
+
+          const waiterName =
+            getWaiterDisplayName(
+              waiter
+            );
+
+
+          const label =
+            guestLabel(
+              sessionId,
+              session
+            );
+
+
+          const total =
+            calculateTotal(
+              session.items || {}
+            );
+
+
+          const request =
+            session.latestRequest;
+
+
+          return `
+
+            <div class="session-card">
+
+              <div class="heading-row">
+
+                <div>
+
+                  <strong>
+                    ${escapeHtml(
+                      label
+                    )}
+                  </strong>
+
+                  <div class="muted">
+
+                    ${escapeHtml(
+                      waiterName
+                    )}
+
+                    · Waiter slot
+
+                    ${escapeHtml(
+                      session.waiterSlot ||
+                      "?"
+                    )}
+
+                  </div>
+
+                </div>
+
+
+                <strong>
+                  ${money(
+                    total
+                  )}
+                </strong>
+
+              </div>
+
+
+              ${
+                request &&
+                request.status !==
+                  "completed"
+
+                  ? `
+
+                    <div
+                      class="status ${
+                        request.status === "new"
+                          ? "danger"
+                          : ""
+                      }"
+                    >
+
+                      ${escapeHtml(
+                        request.label || ""
+                      )}
+
+                      —
+
+                      ${escapeHtml(
+                        request.status || ""
+                      )}
+
+                    </div>
+
+                  `
+
+                  : ""
+              }
+
+
+              <button
+                class="danger"
+                onclick="endSessionOverride(
+                  '${sessionId}',
+                  'manager_override'
+                )"
+              >
+                Manager End Session
+              </button>
+
+            </div>
+
+          `;
+
         }
 
-        <button
-          class="danger"
-          onclick="endSessionOverride(
-            '${sessionId}',
-            'manager_override'
-          )"
-        >
-          Manager End Session
-        </button>
-      </div>
-    `;
-  })).then(cards => {
-    container.innerHTML = cards.join("");
-  });
+      )
+
+    );
+
+
+  container.innerHTML =
+    cards.join("");
+
 }
+
+
+/* =========================================================
+   START EASYBEV
+   ========================================================= */
+
+initialiseEasyBev();
+
 </script>
 
 </body>
