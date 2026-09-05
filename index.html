@@ -9,9 +9,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -27,6 +25,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 16px;
     }
 
     header h1 {
@@ -34,12 +33,10 @@
       font-size: 22px;
     }
 
-    header small {
-      opacity: 0.75;
-    }
+    header small { opacity: 0.75; }
 
     .container {
-      max-width: 1000px;
+      max-width: 960px;
       margin: 0 auto;
       padding: 22px 16px 60px;
     }
@@ -52,13 +49,9 @@
       box-shadow: 0 2px 10px rgba(0,0,0,0.07);
     }
 
-    .hidden {
-      display: none !important;
-    }
+    .hidden { display: none !important; }
 
-    h2, h3 {
-      margin-top: 0;
-    }
+    h2, h3 { margin-top: 0; }
 
     button {
       border: 0;
@@ -71,9 +64,7 @@
       margin: 4px;
     }
 
-    button:hover {
-      opacity: 0.9;
-    }
+    button:hover { opacity: 0.9; }
 
     button:disabled {
       opacity: 0.4;
@@ -85,25 +76,10 @@
       color: #111827;
     }
 
-    button.success {
-      background: #15803d;
-    }
-
-    button.warning {
-      background: #d97706;
-    }
-
-    button.danger {
-      background: #b91c1c;
-    }
-
-    button.blue {
-      background: #2563eb;
-    }
-
-    button.purple {
-      background: #7c3aed;
-    }
+    button.success { background: #15803d; }
+    button.warning { background: #d97706; }
+    button.danger { background: #b91c1c; }
+    button.blue { background: #2563eb; }
 
     input, select {
       width: 100%;
@@ -114,13 +90,16 @@
       margin: 7px 0;
     }
 
-    .request-grid {
+    .request-grid,
+    .home-grid,
+    .manager-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 10px;
     }
 
-    .request-grid button {
+    .request-grid button,
+    .home-grid button {
       width: 100%;
       margin: 0;
       min-height: 58px;
@@ -133,26 +112,22 @@
       background: #eef2ff;
     }
 
-    .status.success {
-      background: #dcfce7;
-    }
-
-    .status.warning {
-      background: #fef3c7;
-    }
-
-    .status.danger {
-      background: #fee2e2;
-    }
+    .status.success { background: #dcfce7; }
+    .status.warning { background: #fef3c7; }
+    .status.danger { background: #fee2e2; }
 
     .bill-row,
-    .item-row {
+    .item-row,
+    .manager-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 12px;
       padding: 10px 0;
       border-bottom: 1px solid #eee;
     }
+
+    .manager-row input { margin: 0; }
 
     .total {
       font-size: 25px;
@@ -161,27 +136,19 @@
       margin-top: 16px;
     }
 
-    .waiter-table {
+    .session-card,
+    .waiter-slot-card {
       border: 1px solid #e5e7eb;
       border-radius: 12px;
       padding: 16px;
       margin-bottom: 14px;
-      background: white;
     }
 
-    .waiter-table.active {
+    .session-card.active {
       border: 2px solid #2563eb;
     }
 
-    .waiter-table.stale {
-      border: 2px solid #d97706;
-    }
-
-    .waiter-table.orphan {
-      border: 2px solid #b91c1c;
-    }
-
-    .table-heading {
+    .heading-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -204,16 +171,6 @@
     .badge.alert {
       background: #fee2e2;
       color: #991b1b;
-    }
-
-    .badge.warning {
-      background: #fef3c7;
-      color: #92400e;
-    }
-
-    .badge.blue {
-      background: #dbeafe;
-      color: #1d4ed8;
     }
 
     .modal {
@@ -259,53 +216,37 @@
       font-weight: bold;
     }
 
-    .admin-stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-    }
-
-    .admin-stat {
-      background: #f9fafb;
-      border-radius: 12px;
-      padding: 16px;
-      text-align: center;
-    }
-
-    .admin-stat-number {
-      font-size: 30px;
-      font-weight: bold;
-    }
-
-    .admin-detail {
-      margin: 6px 0;
-      line-height: 1.5;
-    }
-
-    .session-id {
-      font-family: monospace;
-      font-size: 12px;
+    .code {
+      font-family: Consolas, Monaco, monospace;
+      background: #f3f4f6;
+      border-radius: 7px;
+      padding: 7px 9px;
       word-break: break-all;
-      color: #6b7280;
+      font-size: 13px;
     }
 
-    hr {
-      border: 0;
-      border-top: 1px solid #eee;
-      margin: 18px 0;
+    .slot-name {
+      font-weight: 700;
+      font-size: 18px;
     }
 
     @media (max-width: 650px) {
       .request-grid,
-      .admin-stats {
+      .home-grid,
+      .manager-grid {
         grid-template-columns: 1fr;
+      }
+
+      .manager-row,
+      .heading-row {
+        align-items: flex-start;
+        flex-direction: column;
       }
     }
   </style>
 </head>
 
 <body>
-
 <header>
   <h1>EasyBev</h1>
   <small id="headerMode"></small>
@@ -316,48 +257,29 @@
   <!-- HOME -->
   <section id="homeView" class="card hidden">
     <h2>EasyBev Prototype</h2>
-    <p>Choose a demo view.</p>
+    <p class="muted">
+      Guest QR codes are linked to waiter slots. The manager assigns the real waiter name to each slot.
+    </p>
 
-    <button onclick="location.href='?table=7'">
-      Guest – Table 7
-    </button>
-
-    <button onclick="location.href='?table=8'">
-      Guest – Table 8
-    </button>
-
-    <button
-      class="blue"
-      onclick="location.href='?waiter=1'"
-    >
-      Waiter – Thabo
-    </button>
-
-    <button
-      class="purple"
-      onclick="location.href='?admin=1'"
-    >
-      Restaurant Admin
-    </button>
+    <div class="home-grid">
+      <button onclick="location.href='?guest=1'">Guest QR – Waiter 1</button>
+      <button onclick="location.href='?guest=2'">Guest QR – Waiter 2</button>
+      <button class="blue" onclick="location.href='?waiter=1'">Waiter Dashboard – Slot 1</button>
+      <button class="blue" onclick="location.href='?waiter=2'">Waiter Dashboard – Slot 2</button>
+      <button class="success" onclick="location.href='?manager=1'">Management Dashboard</button>
+    </div>
   </section>
 
 
-  <!-- ========================= -->
   <!-- GUEST VIEW -->
-  <!-- ========================= -->
-
   <section id="guestView" class="hidden">
 
     <div class="card">
-      <h2>
-        Table
-        <span id="guestTableNumber"></span>
-      </h2>
+      <h2 id="guestServiceHeading">EasyBev Service</h2>
 
       <div id="guestVerification">
-
         <p id="verificationMessage">
-          Verify your mobile number to start your table session.
+          Verify your mobile number to start your service session.
         </p>
 
         <input
@@ -366,12 +288,9 @@
           placeholder="Mobile number e.g. 0821234567"
         />
 
-        <button onclick="requestOtp()">
-          Send OTP
-        </button>
+        <button onclick="requestOtp()">Send OTP</button>
 
         <div id="otpArea" class="hidden">
-
           <input
             id="guestOtp"
             type="number"
@@ -379,29 +298,21 @@
           />
 
           <p class="muted">
-            Demo OTP:
-            <strong>123456</strong>
+            Demo OTP: <strong>123456</strong>
           </p>
 
-          <button
-            class="success"
-            onclick="verifyOtp()"
-          >
-            Verify
-          </button>
-
+          <button class="success" onclick="verifyOtp()">Verify</button>
         </div>
 
         <div id="verificationStatus"></div>
       </div>
 
       <div id="guestSessionInfo" class="hidden">
-
         <div class="status success">
-          Connected to Table
-          <strong id="connectedTable"></strong>
+          Connected to <strong id="connectedWaiter"></strong>
+          <br />
+          <span class="muted">Session: <strong id="guestSessionCode"></strong></span>
         </div>
-
       </div>
     </div>
 
@@ -412,18 +323,9 @@
         <h3>What do you need?</h3>
 
         <div class="request-grid">
-
-          <button onclick="sendRequest('assistance')">
-            Call Waiter
-          </button>
-
-          <button onclick="sendRequest('drinks')">
-            Order Drinks
-          </button>
-
-          <button onclick="sendRequest('food')">
-            Order Food
-          </button>
+          <button onclick="sendRequest('assistance')">Call Waiter</button>
+          <button onclick="sendRequest('drinks')">Order Drinks</button>
+          <button onclick="sendRequest('food')">Order Food</button>
 
           <button
             id="guestBillButton"
@@ -432,7 +334,6 @@
           >
             Request Bill
           </button>
-
         </div>
 
         <div id="guestRequestStatus"></div>
@@ -440,14 +341,12 @@
 
 
       <div class="card">
-
         <h3>Your Bill</h3>
 
         <div id="guestBillItems"></div>
 
         <div class="total">
-          Total:
-          <span id="guestTotal">R0.00</span>
+          Total: <span id="guestTotal">R0.00</span>
         </div>
 
         <div id="guestBillStatus"></div>
@@ -459,131 +358,63 @@
         >
           Pay
         </button>
-
       </div>
 
     </div>
 
 
     <div id="guestClosedView" class="card hidden">
-
       <h2>Session ended</h2>
-
-      <p>
-        This table session has been closed.
-      </p>
-
-      <button onclick="location.reload()">
-        Start / Reconnect
-      </button>
-
+      <p>This EasyBev service session has been closed.</p>
+      <button onclick="restartGuestSession()">Start New Session</button>
     </div>
 
   </section>
 
 
-
-  <!-- ========================= -->
   <!-- WAITER VIEW -->
-  <!-- ========================= -->
-
   <section id="waiterView" class="hidden">
 
     <div class="card">
-      <h2>Thabo's Tables</h2>
-
+      <h2 id="waiterDashboardTitle">Waiter Dashboard</h2>
       <p class="muted">
-        Active guest sessions and table requests appear here.
+        All active guest sessions assigned to this waiter QR appear here.
       </p>
     </div>
 
-    <div id="waiterTables"></div>
+    <div id="waiterSessions"></div>
 
   </section>
 
 
-
-  <!-- ========================= -->
-  <!-- ADMIN VIEW -->
-  <!-- ========================= -->
-
-  <section id="adminView" class="hidden">
+  <!-- MANAGER VIEW -->
+  <section id="managerView" class="hidden">
 
     <div class="card">
-
-      <h2>Restaurant Admin</h2>
-
+      <h2>Management Dashboard</h2>
       <p class="muted">
-        Manager-level visibility and session recovery controls.
+        Assign staff names to permanent waiter slots. Guest QR links remain unchanged when staff change.
       </p>
-
-      <div class="admin-stats">
-
-        <div class="admin-stat">
-          <div
-            id="adminActiveCount"
-            class="admin-stat-number"
-          >
-            0
-          </div>
-          <div>Active Sessions</div>
-        </div>
-
-        <div class="admin-stat">
-          <div
-            id="adminAvailableCount"
-            class="admin-stat-number"
-          >
-            0
-          </div>
-          <div>Available Tables</div>
-        </div>
-
-        <div class="admin-stat">
-          <div
-            id="adminProblemCount"
-            class="admin-stat-number"
-          >
-            0
-          </div>
-          <div>Session Issues</div>
-        </div>
-
-      </div>
-
     </div>
 
+    <div id="managerWaiterSlots"></div>
 
     <div class="card">
-
-      <h3>Table Management</h3>
-
-      <p class="muted">
-        The administrator can recover stuck,
-        orphaned or incorrectly locked tables.
-      </p>
-
+      <h3>Active Sessions</h3>
+      <div id="managerActiveSessions"></div>
     </div>
-
-    <div id="adminTables"></div>
 
   </section>
 
 </div>
 
 
-
-<!-- ========================= -->
 <!-- ADD ITEMS MODAL -->
-<!-- ========================= -->
-
 <div id="itemModal" class="modal hidden">
-
   <div class="modal-content">
 
     <h2>
-      Add Items – Table
-      <span id="itemModalTable"></span>
+      Add Items – <span id="itemModalGuest"></span>
     </h2>
 
     <input
@@ -608,56 +439,32 @@
       placeholder="Quantity"
     />
 
-    <button
-      class="blue"
-      onclick="addItemToBill()"
-    >
-      Add Item
-    </button>
+    <button class="blue" onclick="addItemToBill()">Add Item</button>
 
     <div class="added-items">
-
       <strong>Current Bill</strong>
-
       <div id="modalBillItems"></div>
-
-      <div
-        class="total"
-        id="modalTotal"
-      >
-        R0.00
-      </div>
-
+      <div class="total" id="modalTotal">R0.00</div>
     </div>
 
     <div class="modal-actions">
-
-      <button
-        class="secondary"
-        onclick="closeItemModal()"
-      >
-        Cancel
-      </button>
-
-      <button
-        class="success"
-        onclick="doneAddingItems()"
-      >
-        Done
-      </button>
-
+      <button class="secondary" onclick="closeItemModal()">Cancel</button>
+      <button class="success" onclick="doneAddingItems()">Done</button>
     </div>
 
   </div>
-
 </div>
 
 
-
 <script>
-
 /* =========================================================
    FIREBASE
+
+   IMPORTANT:
+   Keep the exact Firebase configuration values from your
+   CURRENT WORKING EasyBev index.html here.
+
+   No Firebase Console changes are required for this build.
    ========================================================= */
 
 const firebaseConfig = {
@@ -671,83 +478,53 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
-
 const db = firebase.database();
-
 
 
 /* =========================================================
    GENERAL
    ========================================================= */
 
-const params =
-  new URLSearchParams(
-    window.location.search
-  );
+const params = new URLSearchParams(window.location.search);
 
-const tableId =
-  params.get("table");
+const managerMode = params.get("manager") === "1";
+const waiterSlot = params.get("waiter");
+let guestSlot = params.get("guest");
 
-const waiterMode =
-  params.get("waiter") === "1";
+/*
+  Backward compatibility for the old prototype links.
+  Old Table 7 becomes Waiter Slot 1.
+  Old Table 8 becomes Waiter Slot 2.
 
-const adminMode =
-  params.get("admin") === "1";
+  Nothing under /tables is required by the new architecture.
+*/
+const legacyTable = params.get("table");
 
+if (!guestSlot && legacyTable) {
+  guestSlot = legacyTable === "8" ? "2" : "1";
+}
+
+const WAITER_SLOTS = ["1", "2", "3", "4", "5", "6"];
 
 let currentSessionId = null;
 let currentSession = null;
+let currentGuestWaiterName = null;
 
 let itemModalSessionId = null;
-let itemModalTableId = null;
-
-const DEMO_TABLES = ["7", "8"];
-
-
+let itemModalGuestLabel = null;
+let itemModalWaiterName = null;
 
 function money(value) {
-
-  return (
-    "R" +
-    Number(value || 0).toFixed(2)
-  );
+  return "R" + Number(value || 0).toFixed(2);
 }
 
-
-
 function cleanPhone(phone) {
-
   return String(phone || "")
     .replace(/\s+/g, "")
     .replace(/-/g, "");
 }
 
-
-
-function maskPhone(phone) {
-
-  const cleaned =
-    cleanPhone(phone);
-
-  if (!cleaned) {
-    return "Unknown";
-  }
-
-  if (cleaned.length <= 4) {
-    return cleaned;
-  }
-
-  return (
-    cleaned.slice(0, 3) +
-    "****" +
-    cleaned.slice(-3)
-  );
-}
-
-
-
 function escapeHtml(value) {
-
   return String(value || "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
@@ -756,202 +533,180 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-
-
 function calculateTotal(items) {
+  if (!items) return 0;
 
-  if (!items)
-    return 0;
-
-  let total = 0;
-
-  Object.values(items)
-    .forEach(item => {
-
-      total +=
-        Number(item.price || 0) *
-        Number(item.qty || 1);
-
-    });
-
-  return total;
+  return Object.values(items).reduce((total, item) => {
+    return total +
+      Number(item.price || 0) *
+      Number(item.qty || 1);
+  }, 0);
 }
 
+function makeSessionCode(sessionId) {
+  const raw = String(sessionId || "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .slice(-5)
+    .toUpperCase();
 
-
-function formatDate(timestamp) {
-
-  if (!timestamp)
-    return "Unknown";
-
-  try {
-
-    return new Date(
-      timestamp
-    ).toLocaleString();
-
-  }
-  catch {
-
-    return "Unknown";
-  }
+  return raw ? `G-${raw}` : "GUEST";
 }
 
+function waiterFallbackName(slot) {
+  return `Waiter ${slot}`;
+}
+
+function guestLabel(sessionId, session) {
+  return session && session.sessionCode
+    ? session.sessionCode
+    : makeSessionCode(sessionId);
+}
+
+function sessionStorageKey(slot) {
+  return `easybev_guest_session_${slot}`;
+}
+
+function phoneStorageKey(slot) {
+  return `easybev_guest_phone_${slot}`;
+}
+
+async function getWaiter(slot) {
+  const snap = await db.ref(`waiters/${slot}`).once("value");
+  const waiter = snap.val() || {};
+
+  return {
+    slot: String(slot),
+    name: String(waiter.name || "").trim(),
+    active: waiter.active !== false
+  };
+}
+
+function getWaiterDisplayName(waiter) {
+  return waiter && waiter.name
+    ? waiter.name
+    : waiterFallbackName(waiter ? waiter.slot : "");
+}
+
+async function ensureWaiterSlots() {
+  const snap = await db.ref("waiters").once("value");
+  const existing = snap.val() || {};
+  const updates = {};
+
+  WAITER_SLOTS.forEach(slot => {
+    if (!existing[slot]) {
+      updates[`waiters/${slot}`] = {
+        slot,
+        name: "",
+        active: true,
+        createdAt: firebase.database.ServerValue.TIMESTAMP
+      };
+    }
+  });
+
+  if (Object.keys(updates).length) {
+    await db.ref().update(updates);
+  }
+}
 
 
 /* =========================================================
    ROUTING
    ========================================================= */
 
-if (adminMode) {
+(async function route() {
+  await ensureWaiterSlots();
 
-  document.getElementById(
-    "adminView"
-  ).classList.remove("hidden");
+  if (managerMode) {
+    document.getElementById("managerView").classList.remove("hidden");
+    document.getElementById("headerMode").textContent = "Management";
+    startManagerDashboard();
+    return;
+  }
 
-  document.getElementById(
-    "headerMode"
-  ).textContent =
-    "Restaurant Admin";
+  if (waiterSlot) {
+    document.getElementById("waiterView").classList.remove("hidden");
+    document.getElementById("headerMode").textContent = "Waiter";
+    startWaiterDashboard(waiterSlot);
+    return;
+  }
 
-  startAdminDashboard();
+  if (guestSlot) {
+    document.getElementById("guestView").classList.remove("hidden");
+    document.getElementById("headerMode").textContent = "Guest";
+    startGuestFlow();
+    return;
+  }
 
-}
-else if (waiterMode) {
-
-  document.getElementById(
-    "waiterView"
-  ).classList.remove("hidden");
-
-  document.getElementById(
-    "headerMode"
-  ).textContent =
-    "Waiter";
-
-  startWaiterDashboard();
-
-}
-else if (tableId) {
-
-  document.getElementById(
-    "guestView"
-  ).classList.remove("hidden");
-
-  document.getElementById(
-    "guestTableNumber"
-  ).textContent =
-    tableId;
-
-  document.getElementById(
-    "headerMode"
-  ).textContent =
-    "Guest";
-
-  startGuestFlow();
-
-}
-else {
-
-  document.getElementById(
-    "homeView"
-  ).classList.remove("hidden");
-
-}
-
+  document.getElementById("homeView").classList.remove("hidden");
+})();
 
 
 /* =========================================================
-   GUEST SESSION RECOVERY
+   GUEST FLOW
    ========================================================= */
 
 async function startGuestFlow() {
+  const waiter = await getWaiter(guestSlot);
+  currentGuestWaiterName = getWaiterDisplayName(waiter);
 
-  const rememberedPhone =
-    localStorage.getItem(
-      "easybev_guest_phone"
-    );
+  document.getElementById("guestServiceHeading").textContent =
+    `Service by ${currentGuestWaiterName}`;
 
-  if (rememberedPhone) {
-
-    document.getElementById(
-      "guestPhone"
-    ).value =
-      rememberedPhone;
-
+  if (!waiter.active) {
+    document.getElementById("guestVerification").innerHTML = `
+      <div class="status warning">
+        This waiter service slot is currently unavailable.
+        Please ask a staff member for assistance.
+      </div>
+    `;
+    return;
   }
 
+  const rememberedPhone =
+    localStorage.getItem(phoneStorageKey(guestSlot));
 
-  const tableSnap =
-    await db.ref(
-      `tables/${tableId}`
+  if (rememberedPhone) {
+    document.getElementById("guestPhone").value = rememberedPhone;
+  }
+
+  const rememberedSessionId =
+    localStorage.getItem(sessionStorageKey(guestSlot));
+
+  if (rememberedSessionId) {
+    const snap = await db.ref(
+      `sessions/${rememberedSessionId}`
     ).once("value");
 
-  const table =
-    tableSnap.val();
-
-
-  if (
-    table &&
-    table.activeSessionId
-  ) {
-
-    const sessionSnap =
-      await db.ref(
-        `sessions/${table.activeSessionId}`
-      ).once("value");
-
-    const session =
-      sessionSnap.val();
-
+    const session = snap.val();
 
     if (
       session &&
-      session.status === "active"
+      session.status === "active" &&
+      String(session.waiterSlot) === String(guestSlot)
     ) {
+      currentSessionId = rememberedSessionId;
 
-      currentSessionId =
-        table.activeSessionId;
-
-
-      document.getElementById(
-        "verificationMessage"
-      ).innerHTML =
-        `
-        <strong>
-          An active session already exists
-          for Table ${escapeHtml(tableId)}.
-        </strong>
-
-        <br><br>
-
-        Verify with the same mobile number
-        to reconnect.
-        `;
-
+      document.getElementById("verificationMessage").innerHTML = `
+        <strong>An active EasyBev session was found on this device.</strong><br><br>
+        Verify with the same mobile number to reconnect.
+      `;
 
       if (
         rememberedPhone &&
-        cleanPhone(session.guestPhone) ===
-        cleanPhone(rememberedPhone)
+        cleanPhone(session.guestPhone) === cleanPhone(rememberedPhone)
       ) {
-
-        connectGuestToSession(
-          currentSessionId
-        );
-
+        connectGuestToSession(rememberedSessionId);
       }
 
       return;
     }
+
+    localStorage.removeItem(sessionStorageKey(guestSlot));
   }
 
-
-  document.getElementById(
-    "verificationMessage"
-  ).textContent =
-    "Verify your mobile number to start your table session.";
+  document.getElementById("verificationMessage").textContent =
+    `Verify your mobile number to connect to ${currentGuestWaiterName}.`;
 }
-
 
 
 /* =========================================================
@@ -959,369 +714,172 @@ async function startGuestFlow() {
    ========================================================= */
 
 function requestOtp() {
-
-  const phone =
-    cleanPhone(
-      document.getElementById(
-        "guestPhone"
-      ).value
-    );
-
+  const phone = cleanPhone(
+    document.getElementById("guestPhone").value
+  );
 
   if (phone.length < 9) {
-
-    document.getElementById(
-      "verificationStatus"
-    ).innerHTML =
-      `
-      <div class="status danger">
-        Enter a valid mobile number.
-      </div>
-      `;
-
+    document.getElementById("verificationStatus").innerHTML =
+      `<div class="status danger">Enter a valid mobile number.</div>`;
     return;
   }
 
+  sessionStorage.setItem("easybev_pending_phone", phone);
 
-  sessionStorage.setItem(
-    "easybev_pending_phone",
-    phone
-  );
+  document.getElementById("otpArea")
+    .classList.remove("hidden");
 
-
-  document.getElementById(
-    "otpArea"
-  ).classList.remove("hidden");
-
-
-  document.getElementById(
-    "verificationStatus"
-  ).innerHTML =
-    `
-    <div class="status">
-      OTP sent.
-      Demo code is 123456.
-    </div>
-    `;
+  document.getElementById("verificationStatus").innerHTML =
+    `<div class="status">OTP sent. Demo code is 123456.</div>`;
 }
-
-
 
 async function verifyOtp() {
-
-  const otp =
-    document.getElementById(
-      "guestOtp"
-    ).value;
-
-  const phone =
-    sessionStorage.getItem(
-      "easybev_pending_phone"
-    );
-
+  const otp = document.getElementById("guestOtp").value;
+  const phone = sessionStorage.getItem("easybev_pending_phone");
 
   if (otp !== "123456") {
-
-    document.getElementById(
-      "verificationStatus"
-    ).innerHTML =
-      `
-      <div class="status danger">
-        Incorrect OTP.
-      </div>
-      `;
-
+    document.getElementById("verificationStatus").innerHTML =
+      `<div class="status danger">Incorrect OTP.</div>`;
     return;
   }
 
+  if (!phone) return;
 
-  if (!phone)
-    return;
+  localStorage.setItem(phoneStorageKey(guestSlot), phone);
 
-
-  localStorage.setItem(
-    "easybev_guest_phone",
-    phone
-  );
-
-
-  await findOrCreateSession(
-    phone
-  );
+  await findOrCreateGuestSession(phone);
 }
-
 
 
 /* =========================================================
-   FIND OR CREATE SESSION
+   FIND OR CREATE GUEST SESSION
+
+   A waiter slot can have MANY simultaneous active sessions.
+   That is the key change from the old table architecture.
    ========================================================= */
 
-async function findOrCreateSession(phone) {
+async function findOrCreateGuestSession(phone) {
+  const sessionsSnap = await db.ref("sessions").once("value");
+  const sessions = sessionsSnap.val() || {};
 
-  const tableRef =
-    db.ref(
-      `tables/${tableId}`
-    );
-
-  const tableSnap =
-    await tableRef.once(
-      "value"
-    );
-
-  const table =
-    tableSnap.val() || {};
-
-
-  if (table.activeSessionId) {
-
-    const existingSessionId =
-      table.activeSessionId;
-
-    const sessionSnap =
-      await db.ref(
-        `sessions/${existingSessionId}`
-      ).once("value");
-
-    const session =
-      sessionSnap.val();
-
-
-    if (
+  const existing = Object.entries(sessions).find(
+    ([, session]) =>
       session &&
-      session.status === "active"
-    ) {
+      session.status === "active" &&
+      String(session.waiterSlot) === String(guestSlot) &&
+      cleanPhone(session.guestPhone) === cleanPhone(phone)
+  );
 
-      if (
-        cleanPhone(session.guestPhone) ===
-        cleanPhone(phone)
-      ) {
+  if (existing) {
+    const [existingSessionId] = existing;
 
-        connectGuestToSession(
-          existingSessionId
-        );
-
-        return;
-      }
-
-
-      document.getElementById(
-        "verificationStatus"
-      ).innerHTML =
-        `
-        <div class="status danger">
-
-          Table ${escapeHtml(tableId)}
-          currently has an active session
-          belonging to another verified guest.
-
-          Please ask your waiter for assistance.
-
-        </div>
-        `;
-
-      return;
-    }
-
-
-    await tableRef.update({
-
-      activeSessionId: null,
-
-      status: "available",
-
-      updatedAt:
-        firebase.database.ServerValue.TIMESTAMP
-
-    });
-  }
-
-
-  const sessionRef =
-    db.ref("sessions").push();
-
-  const newSessionId =
-    sessionRef.key;
-
-
-  const newSession = {
-
-    tableId:
-      String(tableId),
-
-    guestPhone:
-      phone,
-
-    status:
-      "active",
-
-    createdAt:
-      firebase.database.ServerValue.TIMESTAMP,
-
-    lastActivityAt:
-      firebase.database.ServerValue.TIMESTAMP,
-
-    latestRequest:
-      null,
-
-    bill: {
-      status: "open"
-    },
-
-    total:
-      0
-  };
-
-
-  const transaction =
-    await tableRef.transaction(
-      current => {
-
-        current =
-          current || {};
-
-
-        if (
-          current.activeSessionId
-        ) {
-
-          return;
-        }
-
-
-        return {
-
-          ...current,
-
-          tableId:
-            String(tableId),
-
-          status:
-            "occupied",
-
-          activeSessionId:
-            newSessionId,
-
-          updatedAt:
-            firebase.database.ServerValue.TIMESTAMP
-
-        };
-      }
+    localStorage.setItem(
+      sessionStorageKey(guestSlot),
+      existingSessionId
     );
 
-
-  if (!transaction.committed) {
-
-    alert(
-      "This table was claimed by another session. Please try again."
-    );
-
+    connectGuestToSession(existingSessionId);
     return;
   }
 
+  const sessionRef = db.ref("sessions").push();
+  const newSessionId = sessionRef.key;
+  const sessionCode = makeSessionCode(newSessionId);
 
-  await sessionRef.set(
-    newSession
-  );
+  const waiter = await getWaiter(guestSlot);
 
+  const newSession = {
+    waiterSlot: String(guestSlot),
+    waiterNameAtStart: getWaiterDisplayName(waiter),
+    guestPhone: phone,
+    sessionCode,
+    status: "active",
+    createdAt: firebase.database.ServerValue.TIMESTAMP,
+    lastActivityAt: firebase.database.ServerValue.TIMESTAMP,
+    latestRequest: null,
+    bill: {
+      status: "open"
+    },
+    total: 0
+  };
 
-  connectGuestToSession(
+  await sessionRef.set(newSession);
+
+  localStorage.setItem(
+    sessionStorageKey(guestSlot),
     newSessionId
   );
-}
 
+  connectGuestToSession(newSessionId);
+}
 
 
 /* =========================================================
    CONNECT GUEST
    ========================================================= */
 
-function connectGuestToSession(
-  sessionId
-) {
+function connectGuestToSession(sessionId) {
+  currentSessionId = sessionId;
 
-  currentSessionId =
-    sessionId;
+  document.getElementById("guestVerification")
+    .classList.add("hidden");
 
+  document.getElementById("guestSessionInfo")
+    .classList.remove("hidden");
 
-  document.getElementById(
-    "guestVerification"
-  ).classList.add("hidden");
+  document.getElementById("guestControls")
+    .classList.remove("hidden");
 
+  document.getElementById("guestClosedView")
+    .classList.add("hidden");
 
-  document.getElementById(
-    "guestSessionInfo"
-  ).classList.remove("hidden");
+  db.ref(`sessions/${sessionId}`).on("value", async snap => {
+    const session = snap.val();
 
-
-  document.getElementById(
-    "guestControls"
-  ).classList.remove("hidden");
-
-
-  document.getElementById(
-    "connectedTable"
-  ).textContent =
-    tableId;
-
-
-  db.ref(
-    `sessions/${sessionId}`
-  ).on(
-    "value",
-    snap => {
-
-      const session =
-        snap.val();
-
-
-      if (!session) {
-
-        showGuestSessionEnded();
-
-        return;
-      }
-
-
-      currentSession =
-        session;
-
-
-      if (
-        session.status !== "active"
-      ) {
-
-        showGuestSessionEnded();
-
-        return;
-      }
-
-
-      renderGuestSession(
-        session
-      );
+    if (!session || session.status !== "active") {
+      showGuestSessionEnded();
+      return;
     }
-  );
+
+    currentSession = session;
+
+    const waiter = await getWaiter(session.waiterSlot);
+    const waiterName = getWaiterDisplayName(waiter);
+
+    currentGuestWaiterName = waiterName;
+
+    document.getElementById("connectedWaiter")
+      .textContent = waiterName;
+
+    document.getElementById("guestSessionCode")
+      .textContent = guestLabel(sessionId, session);
+
+    renderGuestSession(session);
+  });
 }
-
-
 
 function showGuestSessionEnded() {
+  if (guestSlot) {
+    localStorage.removeItem(sessionStorageKey(guestSlot));
+  }
 
-  document.getElementById(
-    "guestControls"
-  ).classList.add("hidden");
+  document.getElementById("guestControls")
+    .classList.add("hidden");
 
+  document.getElementById("guestSessionInfo")
+    .classList.add("hidden");
 
-  document.getElementById(
-    "guestSessionInfo"
-  ).classList.add("hidden");
-
-
-  document.getElementById(
-    "guestClosedView"
-  ).classList.remove("hidden");
+  document.getElementById("guestClosedView")
+    .classList.remove("hidden");
 }
 
+function restartGuestSession() {
+  if (guestSlot) {
+    localStorage.removeItem(sessionStorageKey(guestSlot));
+  }
+
+  location.reload();
+}
 
 
 /* =========================================================
@@ -1329,557 +887,251 @@ function showGuestSessionEnded() {
    ========================================================= */
 
 async function sendRequest(type) {
-
-  if (!currentSessionId)
-    return;
-
+  if (!currentSessionId) return;
 
   const labels = {
-
-    assistance:
-      "Waiter assistance",
-
-    drinks:
-      "Drinks requested",
-
-    food:
-      "Food requested"
-
+    assistance: "Waiter assistance",
+    drinks: "Drinks requested",
+    food: "Food requested"
   };
 
-
-  await db.ref(
-    `sessions/${currentSessionId}`
-  ).update({
-
+  await db.ref(`sessions/${currentSessionId}`).update({
     latestRequest: {
-
       type,
-
-      label:
-        labels[type],
-
-      status:
-        "new",
-
-      createdAt:
-        firebase.database.ServerValue.TIMESTAMP
-
+      label: labels[type],
+      status: "new",
+      createdAt: firebase.database.ServerValue.TIMESTAMP
     },
-
-    lastActivityAt:
-      firebase.database.ServerValue.TIMESTAMP
-
+    lastActivityAt: firebase.database.ServerValue.TIMESTAMP
   });
 }
 
-
-
 async function requestBill() {
+  if (!currentSessionId) return;
 
-  if (!currentSessionId)
-    return;
-
-
-  const total =
-    calculateTotal(
-      currentSession &&
-      currentSession.items
-    );
-
+  const total = calculateTotal(
+    currentSession && currentSession.items
+  );
 
   if (total <= 0) {
-
-    alert(
-      "There are no items on this bill yet."
-    );
-
+    alert("There are no items on this bill yet.");
     return;
   }
 
-
-  await db.ref(
-    `sessions/${currentSessionId}`
-  ).update({
-
+  await db.ref(`sessions/${currentSessionId}`).update({
     latestRequest: {
-
-      type:
-        "bill",
-
-      label:
-        "Bill requested",
-
-      status:
-        "new",
-
-      createdAt:
-        firebase.database.ServerValue.TIMESTAMP
-
+      type: "bill",
+      label: "Bill requested",
+      status: "new",
+      createdAt: firebase.database.ServerValue.TIMESTAMP
     },
-
-    "bill/status":
-      "requested",
-
-    "bill/requestedAt":
-      firebase.database.ServerValue.TIMESTAMP,
-
-    lastActivityAt:
-      firebase.database.ServerValue.TIMESTAMP
-
+    "bill/status": "requested",
+    "bill/requestedAt": firebase.database.ServerValue.TIMESTAMP,
+    lastActivityAt: firebase.database.ServerValue.TIMESTAMP
   });
 }
-
-
 
 async function payBill() {
+  if (!currentSessionId) return;
 
-  if (!currentSessionId)
-    return;
+  const confirmPayment = confirm(
+    "Demo payment: mark this bill as paid?"
+  );
 
+  if (!confirmPayment) return;
 
-  const confirmPayment =
-    confirm(
-      "Demo payment: mark this bill as paid?"
-    );
-
-
-  if (!confirmPayment)
-    return;
-
-
-  await db.ref(
-    `sessions/${currentSessionId}`
-  ).update({
-
-    "bill/status":
-      "paid",
-
-    "bill/paidAt":
-      firebase.database.ServerValue.TIMESTAMP,
-
+  await db.ref(`sessions/${currentSessionId}`).update({
+    "bill/status": "paid",
+    "bill/paidAt": firebase.database.ServerValue.TIMESTAMP,
     latestRequest: {
-
-      type:
-        "payment",
-
-      label:
-        "Payment completed",
-
-      status:
-        "new",
-
-      createdAt:
-        firebase.database.ServerValue.TIMESTAMP
-
+      type: "payment",
+      label: "Payment completed",
+      status: "new",
+      createdAt: firebase.database.ServerValue.TIMESTAMP
     },
-
-    lastActivityAt:
-      firebase.database.ServerValue.TIMESTAMP
-
+    lastActivityAt: firebase.database.ServerValue.TIMESTAMP
   });
 }
-
 
 
 /* =========================================================
    RENDER GUEST
    ========================================================= */
 
-function renderGuestSession(
-  session
-) {
+function renderGuestSession(session) {
+  const items = session.items || {};
+  const total = calculateTotal(items);
 
-  const items =
-    session.items || {};
-
-  const total =
-    calculateTotal(
-      items
-    );
-
-  const itemsDiv =
-    document.getElementById(
-      "guestBillItems"
-    );
-
-  const entries =
-    Object.values(items);
-
+  const itemsDiv = document.getElementById("guestBillItems");
+  const entries = Object.values(items);
 
   if (!entries.length) {
-
     itemsDiv.innerHTML =
-      `
-      <p class="muted">
-        No items added yet.
-      </p>
+      `<p class="muted">No items added yet.</p>`;
+  } else {
+    itemsDiv.innerHTML = entries.map(item => {
+      const subtotal =
+        Number(item.price) *
+        Number(item.qty || 1);
+
+      return `
+        <div class="bill-row">
+          <span>
+            ${escapeHtml(item.name)}
+            × ${item.qty || 1}
+          </span>
+          <strong>${money(subtotal)}</strong>
+        </div>
       `;
-
-  }
-  else {
-
-    itemsDiv.innerHTML =
-      entries.map(
-        item => {
-
-          const subtotal =
-            Number(item.price) *
-            Number(item.qty || 1);
-
-
-          return `
-            <div class="bill-row">
-
-              <span>
-                ${escapeHtml(item.name)}
-                × ${item.qty || 1}
-              </span>
-
-              <strong>
-                ${money(subtotal)}
-              </strong>
-
-            </div>
-          `;
-
-        }
-      ).join("");
+    }).join("");
   }
 
+  document.getElementById("guestTotal")
+    .textContent = money(total);
 
-  document.getElementById(
-    "guestTotal"
-  ).textContent =
-    money(total);
+  document.getElementById("guestBillButton")
+    .disabled = total <= 0;
 
-
-  document.getElementById(
-    "guestBillButton"
-  ).disabled =
-    total <= 0;
-
-
-  const request =
-    session.latestRequest;
-
+  const request = session.latestRequest;
   const requestStatus =
-    document.getElementById(
-      "guestRequestStatus"
-    );
-
+    document.getElementById("guestRequestStatus");
 
   if (request) {
+    let message = escapeHtml(request.label || "");
 
-    let message =
-      escapeHtml(
-        request.label || ""
-      );
-
-
-    if (
-      request.status ===
-      "acknowledged"
-    ) {
-
-      message +=
-        " — Thabo acknowledged";
+    if (request.status === "acknowledged") {
+      message += ` — ${escapeHtml(currentGuestWaiterName || "Waiter")} acknowledged`;
     }
 
-
-    if (
-      request.status ===
-      "completed"
-    ) {
-
-      message +=
-        " — completed";
+    if (request.status === "completed") {
+      message += " — completed";
     }
 
-
     requestStatus.innerHTML =
-      `
-      <div class="status">
-        ${message}
-      </div>
-      `;
-
+      `<div class="status">${message}</div>`;
+  } else {
+    requestStatus.innerHTML = "";
   }
-  else {
-
-    requestStatus.innerHTML =
-      "";
-  }
-
 
   const billStatus =
-    session.bill &&
-    session.bill.status
+    session.bill && session.bill.status
       ? session.bill.status
       : "open";
 
-
   const billStatusDiv =
-    document.getElementById(
-      "guestBillStatus"
-    );
-
+    document.getElementById("guestBillStatus");
 
   const payButton =
-    document.getElementById(
-      "guestPayButton"
-    );
+    document.getElementById("guestPayButton");
 
-
-  if (
-    billStatus === "requested"
-  ) {
-
-    billStatusDiv.innerHTML =
-      `
+  if (billStatus === "requested") {
+    billStatusDiv.innerHTML = `
       <div class="status warning">
-        Bill requested.
-        Waiting for Thabo
+        Bill requested. Waiting for
+        ${escapeHtml(currentGuestWaiterName || "your waiter")}
         to finalise it.
       </div>
-      `;
+    `;
 
-    payButton.classList.add(
-      "hidden"
-    );
-
-  }
-  else if (
-    billStatus === "finalized"
-  ) {
-
+    payButton.classList.add("hidden");
+  } else if (billStatus === "finalized") {
     billStatusDiv.innerHTML =
-      `
+      `<div class="status success">Bill finalised.</div>`;
+
+    payButton.classList.remove("hidden");
+  } else if (billStatus === "paid") {
+    billStatusDiv.innerHTML = `
       <div class="status success">
-        Bill finalised.
+        Payment received. Waiting for the session to be closed.
       </div>
-      `;
+    `;
 
-    payButton.classList.remove(
-      "hidden"
-    );
-
-  }
-  else if (
-    billStatus === "paid"
-  ) {
-
-    billStatusDiv.innerHTML =
-      `
-      <div class="status success">
-        Payment received.
-        Waiting for the session
-        to be closed.
-      </div>
-      `;
-
-    payButton.classList.add(
-      "hidden"
-    );
-
-  }
-  else {
-
-    billStatusDiv.innerHTML =
-      "";
-
-    payButton.classList.add(
-      "hidden"
-    );
+    payButton.classList.add("hidden");
+  } else {
+    billStatusDiv.innerHTML = "";
+    payButton.classList.add("hidden");
   }
 }
-
 
 
 /* =========================================================
    WAITER DASHBOARD
    ========================================================= */
 
-function startWaiterDashboard() {
+async function startWaiterDashboard(slot) {
+  const waiter = await getWaiter(slot);
+  const waiterName = getWaiterDisplayName(waiter);
 
-  db.ref(
-    "sessions"
-  ).on(
-    "value",
-    snap => {
+  document.getElementById("waiterDashboardTitle")
+    .textContent = `${waiterName}'s Guests`;
 
-      const sessions =
-        snap.val() || {};
+  db.ref(`waiters/${slot}`).on("value", snap => {
+    const latest = snap.val() || {};
+    const name = String(latest.name || "").trim()
+      || waiterFallbackName(slot);
 
-      renderWaiterDashboard(
-        sessions
-      );
+    document.getElementById("waiterDashboardTitle")
+      .textContent = `${name}'s Guests`;
+  });
 
-    }
-  );
+  db.ref("sessions").on("value", snap => {
+    const sessions = snap.val() || {};
+    renderWaiterDashboard(slot, sessions);
+  });
 }
 
-
-
-function renderWaiterDashboard(
-  sessions
-) {
-
+function renderWaiterDashboard(slot, sessions) {
   const container =
-    document.getElementById(
-      "waiterTables"
-    );
+    document.getElementById("waiterSessions");
 
-
-  const activeByTable =
-    {};
-
-
-  Object.entries(
-    sessions
-  ).forEach(
-    ([sessionId, session]) => {
-
-      if (
-        session.status === "active" &&
-        session.tableId
-      ) {
-
-        activeByTable[
-          String(session.tableId)
-        ] = {
-
-          sessionId,
-
-          ...session
-
-        };
-      }
-    }
-  );
-
-
-  const knownTables =
-    new Set(
-      DEMO_TABLES
-    );
-
-
-  Object.keys(
-    activeByTable
-  ).forEach(
-    table =>
-      knownTables.add(table)
-  );
-
-
-  container.innerHTML =
-    Array.from(
-      knownTables
+  const activeSessions = Object.entries(sessions)
+    .filter(([, session]) =>
+      session &&
+      session.status === "active" &&
+      String(session.waiterSlot) === String(slot)
     )
-      .sort(
-        (a, b) =>
-          Number(a) - Number(b)
-      )
-      .map(
-        table => {
+    .sort((a, b) =>
+      Number(b[1].lastActivityAt || b[1].createdAt || 0) -
+      Number(a[1].lastActivityAt || a[1].createdAt || 0)
+    );
 
-          const session =
-            activeByTable[table];
+  if (!activeSessions.length) {
+    container.innerHTML = `
+      <div class="card">
+        <p class="muted">No active guest sessions.</p>
+      </div>
+    `;
+    return;
+  }
 
-
-          if (!session) {
-
-            return `
-              <div class="waiter-table">
-
-                <div class="table-heading">
-
-                  <h3>
-                    Table ${escapeHtml(table)}
-                  </h3>
-
-                  <span class="badge">
-                    Available
-                  </span>
-
-                </div>
-
-                <p class="muted">
-                  No active session.
-                </p>
-
-              </div>
-            `;
-          }
-
-
-          return waiterTableHtml(
-            table,
-            session
-          );
-
-        }
-      ).join("");
+  container.innerHTML = activeSessions.map(
+    ([sessionId, session]) =>
+      waiterSessionHtml(sessionId, session)
+  ).join("");
 }
 
-
-
-function waiterTableHtml(
-  table,
-  session
-) {
-
-  const sessionId =
-    session.sessionId;
-
-  const items =
-    session.items || {};
-
-  const total =
-    calculateTotal(
-      items
-    );
-
-  const request =
-    session.latestRequest;
+function waiterSessionHtml(sessionId, session) {
+  const items = session.items || {};
+  const total = calculateTotal(items);
+  const request = session.latestRequest;
 
   const billStatus =
-    session.bill &&
-    session.bill.status
+    session.bill && session.bill.status
       ? session.bill.status
       : "open";
 
+  const label = guestLabel(sessionId, session);
 
-  let requestHtml =
-    "";
+  let requestHtml = "";
 
-
-  if (
-    request &&
-    request.status !==
-      "completed"
-  ) {
-
-    requestHtml =
-      `
-      <div
-        class="status ${
-          request.status === "new"
-            ? "danger"
-            : ""
-        }"
-      >
-
-        <strong>
-          ${escapeHtml(request.label || "")}
-        </strong>
-
+  if (request && request.status !== "completed") {
+    requestHtml = `
+      <div class="status ${
+        request.status === "new" ? "danger" : ""
+      }">
+        <strong>${escapeHtml(request.label || "")}</strong>
         <br>
-
-        Status:
-        ${escapeHtml(request.status)}
-
+        Status: ${escapeHtml(request.status)}
         <br><br>
 
         ${
@@ -1896,10 +1148,8 @@ function waiterTableHtml(
         }
 
         ${
-          request.status ===
-            "acknowledged" &&
+          request.status === "acknowledged" &&
           request.type !== "bill"
-
             ? `
               <button
                 class="success"
@@ -1910,1603 +1160,605 @@ function waiterTableHtml(
             `
             : ""
         }
-
       </div>
-      `;
+    `;
   }
 
+  let billAction = "";
 
-  let billAction =
-    "";
-
-
-  if (
-    billStatus ===
-    "requested"
-  ) {
-
-    billAction =
-      `
+  if (billStatus === "requested") {
+    billAction = `
       <button
         class="success"
         onclick="finalizeBill('${sessionId}')"
       >
         Done – Finalise Bill
       </button>
-      `;
-
-  }
-  else if (
-    billStatus ===
-    "finalized"
-  ) {
-
-    billAction =
-      `
+    `;
+  } else if (billStatus === "finalized") {
+    billAction = `
       <span class="badge active">
-        Bill Finalised –
-        Awaiting Payment
+        Bill Finalised – Awaiting Payment
       </span>
-      `;
-
-  }
-  else if (
-    billStatus ===
-    "paid"
-  ) {
-
-    billAction =
-      `
+    `;
+  } else if (billStatus === "paid") {
+    billAction = `
       <button
         class="success"
-        onclick="closePaidSession(
-          '${sessionId}',
-          '${table}'
-        )"
+        onclick="closePaidSession('${sessionId}')"
       >
         Close Session
       </button>
-      `;
+    `;
   }
 
-
   return `
-    <div class="waiter-table active">
+    <div class="session-card active">
 
-      <div class="table-heading">
-
-        <h3>
-          Table ${escapeHtml(table)}
-        </h3>
-
-        <span class="badge active">
-          Active
-        </span>
-
+      <div class="heading-row">
+        <h3>${escapeHtml(label)}</h3>
+        <span class="badge active">Active</span>
       </div>
-
 
       ${requestHtml}
 
-
       <div>
-
-        <strong>
-          Current total
-        </strong>
-
-        <div class="big-number">
-          ${money(total)}
-        </div>
-
+        <strong>Current total</strong>
+        <div class="big-number">${money(total)}</div>
       </div>
 
-
       <br>
-
 
       <button
         class="blue"
         onclick="openItemModal(
           '${sessionId}',
-          '${table}'
+          '${escapeHtml(label)}'
         )"
       >
         Add Items
       </button>
 
-
       ${billAction}
 
-
-      <hr>
-
+      <hr style="border:0;border-top:1px solid #eee;margin:18px 0;">
 
       <button
         class="danger"
-        onclick="endSessionOverride(
-          '${sessionId}',
-          '${table}'
-        )"
+        onclick="endSessionOverride('${sessionId}', 'waiter_override')"
       >
         End Session
       </button>
 
-
       <p class="muted">
-        End Session is the waiter override
-        for abandoned or stuck sessions.
+        Use End Session for abandoned, broken or stuck guest sessions.
       </p>
 
     </div>
   `;
 }
-
-
-
-/* =========================================================
-   ADMIN DASHBOARD
-   ========================================================= */
-
-function startAdminDashboard() {
-
-  /*
-    For the prototype we listen to the root
-    so Admin always sees tables AND sessions
-    from the same live Firebase state.
-
-    Later this should be scoped by restaurantId.
-  */
-
-  db.ref().on(
-    "value",
-    snap => {
-
-      const data =
-        snap.val() || {};
-
-      const tables =
-        data.tables || {};
-
-      const sessions =
-        data.sessions || {};
-
-
-      renderAdminDashboard(
-        tables,
-        sessions
-      );
-
-    }
-  );
-}
-
-
-
-function renderAdminDashboard(
-  tables,
-  sessions
-) {
-
-  const container =
-    document.getElementById(
-      "adminTables"
-    );
-
-
-  const knownTables =
-    new Set(
-      DEMO_TABLES
-    );
-
-
-  Object.keys(
-    tables
-  ).forEach(
-    table =>
-      knownTables.add(
-        String(table)
-      )
-  );
-
-
-  /*
-    Find every active session,
-    including sessions that are no longer
-    correctly linked by the table record.
-  */
-
-  const activeSessionsByTable =
-    {};
-
-
-  Object.entries(
-    sessions
-  ).forEach(
-    ([sessionId, session]) => {
-
-      if (
-        session &&
-        session.status === "active" &&
-        session.tableId
-      ) {
-
-        const sessionTable =
-          String(
-            session.tableId
-          );
-
-
-        knownTables.add(
-          sessionTable
-        );
-
-
-        if (
-          !activeSessionsByTable[
-            sessionTable
-          ]
-        ) {
-
-          activeSessionsByTable[
-            sessionTable
-          ] = [];
-
-        }
-
-
-        activeSessionsByTable[
-          sessionTable
-        ].push({
-
-          sessionId,
-
-          ...session
-
-        });
-      }
-    }
-  );
-
-
-  let activeCount =
-    0;
-
-  let availableCount =
-    0;
-
-  let problemCount =
-    0;
-
-
-  const cards =
-    Array.from(
-      knownTables
-    )
-      .sort(
-        (a, b) =>
-          Number(a) - Number(b)
-      )
-      .map(
-        table => {
-
-          const tableRecord =
-            tables[table] || {};
-
-          const activeSessionId =
-            tableRecord.activeSessionId
-              ? String(
-                  tableRecord.activeSessionId
-                )
-              : null;
-
-
-          const tableActiveSessions =
-            activeSessionsByTable[
-              table
-            ] || [];
-
-
-          const linkedSession =
-            activeSessionId
-              ? sessions[
-                  activeSessionId
-                ]
-              : null;
-
-
-          /*
-            NORMAL ACTIVE TABLE
-          */
-
-          if (
-            activeSessionId &&
-            linkedSession &&
-            linkedSession.status ===
-              "active"
-          ) {
-
-            activeCount++;
-
-
-            const sessionWithId =
-              {
-
-                sessionId:
-                  activeSessionId,
-
-                ...linkedSession
-
-              };
-
-
-            return adminActiveTableHtml(
-              table,
-              sessionWithId,
-              false
-            );
-          }
-
-
-          /*
-            STALE TABLE POINTER
-
-            Table says occupied,
-            but the session is missing,
-            closed or ended.
-          */
-
-          if (activeSessionId) {
-
-            problemCount++;
-
-
-            return adminStaleTableHtml(
-              table,
-              activeSessionId,
-              linkedSession
-            );
-          }
-
-
-          /*
-            ORPHANED ACTIVE SESSION
-
-            Active session exists,
-            but the table no longer points at it.
-
-            This is exactly the sort of state
-            that can otherwise leave EasyBev stuck.
-          */
-
-          if (
-            tableActiveSessions.length
-          ) {
-
-            activeCount +=
-              tableActiveSessions.length;
-
-            problemCount +=
-              tableActiveSessions.length;
-
-
-            return tableActiveSessions
-              .map(
-                session =>
-                  adminActiveTableHtml(
-                    table,
-                    session,
-                    true
-                  )
-              )
-              .join("");
-          }
-
-
-          availableCount++;
-
-
-          return `
-            <div class="waiter-table">
-
-              <div class="table-heading">
-
-                <h3>
-                  Table ${escapeHtml(table)}
-                </h3>
-
-                <span class="badge">
-                  Available
-                </span>
-
-              </div>
-
-              <p class="muted">
-                No active session.
-              </p>
-
-            </div>
-          `;
-        }
-      );
-
-
-  document.getElementById(
-    "adminActiveCount"
-  ).textContent =
-    activeCount;
-
-
-  document.getElementById(
-    "adminAvailableCount"
-  ).textContent =
-    availableCount;
-
-
-  document.getElementById(
-    "adminProblemCount"
-  ).textContent =
-    problemCount;
-
-
-  container.innerHTML =
-    cards.join("");
-}
-
-
-
-function adminActiveTableHtml(
-  table,
-  session,
-  orphaned
-) {
-
-  const sessionId =
-    session.sessionId;
-
-  const total =
-    calculateTotal(
-      session.items || {}
-    );
-
-
-  const billStatus =
-    session.bill &&
-    session.bill.status
-      ? session.bill.status
-      : "open";
-
-
-  const request =
-    session.latestRequest;
-
-
-  return `
-    <div
-      class="waiter-table ${
-        orphaned
-          ? "orphan"
-          : "active"
-      }"
-    >
-
-      <div class="table-heading">
-
-        <h3>
-          Table ${escapeHtml(table)}
-        </h3>
-
-        ${
-          orphaned
-            ? `
-              <span class="badge alert">
-                Orphaned Session
-              </span>
-            `
-            : `
-              <span class="badge active">
-                Active
-              </span>
-            `
-        }
-
-      </div>
-
-
-      ${
-        orphaned
-          ? `
-            <div class="status danger">
-
-              <strong>
-                Session lifecycle issue detected.
-              </strong>
-
-              <br><br>
-
-              This session is active,
-              but Table ${escapeHtml(table)}
-              does not point to it correctly.
-
-            </div>
-          `
-          : ""
-      }
-
-
-      <div class="admin-detail">
-
-        <strong>
-          Guest:
-        </strong>
-
-        ${escapeHtml(
-          maskPhone(
-            session.guestPhone
-          )
-        )}
-
-      </div>
-
-
-      <div class="admin-detail">
-
-        <strong>
-          Bill status:
-        </strong>
-
-        ${escapeHtml(
-          billStatus
-        )}
-
-      </div>
-
-
-      <div class="admin-detail">
-
-        <strong>
-          Total:
-        </strong>
-
-        ${money(total)}
-
-      </div>
-
-
-      <div class="admin-detail">
-
-        <strong>
-          Started:
-        </strong>
-
-        ${escapeHtml(
-          formatDate(
-            session.createdAt
-          )
-        )}
-
-      </div>
-
-
-      <div class="admin-detail">
-
-        <strong>
-          Last activity:
-        </strong>
-
-        ${escapeHtml(
-          formatDate(
-            session.lastActivityAt
-          )
-        )}
-
-      </div>
-
-
-      ${
-        request
-          ? `
-            <div class="admin-detail">
-
-              <strong>
-                Latest request:
-              </strong>
-
-              ${escapeHtml(
-                request.label || ""
-              )}
-
-              (${escapeHtml(
-                request.status || ""
-              )})
-
-            </div>
-          `
-          : ""
-      }
-
-
-      <div class="session-id">
-
-        Session:
-        ${escapeHtml(sessionId)}
-
-      </div>
-
-
-      <hr>
-
-
-      <button
-        class="danger"
-        onclick="adminForceCloseSession(
-          '${sessionId}',
-          '${table}'
-        )"
-      >
-        Force Close / Release Table
-      </button>
-
-
-      <p class="muted">
-        Manager override.
-        This ends the live session,
-        preserves the bill history
-        and releases the table.
-      </p>
-
-    </div>
-  `;
-}
-
-
-
-function adminStaleTableHtml(
-  table,
-  activeSessionId,
-  session
-) {
-
-  let reason =
-    "The table points to a session that no longer exists.";
-
-
-  if (session) {
-
-    reason =
-      `The table points to a session with status "${escapeHtml(
-        session.status || "unknown"
-      )}".`;
-  }
-
-
-  return `
-    <div class="waiter-table stale">
-
-      <div class="table-heading">
-
-        <h3>
-          Table ${escapeHtml(table)}
-        </h3>
-
-        <span class="badge warning">
-          Stale Table Lock
-        </span>
-
-      </div>
-
-
-      <div class="status warning">
-
-        <strong>
-          Table record requires repair.
-        </strong>
-
-        <br><br>
-
-        ${reason}
-
-      </div>
-
-
-      <div class="session-id">
-
-        Stored activeSessionId:
-        ${escapeHtml(activeSessionId)}
-
-      </div>
-
-
-      <hr>
-
-
-      <button
-        class="warning"
-        onclick="repairStaleTable(
-          '${table}'
-        )"
-      >
-        Repair / Release Table
-      </button>
-
-
-      <p class="muted">
-        This removes the stale session pointer
-        and marks the table as available.
-      </p>
-
-    </div>
-  `;
-}
-
-
-
-/* =========================================================
-   ADMIN SESSION OVERRIDE
-   ========================================================= */
-
-async function adminForceCloseSession(
-  sessionId,
-  table
-) {
-
-  const confirmed =
-    confirm(
-      `ADMIN OVERRIDE\n\n` +
-      `Force close the active session for Table ${table}?\n\n` +
-      `The session history and bill items will remain stored.`
-    );
-
-
-  if (!confirmed)
-    return;
-
-
-  const secondConfirm =
-    confirm(
-      `Confirm manager override for Table ${table}.`
-    );
-
-
-  if (!secondConfirm)
-    return;
-
-
-  await closeSessionAtomic(
-    sessionId,
-    table,
-    "admin_override"
-  );
-}
-
-
-
-/* =========================================================
-   ADMIN STALE TABLE REPAIR
-   ========================================================= */
-
-async function repairStaleTable(
-  table
-) {
-
-  const tableRef =
-    db.ref(
-      `tables/${table}`
-    );
-
-
-  const tableSnap =
-    await tableRef.once(
-      "value"
-    );
-
-
-  const tableData =
-    tableSnap.val() || {};
-
-
-  const activeSessionId =
-    tableData.activeSessionId;
-
-
-  if (!activeSessionId) {
-
-    await tableRef.update({
-
-      status:
-        "available",
-
-      updatedAt:
-        firebase.database.ServerValue.TIMESTAMP
-
-    });
-
-
-    alert(
-      `Table ${table} is available.`
-    );
-
-    return;
-  }
-
-
-  const sessionSnap =
-    await db.ref(
-      `sessions/${activeSessionId}`
-    ).once("value");
-
-
-  const session =
-    sessionSnap.val();
-
-
-  /*
-    Safety check:
-    if it really is still active,
-    don't accidentally delete a good pointer.
-  */
-
-  if (
-    session &&
-    session.status === "active"
-  ) {
-
-    alert(
-      `Table ${table} still has a valid active session. No repair was performed.`
-    );
-
-    return;
-  }
-
-
-  const confirmed =
-    confirm(
-      `Release stale lock on Table ${table}?`
-    );
-
-
-  if (!confirmed)
-    return;
-
-
-  await tableRef.update({
-
-    activeSessionId:
-      null,
-
-    status:
-      "available",
-
-    updatedAt:
-      firebase.database.ServerValue.TIMESTAMP
-
-  });
-
-
-  alert(
-    `Table ${table} has been repaired and released.`
-  );
-}
-
 
 
 /* =========================================================
    REQUEST MANAGEMENT
    ========================================================= */
 
-async function acknowledgeRequest(
-  sessionId
-) {
-
+async function acknowledgeRequest(sessionId) {
   await db.ref(
     `sessions/${sessionId}/latestRequest`
   ).update({
-
-    status:
-      "acknowledged",
-
+    status: "acknowledged",
     acknowledgedAt:
       firebase.database.ServerValue.TIMESTAMP
-
   });
 }
 
-
-
-async function completeRequest(
-  sessionId
-) {
-
+async function completeRequest(sessionId) {
   await db.ref(
     `sessions/${sessionId}/latestRequest`
   ).update({
-
-    status:
-      "completed",
-
+    status: "completed",
     completedAt:
       firebase.database.ServerValue.TIMESTAMP
-
   });
 }
-
 
 
 /* =========================================================
    ITEM MODAL
    ========================================================= */
 
-function openItemModal(
-  sessionId,
-  table
-) {
+async function openItemModal(sessionId, label) {
+  itemModalSessionId = sessionId;
+  itemModalGuestLabel = label;
 
-  itemModalSessionId =
-    sessionId;
+  const sessionSnap = await db.ref(
+    `sessions/${sessionId}`
+  ).once("value");
 
-  itemModalTableId =
-    table;
+  const session = sessionSnap.val() || {};
+  const waiter = await getWaiter(session.waiterSlot);
 
+  itemModalWaiterName = getWaiterDisplayName(waiter);
 
-  document.getElementById(
-    "itemModalTable"
-  ).textContent =
-    table;
+  document.getElementById("itemModalGuest")
+    .textContent = label;
 
+  document.getElementById("itemModal")
+    .classList.remove("hidden");
 
-  document.getElementById(
-    "itemModal"
-  ).classList.remove(
-    "hidden"
-  );
-
-
-  document.getElementById(
-    "itemName"
-  ).value =
-    "";
-
-
-  document.getElementById(
-    "itemPrice"
-  ).value =
-    "";
-
-
-  document.getElementById(
-    "itemQty"
-  ).value =
-    "1";
-
+  document.getElementById("itemName").value = "";
+  document.getElementById("itemPrice").value = "";
+  document.getElementById("itemQty").value = "1";
 
   refreshModalBill();
 
-
-  setTimeout(
-    () => {
-
-      document.getElementById(
-        "itemName"
-      ).focus();
-
-    },
-    100
-  );
+  setTimeout(() => {
+    document.getElementById("itemName").focus();
+  }, 100);
 }
-
-
 
 function closeItemModal() {
+  document.getElementById("itemModal")
+    .classList.add("hidden");
 
-  document.getElementById(
-    "itemModal"
-  ).classList.add(
-    "hidden"
-  );
-
-
-  itemModalSessionId =
-    null;
-
-  itemModalTableId =
-    null;
+  itemModalSessionId = null;
+  itemModalGuestLabel = null;
+  itemModalWaiterName = null;
 }
 
-
-
-/* =========================================================
-   ADD ITEM
-   ========================================================= */
-
 async function addItemToBill() {
-
-  if (!itemModalSessionId)
-    return;
-
+  if (!itemModalSessionId) return;
 
   const name =
-    document.getElementById(
-      "itemName"
-    ).value.trim();
-
+    document.getElementById("itemName")
+      .value.trim();
 
   const price =
-    Number(
-      document.getElementById(
-        "itemPrice"
-      ).value
-    );
-
+    Number(document.getElementById("itemPrice").value);
 
   const qty =
-    Number(
-      document.getElementById(
-        "itemQty"
-      ).value || 1
-    );
-
+    Number(document.getElementById("itemQty").value || 1);
 
   if (
     !name ||
     !Number.isFinite(price) ||
     price < 0 ||
+    !Number.isFinite(qty) ||
     qty < 1
   ) {
-
-    alert(
-      "Enter an item name, valid price and quantity."
-    );
-
+    alert("Enter an item name, valid price and quantity.");
     return;
   }
 
-
-  const itemRef =
-    db.ref(
-      `sessions/${itemModalSessionId}/items`
-    ).push();
-
+  const itemRef = db.ref(
+    `sessions/${itemModalSessionId}/items`
+  ).push();
 
   await itemRef.set({
-
     name,
-
     price,
-
     qty,
-
-    addedBy:
-      "Thabo",
-
-    addedAt:
-      firebase.database.ServerValue.TIMESTAMP
-
+    addedBy: itemModalWaiterName || "Waiter",
+    addedAt: firebase.database.ServerValue.TIMESTAMP
   });
 
+  const snap = await db.ref(
+    `sessions/${itemModalSessionId}/items`
+  ).once("value");
 
-  const snap =
-    await db.ref(
-      `sessions/${itemModalSessionId}/items`
-    ).once("value");
-
-
-  const total =
-    calculateTotal(
-      snap.val()
-    );
-
+  const total = calculateTotal(snap.val());
 
   await db.ref(
     `sessions/${itemModalSessionId}`
   ).update({
-
     total,
-
     lastActivityAt:
       firebase.database.ServerValue.TIMESTAMP
-
   });
 
-
-  document.getElementById(
-    "itemName"
-  ).value =
-    "";
-
-
-  document.getElementById(
-    "itemPrice"
-  ).value =
-    "";
-
-
-  document.getElementById(
-    "itemQty"
-  ).value =
-    "1";
-
-
-  document.getElementById(
-    "itemName"
-  ).focus();
-
+  document.getElementById("itemName").value = "";
+  document.getElementById("itemPrice").value = "";
+  document.getElementById("itemQty").value = "1";
+  document.getElementById("itemName").focus();
 
   refreshModalBill();
 }
 
-
-
-/* =========================================================
-   REFRESH ITEM MODAL
-   ========================================================= */
-
 async function refreshModalBill() {
+  if (!itemModalSessionId) return;
 
-  if (!itemModalSessionId)
-    return;
+  const snap = await db.ref(
+    `sessions/${itemModalSessionId}/items`
+  ).once("value");
 
+  const items = snap.val() || {};
+  const entries = Object.values(items);
 
-  const snap =
-    await db.ref(
-      `sessions/${itemModalSessionId}/items`
-    ).once("value");
-
-
-  const items =
-    snap.val() || {};
-
-
-  const entries =
-    Object.values(
-      items
-    );
-
-
-  const list =
-    document.getElementById(
-      "modalBillItems"
-    );
-
+  const list = document.getElementById("modalBillItems");
 
   if (!entries.length) {
-
     list.innerHTML =
-      `
-      <p class="muted">
-        No items yet.
-      </p>
-      `;
-
-  }
-  else {
-
-    list.innerHTML =
-      entries.map(
-        item => {
-
-          return `
-            <div class="item-row">
-
-              <span>
-                ${escapeHtml(item.name)}
-                × ${item.qty || 1}
-              </span>
-
-              <strong>
-                ${money(
-                  Number(item.price) *
-                  Number(item.qty || 1)
-                )}
-              </strong>
-
-            </div>
-          `;
-
-        }
-      ).join("");
+      `<p class="muted">No items yet.</p>`;
+  } else {
+    list.innerHTML = entries.map(item => `
+      <div class="item-row">
+        <span>
+          ${escapeHtml(item.name)}
+          × ${item.qty || 1}
+        </span>
+        <strong>
+          ${money(
+            Number(item.price) *
+            Number(item.qty || 1)
+          )}
+        </strong>
+      </div>
+    `).join("");
   }
 
-
-  document.getElementById(
-    "modalTotal"
-  ).textContent =
-    money(
-      calculateTotal(
-        items
-      )
-    );
+  document.getElementById("modalTotal")
+    .textContent = money(calculateTotal(items));
 }
-
-
 
 function doneAddingItems() {
-
   closeItemModal();
 }
-
 
 
 /* =========================================================
    BILL FINALISATION
    ========================================================= */
 
-async function finalizeBill(
-  sessionId
-) {
+async function finalizeBill(sessionId) {
+  const snap = await db.ref(
+    `sessions/${sessionId}`
+  ).once("value");
 
-  const snap =
-    await db.ref(
-      `sessions/${sessionId}`
-    ).once("value");
+  const session = snap.val();
 
+  if (!session) return;
 
-  const session =
-    snap.val();
-
-
-  if (!session)
-    return;
-
-
-  const total =
-    calculateTotal(
-      session.items || {}
-    );
-
+  const total = calculateTotal(session.items || {});
 
   if (total <= 0) {
-
-    alert(
-      "There are no billable items."
-    );
-
+    alert("There are no billable items.");
     return;
   }
 
-
-  await db.ref(
-    `sessions/${sessionId}`
-  ).update({
-
+  await db.ref(`sessions/${sessionId}`).update({
     total,
-
-    "bill/status":
-      "finalized",
-
+    "bill/status": "finalized",
     "bill/finalizedAt":
       firebase.database.ServerValue.TIMESTAMP,
-
     latestRequest: {
-
-      type:
-        "bill",
-
-      label:
-        "Bill finalised",
-
-      status:
-        "completed",
-
+      type: "bill",
+      label: "Bill finalised",
+      status: "completed",
       completedAt:
         firebase.database.ServerValue.TIMESTAMP
-
     },
-
     lastActivityAt:
       firebase.database.ServerValue.TIMESTAMP
-
   });
 }
-
 
 
 /* =========================================================
    NORMAL PAID SESSION CLOSURE
    ========================================================= */
 
-async function closePaidSession(
-  sessionId,
-  table
-) {
+async function closePaidSession(sessionId) {
+  const snap = await db.ref(
+    `sessions/${sessionId}`
+  ).once("value");
 
-  const snap =
-    await db.ref(
-      `sessions/${sessionId}`
-    ).once("value");
-
-
-  const session =
-    snap.val();
-
+  const session = snap.val();
 
   if (
     !session ||
     !session.bill ||
-    session.bill.status !==
-      "paid"
+    session.bill.status !== "paid"
   ) {
-
     alert(
       "The session can only be closed normally after payment."
     );
-
     return;
   }
 
+  const label = guestLabel(sessionId, session);
 
-  const confirmed =
-    confirm(
-      `Close Table ${table} session and release the table?`
-    );
-
-
-  if (!confirmed)
-    return;
-
-
-  await closeSessionAtomic(
-    sessionId,
-    table,
-    "paid"
+  const confirmed = confirm(
+    `Close ${label} and end this paid session?`
   );
+
+  if (!confirmed) return;
+
+  await closeSessionAtomic(sessionId, "paid");
 }
 
 
-
 /* =========================================================
-   WAITER OVERRIDE
+   WAITER / MANAGER OVERRIDE
    ========================================================= */
 
 async function endSessionOverride(
   sessionId,
-  table
+  reason = "waiter_override"
 ) {
+  const snap = await db.ref(
+    `sessions/${sessionId}`
+  ).once("value");
 
-  const confirmed =
-    confirm(
-      `End the active session for Table ${table}?\n\n` +
-      `Use this for an abandoned, broken or stuck session.\n\n` +
-      `The current session will remain in history and the table will be released.`
-    );
+  const session = snap.val();
 
+  if (!session) return;
 
-  if (!confirmed)
-    return;
+  const label = guestLabel(sessionId, session);
 
-
-  const secondConfirm =
-    confirm(
-      `Confirm: release Table ${table} now?`
-    );
-
-
-  if (!secondConfirm)
-    return;
-
-
-  await closeSessionAtomic(
-    sessionId,
-    table,
-    "waiter_override"
+  const confirmed = confirm(
+    `End the active session for ${label}?\n\n` +
+    `Use this for an abandoned, broken or stuck session.`
   );
-}
 
+  if (!confirmed) return;
+
+  const secondConfirm = confirm(
+    `Confirm: end ${label} now?`
+  );
+
+  if (!secondConfirm) return;
+
+  await closeSessionAtomic(sessionId, reason);
+}
 
 
 /* =========================================================
-   ATOMIC SESSION CLOSURE
+   SESSION CLOSURE
+
+   No table is released because the new architecture does
+   not lock a table. Each guest session stands independently.
    ========================================================= */
 
-async function closeSessionAtomic(
-  sessionId,
-  table,
-  reason
-) {
+async function closeSessionAtomic(sessionId, reason) {
+  const sessionSnap = await db.ref(
+    `sessions/${sessionId}`
+  ).once("value");
 
-  const sessionSnap =
-    await db.ref(
-      `sessions/${sessionId}`
-    ).once("value");
+  const session = sessionSnap.val();
 
-
-  const session =
-    sessionSnap.val();
-
-
-  /*
-    Session missing:
-    still attempt to release a stale table pointer.
-  */
-
-  if (!session) {
-
-    const tableSnap =
-      await db.ref(
-        `tables/${table}`
-      ).once("value");
-
-
-    const tableData =
-      tableSnap.val();
-
-
-    if (
-      tableData &&
-      tableData.activeSessionId ===
-        sessionId
-    ) {
-
-      await db.ref(
-        `tables/${table}`
-      ).update({
-
-        activeSessionId:
-          null,
-
-        status:
-          "available",
-
-        updatedAt:
-          firebase.database.ServerValue.TIMESTAMP
-
-      });
-    }
-
-
-    return;
-  }
-
+  if (!session) return;
 
   const finalStatus =
-    reason === "paid"
-      ? "closed"
-      : "ended";
+    reason === "paid" ? "closed" : "ended";
 
+  const updates = {};
 
-  let closedBy =
-    "system";
-
-
-  if (
-    reason === "paid"
-  ) {
-
-    closedBy =
-      "Thabo";
-
-  }
-  else if (
-    reason ===
-      "waiter_override"
-  ) {
-
-    closedBy =
-      "Thabo";
-
-  }
-  else if (
-    reason ===
-      "admin_override"
-  ) {
-
-    closedBy =
-      "Restaurant Admin";
-  }
-
-
-  const updates =
-    {};
-
-
-  updates[
-    `sessions/${sessionId}/status`
-  ] =
+  updates[`sessions/${sessionId}/status`] =
     finalStatus;
 
-
-  updates[
-    `sessions/${sessionId}/endedAt`
-  ] =
+  updates[`sessions/${sessionId}/endedAt`] =
     firebase.database.ServerValue.TIMESTAMP;
 
-
-  updates[
-    `sessions/${sessionId}/closeReason`
-  ] =
+  updates[`sessions/${sessionId}/closeReason`] =
     reason;
 
-
-  updates[
-    `sessions/${sessionId}/closedBy`
-  ] =
-    closedBy;
-
-
-  updates[
-    `sessions/${sessionId}/latestRequest`
-  ] =
+  updates[`sessions/${sessionId}/latestRequest`] =
     null;
 
-
-  updates[
-    `sessions/${sessionId}/lastActivityAt`
-  ] =
+  updates[`sessions/${sessionId}/lastActivityAt`] =
     firebase.database.ServerValue.TIMESTAMP;
 
+  await db.ref().update(updates);
 
-  const tableSnap =
-    await db.ref(
-      `tables/${table}`
-    ).once("value");
-
-
-  const tableData =
-    tableSnap.val();
-
-
-  /*
-    Release the table only if this session
-    actually owns the activeSessionId.
-  */
-
-  if (
-    tableData &&
-    tableData.activeSessionId ===
-      sessionId
-  ) {
-
-    updates[
-      `tables/${table}/activeSessionId`
-    ] =
-      null;
-
-
-    updates[
-      `tables/${table}/status`
-    ] =
-      "available";
-
-
-    updates[
-      `tables/${table}/updatedAt`
-    ] =
-      firebase.database.ServerValue.TIMESTAMP;
-  }
-
-
-  await db.ref().update(
-    updates
+  alert(
+    reason === "paid"
+      ? `${guestLabel(sessionId, session)} closed successfully.`
+      : `${guestLabel(sessionId, session)} session ended.`
   );
+}
 
 
-  if (
-    reason ===
-    "admin_override"
-  ) {
+/* =========================================================
+   MANAGEMENT DASHBOARD
+   ========================================================= */
 
-    alert(
-      `Admin override complete. Table ${table} session has been ended.`
-    );
+function startManagerDashboard() {
+  db.ref("waiters").on("value", snap => {
+    const waiters = snap.val() || {};
+    renderManagerWaiterSlots(waiters);
+  });
 
-  }
-  else if (
-    reason ===
-    "paid"
-  ) {
+  db.ref("sessions").on("value", snap => {
+    const sessions = snap.val() || {};
+    renderManagerActiveSessions(sessions);
+  });
+}
 
-    alert(
-      `Table ${table} closed successfully.`
-    );
+function renderManagerWaiterSlots(waiters) {
+  const container =
+    document.getElementById("managerWaiterSlots");
 
-  }
-  else {
+  container.innerHTML = WAITER_SLOTS.map(slot => {
+    const waiter = waiters[slot] || {};
+    const name = String(waiter.name || "");
+    const active = waiter.active !== false;
 
-    alert(
-      `Table ${table} session ended and the table has been released.`
-    );
+    const guestLink =
+      `${window.location.origin}${window.location.pathname}?guest=${slot}`;
+
+    const waiterLink =
+      `${window.location.origin}${window.location.pathname}?waiter=${slot}`;
+
+    return `
+      <div class="waiter-slot-card">
+        <div class="heading-row">
+          <div>
+            <div class="slot-name">Waiter ${escapeHtml(slot)}</div>
+            <div class="muted">
+              Permanent QR/service slot
+            </div>
+          </div>
+
+          <span class="badge ${active ? "active" : ""}">
+            ${active ? "Enabled" : "Disabled"}
+          </span>
+        </div>
+
+        <br>
+
+        <label>
+          Assigned staff name
+          <input
+            id="managerWaiterName${slot}"
+            type="text"
+            value="${escapeHtml(name)}"
+            placeholder="e.g. Thabo"
+          />
+        </label>
+
+        <button
+          class="success"
+          onclick="saveWaiterName('${slot}')"
+        >
+          Save Name
+        </button>
+
+        <button
+          class="${active ? "danger" : "blue"}"
+          onclick="toggleWaiterSlot('${slot}', ${active})"
+        >
+          ${active ? "Disable Slot" : "Enable Slot"}
+        </button>
+
+        <p class="muted">Guest QR link</p>
+        <div class="code">${escapeHtml(guestLink)}</div>
+
+        <button
+          class="secondary"
+          onclick="copyText('${escapeHtml(guestLink)}')"
+        >
+          Copy Guest Link
+        </button>
+
+        <button
+          class="blue"
+          onclick="location.href='?waiter=${slot}'"
+        >
+          Open Waiter Dashboard
+        </button>
+
+        <p class="muted">Waiter dashboard link</p>
+        <div class="code">${escapeHtml(waiterLink)}</div>
+      </div>
+    `;
+  }).join("");
+}
+
+async function saveWaiterName(slot) {
+  const input =
+    document.getElementById(`managerWaiterName${slot}`);
+
+  const name = input.value.trim();
+
+  await db.ref(`waiters/${slot}`).update({
+    slot: String(slot),
+    name,
+    updatedAt:
+      firebase.database.ServerValue.TIMESTAMP
+  });
+
+  alert(
+    name
+      ? `Waiter ${slot} is now assigned to ${name}.`
+      : `Waiter ${slot} returned to its placeholder name.`
+  );
+}
+
+async function toggleWaiterSlot(slot, currentlyActive) {
+  await db.ref(`waiters/${slot}`).update({
+    active: !currentlyActive,
+    updatedAt:
+      firebase.database.ServerValue.TIMESTAMP
+  });
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    alert("Link copied.");
+  } catch (error) {
+    prompt("Copy this link:", text);
   }
 }
 
+function renderManagerActiveSessions(sessions) {
+  const container =
+    document.getElementById("managerActiveSessions");
+
+  const active = Object.entries(sessions)
+    .filter(([, session]) =>
+      session && session.status === "active"
+    )
+    .sort((a, b) =>
+      Number(b[1].lastActivityAt || b[1].createdAt || 0) -
+      Number(a[1].lastActivityAt || a[1].createdAt || 0)
+    );
+
+  if (!active.length) {
+    container.innerHTML =
+      `<p class="muted">No active guest sessions.</p>`;
+    return;
+  }
+
+  Promise.all(active.map(async ([sessionId, session]) => {
+    const waiter = await getWaiter(session.waiterSlot);
+    const waiterName = getWaiterDisplayName(waiter);
+    const label = guestLabel(sessionId, session);
+    const total = calculateTotal(session.items || {});
+    const request = session.latestRequest;
+
+    return `
+      <div class="session-card">
+        <div class="heading-row">
+          <div>
+            <strong>${escapeHtml(label)}</strong>
+            <div class="muted">
+              ${escapeHtml(waiterName)}
+              · Waiter slot ${escapeHtml(session.waiterSlot || "?")}
+            </div>
+          </div>
+          <strong>${money(total)}</strong>
+        </div>
+
+        ${
+          request && request.status !== "completed"
+            ? `
+              <div class="status ${
+                request.status === "new" ? "danger" : ""
+              }">
+                ${escapeHtml(request.label || "")}
+                — ${escapeHtml(request.status || "")}
+              </div>
+            `
+            : ""
+        }
+
+        <button
+          class="danger"
+          onclick="endSessionOverride(
+            '${sessionId}',
+            'manager_override'
+          )"
+        >
+          Manager End Session
+        </button>
+      </div>
+    `;
+  })).then(cards => {
+    container.innerHTML = cards.join("");
+  });
+}
 </script>
 
 </body>
