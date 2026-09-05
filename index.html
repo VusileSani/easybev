@@ -245,9 +245,24 @@
   .usual-actions button { width:auto; margin:0; }
   .guest-name-line { font-size:20px; font-weight:850; letter-spacing:-.3px; }
   .guest-code-line { color:var(--muted); font-size:12px; font-weight:700; margin-top:2px; }
+  .guest-primary-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-bottom:14px; }
+  .guest-primary-actions button { width:100%; margin:0; min-height:64px; }
+  .preferences-panel { margin-top:14px; border:1px solid var(--line); border-radius:14px; background:#f8faf9; overflow:hidden; }
+  .preferences-panel summary { cursor:pointer; padding:15px 16px; font-weight:850; list-style:none; }
+  .preferences-panel summary::-webkit-details-marker { display:none; }
+  .preferences-panel summary::after { content:"+"; float:right; color:#8b6714; }
+  .preferences-panel[open] summary::after { content:"–"; }
+  .preferences-body { padding:0 16px 16px; border-top:1px solid var(--line); }
+  .manager-report-panel { margin-bottom:16px; }
+  .report-controls { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0 16px; }
+  .report-controls button { width:auto; margin:0; }
+  .report-kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+  .report-kpi { padding:15px; border:1px solid var(--line); border-radius:14px; background:#f8faf9; }
+  .report-kpi strong { display:block; font-size:25px; letter-spacing:-.5px; margin-top:3px; }
+  .report-table { margin-top:16px; }
 
   @media (max-width: 650px) {
-    .slot-detail-grid, .usual-grid { grid-template-columns:1fr; }
+    .slot-detail-grid, .usual-grid, .report-kpis { grid-template-columns:1fr; }
     .qr-lanyard { grid-template-columns:1fr; }
     .qr-box { margin:0 auto; }
   }
@@ -785,28 +800,9 @@
 
         <h3>What do you need?</h3>
 
-        <div class="request-grid">
-
-          <button onclick="sendRequest('assistance')">
-            Call Waiter
-          </button>
-
-          <button onclick="sendRequest('drinks')">
-            Order Drinks
-          </button>
-
-          <button onclick="sendRequest('food')">
-            Order Food
-          </button>
-
-          <button
-            id="guestBillButton"
-            class="warning"
-            onclick="requestBill()"
-          >
-            Request Bill
-          </button>
-
+        <div class="guest-primary-actions">
+          <button onclick="sendRequest('assistance')">Call Waiter</button>
+          <button class="warning" onclick="sendMyUsual()">My Usual</button>
         </div>
 
         <div id="guestRequestStatus"></div>
@@ -814,16 +810,8 @@
         <div class="chat-panel guest-chat">
           <h4>Message your waiter</h4>
           <div class="notification-toolbar">
-            <button
-              id="guestNotificationsButton"
-              class="secondary"
-              onclick="enableEasyBevNotifications()"
-            >
-              Enable Reply Alerts
-            </button>
-            <span id="guestNotificationStatus" class="notification-state">
-              Optional alerts when your waiter replies.
-            </span>
+            <button id="guestNotificationsButton" class="secondary" onclick="enableEasyBevNotifications()">Enable Reply Alerts</button>
+            <span id="guestNotificationStatus" class="notification-state">Optional alerts when your waiter replies.</span>
           </div>
           <div id="guestChatThread" class="chat-thread">
             <div class="chat-empty">No messages yet.</div>
@@ -834,43 +822,25 @@
           </div>
         </div>
 
-      </div>
-
-
-      <div class="card usual-card">
-
-        <div class="heading-row">
-          <div>
-            <h3 style="margin-bottom:4px">My Usual</h3>
-            <p class="muted" style="margin:0">Save your favourites once, then send them to your waiter whenever you want.</p>
+        <details class="preferences-panel">
+          <summary>Preferences &amp; Settings</summary>
+          <div class="preferences-body">
+            <h3 style="margin-top:14px;margin-bottom:4px">Set My Usual</h3>
+            <p class="muted" style="margin-top:0">Edit what EasyBev should send when you tap My Usual.</p>
+            <div class="usual-grid">
+              <label>Favourite drink<input id="usualDrink" type="text" maxlength="100" placeholder="e.g. Castle Lite" /></label>
+              <label>Favourite meal<input id="usualMeal" type="text" maxlength="120" placeholder="e.g. Sirloin, medium rare" /></label>
+            </div>
+            <label>Optional note<input id="usualNote" type="text" maxlength="160" placeholder="e.g. No ice, lemon on the side" /></label>
+            <div class="usual-actions">
+              <button class="secondary" onclick="saveMyUsual()">Save My Usual</button>
+            </div>
+            <div id="usualStatus"></div>
           </div>
-          <span class="badge">Guest preference</span>
-        </div>
-
-        <div class="usual-grid" style="margin-top:12px">
-          <label>
-            Favourite drink
-            <input id="usualDrink" type="text" maxlength="100" placeholder="e.g. Castle Lite" />
-          </label>
-          <label>
-            Favourite meal
-            <input id="usualMeal" type="text" maxlength="120" placeholder="e.g. Sirloin, medium rare" />
-          </label>
-        </div>
-
-        <label>
-          Optional note
-          <input id="usualNote" type="text" maxlength="160" placeholder="e.g. No ice, lemon on the side" />
-        </label>
-
-        <div class="usual-actions">
-          <button class="secondary" onclick="saveMyUsual()">Save My Usual</button>
-          <button class="warning" onclick="sendMyUsual()">Send My Usual</button>
-        </div>
-
-        <div id="usualStatus"></div>
+        </details>
 
       </div>
+
 
       <div class="card">
 
@@ -977,11 +947,13 @@
 
       <div class="manager-toolbar">
         <button class="warning" onclick="addWaiterSlot()">+ Add Waiter Slot</button>
+        <button class="secondary" onclick="toggleManagerReports()">Reports</button>
         <span class="muted">Slots are permanent. Deactivate rather than delete.</span>
       </div>
 
     </div>
 
+    <div id="managerReports" class="card manager-report-panel hidden"></div>
     <div id="managerWaiterSlots"></div>
 
   </section>
@@ -2340,24 +2312,15 @@ async function startGuestFlow() {
           `;
 
 
-        if (
-
-          rememberedPhone &&
-
-          cleanPhone(
-            session.guestPhone
-          ) ===
-
-          cleanPhone(
-            rememberedPhone
-          )
-
-        ) {
-
-          connectGuestToSession(
-            rememberedSessionId
-          );
-
+        /* Identity may be remembered, but waiter-session routing is never automatic.
+           The guest must explicitly reconnect to this waiter/session. */
+        if (rememberedPhone && cleanPhone(session.guestPhone) === cleanPhone(rememberedPhone)) {
+          document.getElementById("verificationMessage").innerHTML = `
+            <strong>Welcome back${currentGuestProfile && currentGuestProfile.firstName ? `, ${escapeHtml(currentGuestProfile.firstName)}` : ""}.</strong><br><br>
+            You have an active session with ${escapeHtml(currentGuestWaiterName)}.
+            <br><br>
+            <button class="success" onclick="connectGuestToSession('${rememberedSessionId}')">Reconnect to ${escapeHtml(currentGuestWaiterName)}</button>
+          `;
         }
 
         return;
@@ -2377,9 +2340,10 @@ async function startGuestFlow() {
     if (rememberMe && rememberedPhone && currentGuestUserId && currentGuestProfile) {
       document.getElementById("verificationMessage").innerHTML = `
         <strong>Welcome back, ${escapeHtml(currentGuestProfile.firstName || "Guest")}.</strong><br><br>
-        Connecting you to ${escapeHtml(currentGuestWaiterName)}…
+        Ready to connect to ${escapeHtml(currentGuestWaiterName)}.
+        <br><br>
+        <button class="success" onclick="connectRememberedGuest()">Connect to ${escapeHtml(currentGuestWaiterName)}</button>
       `;
-      await findOrCreateGuestSession(rememberedPhone);
       return;
     }
 
@@ -2402,6 +2366,17 @@ async function startGuestFlow() {
 
   }
 
+}
+
+
+async function connectRememberedGuest() {
+  const rememberedPhone = localStorage.getItem(phoneStorageKey(guestSlot));
+  if (!rememberedPhone || !currentGuestUserId) {
+    document.getElementById("verificationMessage").textContent =
+      `Verify your mobile number to connect to ${currentGuestWaiterName}.`;
+    return;
+  }
+  await findOrCreateGuestSession(rememberedPhone);
 }
 
 
@@ -2673,9 +2648,19 @@ function showUsualStatus(message, kind = "") {
 
 async function sendMyUsual() {
   if (!currentSessionId) return;
+  if (!currentGuestUserId) {
+    showUsualStatus("Set up My Usual under Preferences & Settings first.", "warning");
+    document.querySelector(".preferences-panel")?.setAttribute("open", "");
+    return;
+  }
 
-  const usual = await saveMyUsual(false);
-  if (!usual) return;
+  const snap = await db.ref(`users/${currentGuestUserId}/preferences/usual`).once("value");
+  const usual = snap.val() || {};
+  if (!usual.drink && !usual.meal && !usual.note) {
+    document.querySelector(".preferences-panel")?.setAttribute("open", "");
+    showUsualStatus("Set My Usual here first, then use the button above anytime.", "warning");
+    return;
+  }
 
   const parts = [];
   if (usual.drink) parts.push(`Drink: ${usual.drink}`);
@@ -3103,16 +3088,7 @@ async function sendRequest(
 
 
   const labels = {
-
-    assistance:
-      "Waiter assistance",
-
-    drinks:
-      "Drinks requested",
-
-    food:
-      "Food requested"
-
+    assistance: "Waiter assistance"
   };
 
 
@@ -3127,7 +3103,7 @@ async function sendRequest(
         type,
 
         label:
-          labels[type],
+          labels[type] || "Guest request",
 
         status:
           "new",
@@ -5186,11 +5162,13 @@ function startManagerDashboard() {
     db.ref("waiters").on("value", snap => {
       latestManagerWaiters = snap.val() || {};
       renderManagerWaiterSlots(latestManagerWaiters, latestManagerSessions);
+      if (!document.getElementById("managerReports")?.classList.contains("hidden")) renderManagerReports();
     });
 
     db.ref("sessions").on("value", snap => {
       latestManagerSessions = snap.val() || {};
       renderManagerWaiterSlots(latestManagerWaiters, latestManagerSessions);
+      if (!document.getElementById("managerReports")?.classList.contains("hidden")) renderManagerReports();
     });
 
   }
@@ -5198,6 +5176,80 @@ function startManagerDashboard() {
     console.error(error);
     showStartupError(error.message || "Could not load management dashboard.");
   }
+}
+
+
+let managerReportRangeDays = 1;
+
+function toggleManagerReports() {
+  const panel = document.getElementById("managerReports");
+  if (!panel) return;
+  panel.classList.toggle("hidden");
+  if (!panel.classList.contains("hidden")) renderManagerReports();
+}
+
+function setManagerReportRange(days) {
+  managerReportRangeDays = Number(days) || 1;
+  renderManagerReports();
+}
+
+function renderManagerReports() {
+  const panel = document.getElementById("managerReports");
+  if (!panel) return;
+
+  const now = Date.now();
+  const start = managerReportRangeDays === 1
+    ? new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()).getTime()
+    : now - managerReportRangeDays * 24 * 60 * 60 * 1000;
+
+  const rows = Object.entries(latestManagerSessions || {}).filter(([, session]) => {
+    const created = Number(session && session.createdAt || 0);
+    return session && created >= start && created <= now;
+  });
+
+  const uniqueGuests = new Set(rows.map(([, s]) => s.guestUserId || cleanPhone(s.guestPhone) || s.sessionCode).filter(Boolean)).size;
+  const closed = rows.filter(([, s]) => s.status === "closed" || s.status === "ended").length;
+  const billsRequested = rows.filter(([, s]) => s.bill && s.bill.requestedAt).length;
+  const recordedValue = rows.reduce((sum, [, s]) => sum + calculateTotal(s.items || {}), 0);
+
+  const durations = rows
+    .filter(([, s]) => s.endedAt && s.createdAt)
+    .map(([, s]) => Number(s.endedAt) - Number(s.createdAt))
+    .filter(ms => ms > 0);
+  const avgMinutes = durations.length ? Math.round(durations.reduce((a,b) => a+b, 0) / durations.length / 60000) : null;
+
+  const waiterCounts = {};
+  rows.forEach(([, s]) => {
+    const slot = String(s.waiterSlot || "?");
+    waiterCounts[slot] = (waiterCounts[slot] || 0) + 1;
+  });
+  const waiterRows = Object.entries(waiterCounts).sort((a,b) => Number(a[0]) - Number(b[0])).map(([slot, count]) => {
+    const waiter = latestManagerWaiters[slot] || {};
+    return `<div class="manager-row"><span>${escapeHtml(getWaiterDisplayName({...waiter, slot}))}<small class="muted"> · Waiter ${escapeHtml(slot)}</small></span><strong>${count} session${count === 1 ? "" : "s"}</strong></div>`;
+  }).join("") || `<p class="muted">No service sessions in this period.</p>`;
+
+  const rangeLabel = managerReportRangeDays === 1 ? "Today" : `Last ${managerReportRangeDays} days`;
+  panel.innerHTML = `
+    <div class="heading-row">
+      <div><h3 style="margin-bottom:3px">Service Reports</h3><p class="muted" style="margin:0">${rangeLabel} · EasyBev service activity only.</p></div>
+      <button class="secondary" onclick="toggleManagerReports()">Close</button>
+    </div>
+    <div class="report-controls">
+      <button class="${managerReportRangeDays === 1 ? "warning" : "secondary"}" onclick="setManagerReportRange(1)">Today</button>
+      <button class="${managerReportRangeDays === 7 ? "warning" : "secondary"}" onclick="setManagerReportRange(7)">7 Days</button>
+      <button class="${managerReportRangeDays === 30 ? "warning" : "secondary"}" onclick="setManagerReportRange(30)">30 Days</button>
+    </div>
+    <div class="report-kpis">
+      <div class="report-kpi"><span class="muted">Sessions</span><strong>${rows.length}</strong></div>
+      <div class="report-kpi"><span class="muted">Unique guests</span><strong>${uniqueGuests}</strong></div>
+      <div class="report-kpi"><span class="muted">Bills requested</span><strong>${billsRequested}</strong></div>
+      <div class="report-kpi"><span class="muted">Recorded bill value</span><strong>${money(recordedValue)}</strong></div>
+    </div>
+    <div class="report-table">
+      <div class="heading-row"><strong>Waiter activity</strong><span class="muted">${closed} ended · Avg duration ${avgMinutes === null ? "—" : `${avgMinutes} min`}</span></div>
+      ${waiterRows}
+    </div>
+  `;
 }
 
 
