@@ -114,6 +114,15 @@ function getWaiterDisplayName(
 
   if (
     waiter &&
+    waiter.assignedStaffName
+  ) {
+
+    return waiter.assignedStaffName;
+
+  }
+
+  if (
+    waiter &&
     waiter.name
   ) {
 

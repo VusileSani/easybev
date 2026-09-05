@@ -673,6 +673,12 @@ async function findOrCreateGuestSession(
         waiter
       ),
 
+    waiterStaffIdAtStart:
+      String(waiter.assignedStaffId || "").trim() || null,
+
+    waiterStaffNameAtStart:
+      String(waiter.assignedStaffName || waiter.name || "").trim() || null,
+
     guestUserId:
       currentGuestUserId || null,
 

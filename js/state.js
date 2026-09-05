@@ -85,6 +85,7 @@ let managerSelectedSlot = null;
 let latestManagerWaiters = {};
 let latestManagerSessions = {};
 let latestManagerMenuItems = {};
+let latestManagerStaff = {};
 
 let currentGuestUserId = null;
 let currentGuestProfile = null;

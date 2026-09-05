@@ -226,6 +226,8 @@ async function getWaiter(
     exists: snap.exists(),
     slot: String(slot),
     name: String(waiter.name || "").trim(),
+    assignedStaffId: String(waiter.assignedStaffId || "").trim(),
+    assignedStaffName: String(waiter.assignedStaffName || "").trim(),
     active: snap.exists() && waiter.active !== false
   };
 }

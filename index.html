@@ -397,6 +397,7 @@
 
       <div class="manager-toolbar">
         <button class="warning" onclick="addWaiterSlot()">+ Add Waiter Slot</button>
+        <button class="secondary" onclick="toggleManagerStaff()">Staff</button>
         <button class="secondary" onclick="toggleManagerMenuItems()">Menu Items</button>
         <button class="secondary" onclick="toggleManagerReports()">Reports</button>
         <span class="muted">Slots are permanent. Deactivate rather than delete.</span>
@@ -404,6 +405,7 @@
 
     </div>
 
+    <div id="managerStaff" class="card manager-staff-panel hidden"></div>
     <div id="managerMenuItems" class="card manager-menu-panel hidden"></div>
     <div id="managerReports" class="card manager-report-panel hidden"></div>
     <div id="managerWaiterSlots"></div>

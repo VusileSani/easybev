@@ -645,3 +645,19 @@
   }
 }
 
+
+
+/* =========================================================
+   STAFF IDENTITY
+   ========================================================= */
+.manager-staff-panel { margin-bottom: 16px; }
+.manager-staff-add { display:grid; grid-template-columns:1.2fr .9fr 1.2fr auto; gap:8px; margin:16px 0; }
+.manager-staff-add input { margin:0; }
+.manager-staff-add button { width:auto; margin:0; }
+.manager-staff-list { display:grid; gap:8px; }
+.manager-staff-row { display:flex; justify-content:space-between; align-items:center; gap:14px; padding:12px 13px; border:1px solid var(--line); border-radius:13px; background:#f8faf9; }
+.manager-staff-name { font-weight:850; }
+@media (max-width: 760px) {
+  .manager-staff-add { grid-template-columns:1fr; }
+  .manager-staff-row { align-items:flex-start; flex-direction:column; }
+}

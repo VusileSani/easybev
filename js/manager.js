@@ -23,6 +23,12 @@ function startManagerDashboard() {
       if (!document.getElementById("managerMenuItems")?.classList.contains("hidden")) renderManagerMenuItems();
     });
 
+    db.ref("staff").on("value", snap => {
+      latestManagerStaff = snap.val() || {};
+      renderManagerWaiterSlots(latestManagerWaiters, latestManagerSessions);
+      if (!document.getElementById("managerStaff")?.classList.contains("hidden")) renderManagerStaff();
+    });
+
   }
   catch (error) {
     console.error(error);
@@ -104,6 +110,245 @@ function renderManagerReports() {
   `;
 }
 
+
+/* =========================================================
+   MANAGER STAFF ROSTER
+   ========================================================= */
+
+function toggleManagerStaff() {
+  const panel = document.getElementById("managerStaff");
+  if (!panel) return;
+  panel.classList.toggle("hidden");
+  if (!panel.classList.contains("hidden")) renderManagerStaff();
+}
+
+function staffDisplayName(staff) {
+  return String((staff && staff.name) || "Unnamed staff member").trim() || "Unnamed staff member";
+}
+
+function activeStaffEntries() {
+  return Object.entries(latestManagerStaff || {})
+    .filter(([, staff]) => staff)
+    .sort((a, b) => staffDisplayName(a[1]).localeCompare(staffDisplayName(b[1])));
+}
+
+function renderManagerStaff() {
+  const panel = document.getElementById("managerStaff");
+  if (!panel) return;
+
+  const rows = activeStaffEntries();
+  const roster = rows.length
+    ? rows.map(([id, staff]) => {
+        const active = staff.active !== false;
+        const slot = Object.entries(latestManagerWaiters || {})
+          .find(([, waiter]) => waiter && String(waiter.assignedStaffId || "") === String(id));
+        const assignment = slot ? `Waiter ${escapeHtml(slot[0])}` : "Not assigned";
+        const mobile = String(staff.mobile || "").trim();
+        const uid = String(staff.firebaseUid || "").trim();
+        return `
+          <div class="manager-staff-row">
+            <div>
+              <div class="manager-staff-name">${escapeHtml(staffDisplayName(staff))}</div>
+              <div class="muted">${escapeHtml(assignment)}${mobile ? ` · ${escapeHtml(mobile)}` : ""}${uid ? ` · Auth linked` : ""}</div>
+            </div>
+            <div class="manager-menu-actions">
+              <span class="badge ${active ? "active" : ""}">${active ? "Active" : "Inactive"}</span>
+              <button class="secondary" onclick="editManagerStaff('${escapeJsString(id)}')">Edit</button>
+              <button class="${active ? "danger" : "blue"}" onclick="toggleManagerStaffMember('${escapeJsString(id)}', ${active})">${active ? "Deactivate" : "Reactivate"}</button>
+            </div>
+          </div>`;
+      }).join("")
+    : `<p class="muted">No staff profiles yet. Add the first waiter below.</p>`;
+
+  panel.innerHTML = `
+    <div class="heading-row">
+      <div>
+        <h3 style="margin-bottom:3px">Staff Roster</h3>
+        <p class="muted" style="margin:0">Staff are persistent EasyBev identities. Permanent QR slots are assigned to these profiles.</p>
+      </div>
+      <button class="secondary" onclick="toggleManagerStaff()">Close</button>
+    </div>
+
+    <div class="manager-staff-add">
+      <input id="managerStaffName" type="text" maxlength="80" placeholder="Full name e.g. Thabo Mokoena" />
+      <input id="managerStaffMobile" type="tel" maxlength="30" placeholder="Mobile (optional)" />
+      <input id="managerStaffUid" type="text" maxlength="160" placeholder="Firebase UID (optional for now)" />
+      <button class="warning" onclick="addManagerStaff()">+ Add Staff</button>
+    </div>
+
+    <div class="manager-staff-list">${roster}</div>
+    <p class="muted" style="margin-top:14px">A Firebase UID links this business profile to the authenticated login. It can be added later without changing historical service records.</p>
+  `;
+}
+
+async function addManagerStaff() {
+  const name = String(document.getElementById("managerStaffName")?.value || "").trim();
+  const mobile = String(document.getElementById("managerStaffMobile")?.value || "").trim();
+  const firebaseUid = String(document.getElementById("managerStaffUid")?.value || "").trim();
+
+  if (!name) {
+    alert("Enter the staff member's name.");
+    return;
+  }
+
+  const duplicate = Object.values(latestManagerStaff || {}).some(staff =>
+    staff && staff.active !== false && String(staff.name || "").trim().toLowerCase() === name.toLowerCase()
+  );
+  if (duplicate) {
+    alert("An active staff profile with that name already exists.");
+    return;
+  }
+
+  if (firebaseUid) {
+    const duplicateUid = Object.values(latestManagerStaff || {}).some(staff =>
+      staff && String(staff.firebaseUid || "").trim() === firebaseUid
+    );
+    if (duplicateUid) {
+      alert("That Firebase UID is already linked to another staff profile.");
+      return;
+    }
+  }
+
+  const ref = db.ref("staff").push();
+  await ref.set({
+    staffId: ref.key,
+    name,
+    mobile,
+    firebaseUid,
+    active: true,
+    createdAt: firebase.database.ServerValue.TIMESTAMP,
+    updatedAt: firebase.database.ServerValue.TIMESTAMP
+  });
+
+  showEasyBevToast("Staff profile created", `${name} is ready for waiter-slot assignment.`);
+}
+
+async function editManagerStaff(id) {
+  const staff = latestManagerStaff[id];
+  if (!staff) return;
+
+  const namePrompt = prompt("Staff name", String(staff.name || ""));
+  if (namePrompt === null) return;
+  const name = namePrompt.trim();
+  if (!name) return;
+
+  const mobilePrompt = prompt("Mobile number (optional)", String(staff.mobile || ""));
+  if (mobilePrompt === null) return;
+  const mobile = mobilePrompt.trim();
+
+  const uidPrompt = prompt("Firebase UID (optional)", String(staff.firebaseUid || ""));
+  if (uidPrompt === null) return;
+  const firebaseUid = uidPrompt.trim();
+
+  if (firebaseUid) {
+    const duplicateUid = Object.entries(latestManagerStaff || {}).some(([otherId, other]) =>
+      otherId !== id && other && String(other.firebaseUid || "").trim() === firebaseUid
+    );
+    if (duplicateUid) {
+      alert("That Firebase UID is already linked to another staff profile.");
+      return;
+    }
+  }
+
+  await db.ref(`staff/${id}`).update({
+    name,
+    mobile,
+    firebaseUid,
+    updatedAt: firebase.database.ServerValue.TIMESTAMP
+  });
+
+  /* Keep the live slot's display snapshot aligned with renamed staff. */
+  const updates = {};
+  Object.entries(latestManagerWaiters || {}).forEach(([slot, waiter]) => {
+    if (waiter && String(waiter.assignedStaffId || "") === String(id)) {
+      updates[`waiters/${slot}/assignedStaffName`] = name;
+      updates[`waiters/${slot}/name`] = name;
+      updates[`waiters/${slot}/updatedAt`] = firebase.database.ServerValue.TIMESTAMP;
+    }
+  });
+  if (Object.keys(updates).length) await db.ref().update(updates);
+
+  showEasyBevToast("Staff profile updated", name);
+}
+
+async function toggleManagerStaffMember(id, currentlyActive) {
+  const staff = latestManagerStaff[id];
+  if (!staff) return;
+
+  if (currentlyActive) {
+    const assignedSlots = Object.entries(latestManagerWaiters || {})
+      .filter(([, waiter]) => waiter && String(waiter.assignedStaffId || "") === String(id));
+    if (assignedSlots.length) {
+      alert(`Unassign ${staffDisplayName(staff)} from Waiter ${assignedSlots.map(([slot]) => slot).join(", ")} before deactivating this staff profile.`);
+      return;
+    }
+  }
+
+  await db.ref(`staff/${id}`).update({
+    active: !currentlyActive,
+    updatedAt: firebase.database.ServerValue.TIMESTAMP
+  });
+  showEasyBevToast(!currentlyActive ? "Staff reactivated" : "Staff deactivated", staffDisplayName(staff));
+}
+
+function staffAssignmentOptions(selectedId = "") {
+  const rows = activeStaffEntries().filter(([, staff]) => staff.active !== false);
+  const options = [`<option value="">Unassigned</option>`];
+  rows.forEach(([id, staff]) => {
+    const assignedElsewhere = Object.entries(latestManagerWaiters || {})
+      .find(([, waiter]) => waiter && String(waiter.assignedStaffId || "") === String(id));
+    const label = `${staffDisplayName(staff)}${assignedElsewhere ? ` · Waiter ${assignedElsewhere[0]}` : ""}`;
+    options.push(`<option value="${escapeHtml(id)}" ${String(selectedId) === String(id) ? "selected" : ""}>${escapeHtml(label)}</option>`);
+  });
+  return options.join("");
+}
+
+async function saveWaiterStaffAssignment(slot) {
+  const select = document.getElementById(`managerWaiterStaff${slot}`);
+  if (!select) return;
+
+  const staffId = String(select.value || "").trim();
+  const current = latestManagerWaiters[slot] || {};
+
+  if (!staffId) {
+    await db.ref(`waiters/${slot}`).update({
+      assignedStaffId: null,
+      assignedStaffName: null,
+      name: "",
+      assignmentUpdatedAt: firebase.database.ServerValue.TIMESTAMP,
+      updatedAt: firebase.database.ServerValue.TIMESTAMP
+    });
+    showEasyBevToast("Waiter slot unassigned", `Waiter ${slot} is available for another staff member.`);
+    return;
+  }
+
+  const staff = latestManagerStaff[staffId];
+  if (!staff || staff.active === false) {
+    alert("Choose an active staff member.");
+    return;
+  }
+
+  const existingAssignment = Object.entries(latestManagerWaiters || {})
+    .find(([otherSlot, waiter]) => String(otherSlot) !== String(slot) && waiter && String(waiter.assignedStaffId || "") === staffId);
+  if (existingAssignment) {
+    alert(`${staffDisplayName(staff)} is already assigned to Waiter ${existingAssignment[0]}. Unassign that slot first.`);
+    return;
+  }
+
+  const assignedAt = firebase.database.ServerValue.TIMESTAMP;
+  await db.ref(`waiters/${slot}`).update({
+    slot: String(slot),
+    assignedStaffId: staffId,
+    assignedStaffName: staffDisplayName(staff),
+    /* name remains as a compatibility snapshot for older EasyBev logic. */
+    name: staffDisplayName(staff),
+    assignedAt,
+    assignmentUpdatedAt: assignedAt,
+    updatedAt: assignedAt
+  });
+
+  showEasyBevToast("Staff assigned", `${staffDisplayName(staff)} → Waiter ${slot}`);
+}
 
 /* =========================================================
    MANAGER MENU ITEMS
@@ -250,7 +495,7 @@ function renderManagerWaiterSlots(
   }
 
   container.innerHTML = slots.map(([slot, waiter]) => {
-    const name = String(waiter.name || "").trim();
+    const name = String(waiter.assignedStaffName || waiter.name || "").trim();
     const active = waiter.active !== false;
     const displayName = name || `Waiter ${slot}`;
     const activeSessions = managerSessionsForSlot(slot, sessions);
@@ -302,7 +547,8 @@ function managerSessionsForSlot(slot, sessions) {
 }
 
 function managerWaiterDetailHtml(slot, waiter, activeSessions, guestLink, waiterLink) {
-  const name = String(waiter.name || "").trim();
+  const name = String(waiter.assignedStaffName || waiter.name || "").trim();
+  const assignedStaffId = String(waiter.assignedStaffId || "").trim();
   const active = waiter.active !== false;
 
   const sessionHtml = activeSessions.length
@@ -322,11 +568,15 @@ function managerWaiterDetailHtml(slot, waiter, activeSessions, guestLink, waiter
       <div class="slot-detail-grid">
         <div>
           <label>
-            Assigned staff name
-            <input id="managerWaiterName${slot}" type="text" value="${escapeHtml(name)}" placeholder="e.g. Thabo" />
+            Assigned staff
+            <select id="managerWaiterStaff${slot}">
+              ${staffAssignmentOptions(assignedStaffId)}
+            </select>
           </label>
+          ${!activeStaffEntries().filter(([, staff]) => staff.active !== false).length ? `<p class="muted">Create a staff profile under <strong>Staff</strong> before assigning this slot.</p>` : ""}
+          ${!assignedStaffId && name ? `<div class="status warning">Legacy assignment: ${escapeHtml(name)}. Create/select a Staff Profile to make this a persistent identity.</div>` : ""}
           <div class="slot-detail-actions">
-            <button class="success" onclick="saveWaiterName('${slot}')">Save Name</button>
+            <button class="success" onclick="saveWaiterStaffAssignment('${slot}')">Save Assignment</button>
             <button class="${active ? "danger" : "blue"}" onclick="toggleWaiterSlot('${slot}', ${active})">${active ? "Deactivate Slot" : "Reactivate Slot"}</button>
             <button class="blue" onclick="location.href='?waiter=${slot}'">Open Waiter Dashboard</button>
           </div>
@@ -431,7 +681,7 @@ function printWaiterLanyard(slot) {
     }
 
     const waiter = latestManagerWaiters[slot] || {};
-    const assignedName = String(waiter.name || "").trim();
+    const assignedName = String(waiter.assignedStaffName || waiter.name || "").trim();
     const guestLink = `${window.location.origin}${window.location.pathname}?guest=${slot}`;
     const popup = window.open("", "_blank", "width=520,height=760");
     if (!popup) {
