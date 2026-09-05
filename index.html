@@ -1,854 +1,647 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EasyBev</title>
 
-  <style>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
+  <style>
     * {
       box-sizing: border-box;
     }
 
     body {
       margin: 0;
-      padding: 24px 14px;
-      font-family: Arial, sans-serif;
-      background: #111;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f4f5f7;
+      color: #202124;
+    }
+
+    header {
+      background: #111827;
       color: white;
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
 
-    h1 {
-      text-align: center;
-      margin: 0 0 5px 0;
+    header h1 {
+      margin: 0;
+      font-size: 22px;
     }
 
-    h2,
-    h3 {
-      margin-top: 0;
-    }
-
-    .subtitle {
-      text-align: center;
-      color: #aaa;
-      margin-bottom: 24px;
+    header small {
+      opacity: 0.75;
     }
 
     .container {
       max-width: 1000px;
-      margin: auto;
+      margin: 0 auto;
+      padding: 22px 16px 60px;
     }
 
     .card {
-      background: #1d1d1d;
-      border: 1px solid #333;
+      background: white;
       border-radius: 14px;
-      padding: 24px;
-      margin-bottom: 20px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
     }
 
     .hidden {
       display: none !important;
     }
 
-    .developer-controls {
-      max-width: 1000px;
-      margin: 0 auto 20px auto;
-      padding: 15px;
-      background: #1d1d1d;
-      border: 1px solid #333;
-      border-radius: 12px;
-    }
-
-    .developer-buttons,
-    .compact-actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
+    h2, h3 {
+      margin-top: 0;
     }
 
     button {
-      width: 100%;
-      padding: 13px;
-      margin: 6px 0;
-      border: none;
-      border-radius: 8px;
+      border: 0;
+      border-radius: 9px;
+      padding: 12px 16px;
       font-size: 15px;
-      font-weight: bold;
       cursor: pointer;
-      background: #21c063;
-      color: #07150c;
+      background: #111827;
+      color: white;
+      margin: 4px;
     }
 
     button:hover {
-      opacity: 0.92;
+      opacity: 0.9;
     }
 
     button:disabled {
-      background: #555;
-      color: #999;
+      opacity: 0.4;
       cursor: not-allowed;
     }
 
-    .secondary {
-      background: #3677d8;
-      color: white;
+    button.secondary {
+      background: #e5e7eb;
+      color: #111827;
     }
 
-    .muted-button {
-      background: #333;
-      color: white;
+    button.success {
+      background: #15803d;
     }
 
-    .warning-button {
-      background: #f2b84b;
-      color: #111;
+    button.warning {
+      background: #d97706;
     }
 
-    .danger {
-      background: #e84c4c;
-      color: white;
+    button.danger {
+      background: #b91c1c;
     }
 
-    input,
-    textarea {
+    button.blue {
+      background: #2563eb;
+    }
+
+    button.purple {
+      background: #7c3aed;
+    }
+
+    input, select {
       width: 100%;
+      border: 1px solid #d1d5db;
+      border-radius: 9px;
       padding: 12px;
-      margin-bottom: 10px;
-      border-radius: 8px;
-      border: 1px solid #444;
-      background: #292929;
-      color: white;
       font-size: 15px;
-      font-family: Arial, sans-serif;
+      margin: 7px 0;
     }
 
-    textarea {
-      min-height: 110px;
-      resize: vertical;
+    .request-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
     }
 
-    .small-text {
-      color: #aaa;
-      font-size: 13px;
-      line-height: 1.6;
+    .request-grid button {
+      width: 100%;
+      margin: 0;
+      min-height: 58px;
     }
 
     .status {
-      margin-top: 18px;
-      padding: 15px;
-      border-radius: 8px;
-      background: #292929;
-      line-height: 1.5;
-    }
-
-    .waiter-intro {
-      color: #aaa;
-      line-height: 1.7;
-      margin-bottom: 18px;
-    }
-
-    .verified {
-      color: #21c063;
-      font-weight: bold;
-    }
-
-    .warning {
-      color: #f2b84b;
-      font-weight: bold;
-    }
-
-    .session-info {
-      padding: 14px;
-      border: 1px solid #444;
-      background: #252525;
-      border-radius: 10px;
-      line-height: 1.7;
-      margin-bottom: 15px;
-    }
-
-    .bill-box {
-      margin: 18px 0;
-      padding: 20px;
-      border-radius: 12px;
-      background: #252525;
-      border: 1px solid #444;
-      text-align: center;
-    }
-
-    .bill-label {
-      color: #aaa;
-      font-size: 14px;
-    }
-
-    .bill-total {
-      font-size: 36px;
-      font-weight: bold;
-      margin: 8px 0;
-    }
-
-    .item-row {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 10px;
-      padding: 8px 0;
-      border-bottom: 1px solid #333;
-    }
-
-    .item-row:last-child {
-      border-bottom: none;
-    }
-
-    .landing {
-      text-align: center;
-      padding: 40px 24px;
-    }
-
-    .landing p {
-      color: #aaa;
-      line-height: 1.7;
-    }
-
-    .completion-box {
-      text-align: center;
-      padding: 35px 20px;
-      background: #252525;
-      border: 1px solid #444;
-      border-radius: 12px;
-    }
-
-    .completion-icon {
-      width: 64px;
-      height: 64px;
-      margin: 0 auto 18px auto;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #21c063;
-      color: #07150c;
-      font-size: 34px;
-      font-weight: bold;
-    }
-
-    .dashboard-summary {
       padding: 12px 14px;
-      margin-bottom: 15px;
-      background: #252525;
-      border-radius: 8px;
-      border: 1px solid #444;
-    }
-
-    .guest-actions {
-      margin-top: 12px;
-    }
-
-    .guest-request-status {
-      margin-top: 14px;
-      padding: 12px;
       border-radius: 9px;
-      background: #202020;
-      border: 1px solid #3d3d3d;
+      margin: 12px 0;
+      background: #eef2ff;
     }
 
-    .request-status-line {
-      padding: 7px 0;
-      border-bottom: 1px solid #333;
-      line-height: 1.5;
+    .status.success {
+      background: #dcfce7;
     }
 
-    .request-status-line:last-child {
-      border-bottom: none;
+    .status.warning {
+      background: #fef3c7;
     }
 
-    .request-sent {
-      color: #f2b84b;
+    .status.danger {
+      background: #fee2e2;
     }
 
-    .request-seen {
-      color: #21c063;
-    }
-
-    .session-card {
-      background: #252525;
-      border: 1px solid #444;
-      border-radius: 14px;
-      padding: 16px;
-      margin-bottom: 12px;
-    }
-
-    .patron-top {
+    .bill-row,
+    .item-row {
       display: flex;
-      align-items: flex-start;
       justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-
-    .patron-name {
-      font-size: 19px;
-      font-weight: bold;
-    }
-
-    .location-label {
-      display: inline-block;
-      padding: 5px 9px;
-      border-radius: 20px;
-      background: #333;
-      color: #ddd;
-      font-size: 12px;
-      white-space: nowrap;
-    }
-
-    .patron-summary {
-      display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
     }
 
-    .patron-total {
-      font-size: 24px;
+    .total {
+      font-size: 25px;
       font-weight: bold;
+      text-align: right;
+      margin-top: 16px;
     }
 
-    .badge-area {
+    .waiter-table {
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 14px;
+      background: white;
+    }
+
+    .waiter-table.active {
+      border: 2px solid #2563eb;
+    }
+
+    .waiter-table.stale {
+      border: 2px solid #d97706;
+    }
+
+    .waiter-table.orphan {
+      border: 2px solid #b91c1c;
+    }
+
+    .table-heading {
       display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
     }
 
     .badge {
-      padding: 5px 8px;
+      display: inline-block;
+      padding: 5px 9px;
       border-radius: 20px;
-      font-size: 11px;
-      font-weight: bold;
-    }
-
-    .badge-request {
-      background: #f2b84b;
-      color: #111;
-    }
-
-    .badge-bill {
-      background: #3677d8;
-      color: white;
-    }
-
-    .badge-ready {
-      background: #21c063;
-      color: #07150c;
-    }
-
-    .patron-details {
-      margin-top: 14px;
-      padding-top: 14px;
-      border-top: 1px solid #3c3c3c;
-    }
-
-    .detail-heading {
-      margin: 15px 0 8px;
-      color: #aaa;
       font-size: 12px;
-      font-weight: bold;
-      text-transform: uppercase;
+      background: #e5e7eb;
     }
 
-    .request-card {
-      margin: 8px 0;
-      padding: 10px;
-      border: 1px solid #555;
-      border-radius: 8px;
-      background: #202020;
+    .badge.active {
+      background: #dcfce7;
+      color: #166534;
     }
 
-    .request-message {
-      white-space: pre-wrap;
-      line-height: 1.5;
+    .badge.alert {
+      background: #fee2e2;
+      color: #991b1b;
     }
 
-    .modal-overlay {
+    .badge.warning {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .badge.blue {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    .modal {
       position: fixed;
       inset: 0;
-      z-index: 9999;
-      background: rgba(0, 0, 0, 0.78);
+      background: rgba(0,0,0,0.55);
       display: flex;
-      align-items: center;
       justify-content: center;
-      padding: 20px;
+      align-items: flex-end;
+      z-index: 1000;
     }
 
-    .modal-card {
+    .modal-content {
       width: 100%;
-      max-width: 430px;
+      max-width: 600px;
       max-height: 90vh;
       overflow-y: auto;
-      background: #1d1d1d;
-      border: 1px solid #444;
-      border-radius: 16px;
-      padding: 20px;
+      background: white;
+      border-radius: 18px 18px 0 0;
+      padding: 22px;
     }
 
-    .modal-title {
-      margin-bottom: 4px;
-    }
-
-    .menu-list {
+    .modal-actions {
+      display: flex;
+      justify-content: space-between;
       margin-top: 18px;
     }
 
-    .menu-item {
-      width: 100%;
-      display: flex;
-      justify-content: space-between;
-      gap: 15px;
-      align-items: center;
-      background: #292929;
-      color: white;
-      border: 1px solid #444;
-      padding: 14px;
-      margin-bottom: 8px;
-      border-radius: 9px;
+    .added-items {
+      margin-top: 14px;
+      background: #f9fafb;
+      border-radius: 10px;
+      padding: 12px;
     }
 
-    .menu-price {
-      font-weight: bold;
-    }
-
-    .add-feedback {
-      margin: 14px 0 8px;
-      padding: 11px 12px;
-      background: #163523;
-      border: 1px solid #285d3c;
-      color: #8ff0b5;
-      border-radius: 8px;
+    .muted {
+      color: #6b7280;
       font-size: 14px;
+    }
+
+    .big-number {
+      font-size: 32px;
       font-weight: bold;
     }
 
-    .app-footer {
-      max-width: 1000px;
-      margin: 30px auto 10px auto;
-      padding: 20px 10px;
+    .admin-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .admin-stat {
+      background: #f9fafb;
+      border-radius: 12px;
+      padding: 16px;
       text-align: center;
-      color: #777;
-      font-size: 13px;
-      border-top: 1px solid #222;
     }
 
-    .app-footer a {
-      color: #aaa;
-      text-decoration: none;
-      margin: 0 5px;
+    .admin-stat-number {
+      font-size: 30px;
+      font-weight: bold;
     }
 
+    .admin-detail {
+      margin: 6px 0;
+      line-height: 1.5;
+    }
+
+    .session-id {
+      font-family: monospace;
+      font-size: 12px;
+      word-break: break-all;
+      color: #6b7280;
+    }
+
+    hr {
+      border: 0;
+      border-top: 1px solid #eee;
+      margin: 18px 0;
+    }
+
+    @media (max-width: 650px) {
+      .request-grid,
+      .admin-stats {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 
 <body>
 
+<header>
   <h1>EasyBev</h1>
+  <small id="headerMode"></small>
+</header>
 
-  <div class="subtitle">
-    Service at your fingertips
-  </div>
+<div class="container">
 
-  <div
-    id="developerControls"
-    class="developer-controls hidden"
-  >
+  <!-- HOME -->
+  <section id="homeView" class="card hidden">
+    <h2>EasyBev Prototype</h2>
+    <p>Choose a demo view.</p>
 
-    <strong>
-      EasyBev V4.3 Developer Controls
-    </strong>
+    <button onclick="location.href='?table=7'">
+      Guest – Table 7
+    </button>
 
-    <div class="developer-buttons">
+    <button onclick="location.href='?table=8'">
+      Guest – Table 8
+    </button>
 
-      <button onclick="openDemoWaiter()">
-        Scan Thabo's QR
-      </button>
-
-      <button
-        class="secondary"
-        onclick="showWaiterDashboard()"
-      >
-        Thabo's Dashboard
-      </button>
-
-    </div>
-
-  </div>
-
-
-  <div class="container">
-
-    <div
-      id="landingView"
-      class="card landing"
+    <button
+      class="blue"
+      onclick="location.href='?waiter=1'"
     >
+      Waiter – Thabo
+    </button>
 
+    <button
+      class="purple"
+      onclick="location.href='?admin=1'"
+    >
+      Restaurant Admin
+    </button>
+  </section>
+
+
+  <!-- ========================= -->
+  <!-- GUEST VIEW -->
+  <!-- ========================= -->
+
+  <section id="guestView" class="hidden">
+
+    <div class="card">
       <h2>
-        Welcome to EasyBev
+        Table
+        <span id="guestTableNumber"></span>
       </h2>
 
-      <p>
-        Scan your waiter's EasyBev QR code to get started.
-      </p>
+      <div id="guestVerification">
 
-    </div>
-
-
-    <div
-      id="guestView"
-      class="card hidden"
-    >
-
-      <h2 id="guestHeading">
-        Hey there 👋
-      </h2>
-
-      <div
-        id="waiterIntro"
-        class="waiter-intro"
-      ></div>
-
-
-      <div id="guestLogin">
-
-        <h3>
-          Let's get you started
-        </h3>
-
-        <input
-          id="guestName"
-          type="text"
-          placeholder="Your name"
-        >
+        <p id="verificationMessage">
+          Verify your mobile number to start your table session.
+        </p>
 
         <input
           id="guestPhone"
           type="tel"
-          placeholder="Mobile number"
-        >
+          placeholder="Mobile number e.g. 0821234567"
+        />
 
-        <button onclick="sendOTP()">
-          Get Started
+        <button onclick="requestOtp()">
+          Send OTP
         </button>
 
+        <div id="otpArea" class="hidden">
+
+          <input
+            id="guestOtp"
+            type="number"
+            placeholder="Enter OTP"
+          />
+
+          <p class="muted">
+            Demo OTP:
+            <strong>123456</strong>
+          </p>
+
+          <button
+            class="success"
+            onclick="verifyOtp()"
+          >
+            Verify
+          </button>
+
+        </div>
+
+        <div id="verificationStatus"></div>
       </div>
 
+      <div id="guestSessionInfo" class="hidden">
 
-      <div
-        id="otpArea"
-        class="hidden"
-      >
-
-        <h3>
-          Quick verification
-        </h3>
-
-        <div class="small-text">
-          Prototype OTP:
-          <strong>1234</strong>
+        <div class="status success">
+          Connected to Table
+          <strong id="connectedTable"></strong>
         </div>
-
-        <br>
-
-        <input
-          id="otpInput"
-          type="text"
-          inputmode="numeric"
-          placeholder="Enter OTP"
-        >
-
-        <button onclick="verifyOTP()">
-          Verify
-        </button>
 
       </div>
+    </div>
 
 
-      <div
-        id="activeGuestSession"
-        class="hidden"
-      >
+    <div id="guestControls" class="hidden">
 
-        <div class="session-info">
+      <div class="card">
+        <h3>What do you need?</h3>
 
-          <strong>
-            You're connected
-          </strong>
+        <div class="request-grid">
 
-          <br>
+          <button onclick="sendRequest('assistance')">
+            Call Waiter
+          </button>
 
-          You:
-          <span id="activeGuestName"></span>
+          <button onclick="sendRequest('drinks')">
+            Order Drinks
+          </button>
 
-          <br>
-
-          Waiter:
-          <strong id="activeWaiterName"></strong>
-
-          <div
-            id="guestLocationRow"
-            class="hidden"
-          >
-
-            Location:
-            <span id="activeLocation"></span>
-
-          </div>
-
-          Account:
-          <span class="verified">
-            VERIFIED
-          </span>
-
-        </div>
-
-
-        <div class="bill-box">
-
-          <div class="bill-label">
-            Your Current Bill
-          </div>
-
-          <div
-            id="guestTotal"
-            class="bill-total"
-          >
-            R0.00
-          </div>
-
-          <div
-            id="guestBillState"
-            class="small-text"
-          >
-            No charges yet.
-          </div>
-
-        </div>
-
-
-        <div id="guestItems"></div>
-
-
-        <div class="guest-actions">
-
-          <button onclick="showGuestRequestModal()">
-            Request Something
+          <button onclick="sendRequest('food')">
+            Order Food
           </button>
 
           <button
-            class="secondary"
-            onclick="sendAssistanceRequest()"
-          >
-            Need Assistance
-          </button>
-
-          <button
-            id="requestBillButton"
-            class="warning-button hidden"
+            id="guestBillButton"
+            class="warning"
             onclick="requestBill()"
           >
             Request Bill
           </button>
 
-          <button
-            id="payButton"
-            class="secondary hidden"
-            onclick="payBill()"
-            disabled
-          >
-            Pay
-          </button>
-
         </div>
 
-
-        <div
-          id="guestRequestStatus"
-          class="guest-request-status hidden"
-        ></div>
-
+        <div id="guestRequestStatus"></div>
       </div>
 
 
-      <div
-        id="sessionComplete"
-        class="completion-box hidden"
-      >
+      <div class="card">
 
-        <div class="completion-icon">
-          ✓
+        <h3>Your Bill</h3>
+
+        <div id="guestBillItems"></div>
+
+        <div class="total">
+          Total:
+          <span id="guestTotal">R0.00</span>
         </div>
 
-        <h3 id="completionTitle">
-          Session complete
-        </h3>
+        <div id="guestBillStatus"></div>
 
-        <p
-          id="completionMessage"
-          class="small-text"
-        ></p>
+        <button
+          id="guestPayButton"
+          class="success hidden"
+          onclick="payBill()"
+        >
+          Pay
+        </button>
 
-      </div>
-
-
-      <div
-        id="guestStatus"
-        class="status"
-      >
-        Scan your waiter's QR code to begin.
       </div>
 
     </div>
 
 
-    <div
-      id="waiterView"
-      class="card hidden"
-    >
+    <div id="guestClosedView" class="card hidden">
 
-      <h2 id="waiterDashboardTitle">
-        Thabo
-      </h2>
+      <h2>Session ended</h2>
 
-      <div class="waiter-intro">
-        Your EasyBev patrons
-      </div>
+      <p>
+        This table session has been closed.
+      </p>
 
-      <div
-        id="dashboardSummary"
-        class="dashboard-summary"
-      >
-        Loading...
-      </div>
-
-      <div id="waiterSessions"></div>
-
-    </div>
-
-  </div>
-
-
-  <!-- REQUEST MODAL -->
-
-  <div
-    id="guestRequestModal"
-    class="modal-overlay hidden"
-    onclick="guestRequestBackgroundClick(event)"
-  >
-
-    <div class="modal-card">
-
-      <h2>
-        What can Thabo get you?
-      </h2>
-
-      <textarea
-        id="guestRequestText"
-        placeholder="e.g. 2 Castle Lagers and an ice bucket"
-      ></textarea>
-
-      <button onclick="submitGuestTextRequest()">
-        Send Request
+      <button onclick="location.reload()">
+        Start / Reconnect
       </button>
 
+    </div>
+
+  </section>
+
+
+
+  <!-- ========================= -->
+  <!-- WAITER VIEW -->
+  <!-- ========================= -->
+
+  <section id="waiterView" class="hidden">
+
+    <div class="card">
+      <h2>Thabo's Tables</h2>
+
+      <p class="muted">
+        Active guest sessions and table requests appear here.
+      </p>
+    </div>
+
+    <div id="waiterTables"></div>
+
+  </section>
+
+
+
+  <!-- ========================= -->
+  <!-- ADMIN VIEW -->
+  <!-- ========================= -->
+
+  <section id="adminView" class="hidden">
+
+    <div class="card">
+
+      <h2>Restaurant Admin</h2>
+
+      <p class="muted">
+        Manager-level visibility and session recovery controls.
+      </p>
+
+      <div class="admin-stats">
+
+        <div class="admin-stat">
+          <div
+            id="adminActiveCount"
+            class="admin-stat-number"
+          >
+            0
+          </div>
+          <div>Active Sessions</div>
+        </div>
+
+        <div class="admin-stat">
+          <div
+            id="adminAvailableCount"
+            class="admin-stat-number"
+          >
+            0
+          </div>
+          <div>Available Tables</div>
+        </div>
+
+        <div class="admin-stat">
+          <div
+            id="adminProblemCount"
+            class="admin-stat-number"
+          >
+            0
+          </div>
+          <div>Session Issues</div>
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="card">
+
+      <h3>Table Management</h3>
+
+      <p class="muted">
+        The administrator can recover stuck,
+        orphaned or incorrectly locked tables.
+      </p>
+
+    </div>
+
+    <div id="adminTables"></div>
+
+  </section>
+
+</div>
+
+
+
+<!-- ========================= -->
+<!-- ADD ITEMS MODAL -->
+<!-- ========================= -->
+
+<div id="itemModal" class="modal hidden">
+
+  <div class="modal-content">
+
+    <h2>
+      Add Items – Table
+      <span id="itemModalTable"></span>
+    </h2>
+
+    <input
+      id="itemName"
+      type="text"
+      placeholder="Item name e.g. Castle Lite"
+    />
+
+    <input
+      id="itemPrice"
+      type="number"
+      min="0"
+      step="0.01"
+      placeholder="Price"
+    />
+
+    <input
+      id="itemQty"
+      type="number"
+      min="1"
+      value="1"
+      placeholder="Quantity"
+    />
+
+    <button
+      class="blue"
+      onclick="addItemToBill()"
+    >
+      Add Item
+    </button>
+
+    <div class="added-items">
+
+      <strong>Current Bill</strong>
+
+      <div id="modalBillItems"></div>
+
+      <div
+        class="total"
+        id="modalTotal"
+      >
+        R0.00
+      </div>
+
+    </div>
+
+    <div class="modal-actions">
+
       <button
-        class="muted-button"
-        onclick="closeGuestRequestModal()"
+        class="secondary"
+        onclick="closeItemModal()"
       >
         Cancel
       </button>
 
-    </div>
-
-  </div>
-
-
-  <!-- ADD ITEM MODAL -->
-
-  <div
-    id="addItemModal"
-    class="modal-overlay hidden"
-    onclick="modalBackgroundClick(event)"
-  >
-
-    <div class="modal-card">
-
-      <h2>
-        Add Item
-      </h2>
-
-      <div
-        id="addItemPatronName"
-        class="small-text"
-      ></div>
-
-      <div class="menu-list">
-
-        <button
-          class="menu-item"
-          onclick="addSelectedItem('Beer', 35)"
-        >
-          <span>Beer</span>
-          <span>R35</span>
-        </button>
-
-        <button
-          class="menu-item"
-          onclick="addSelectedItem('Cocktail', 85)"
-        >
-          <span>Cocktail</span>
-          <span>R85</span>
-        </button>
-
-        <button
-          class="menu-item"
-          onclick="addSelectedItem('Shot', 45)"
-        >
-          <span>Shot</span>
-          <span>R45</span>
-        </button>
-
-        <button
-          class="menu-item"
-          onclick="addSelectedItem('Round of 10 Shots', 450)"
-        >
-          <span>10 Shots</span>
-          <span>R450</span>
-        </button>
-
-        <button
-          class="menu-item"
-          onclick="addSelectedItem('Burger', 120)"
-        >
-          <span>Burger</span>
-          <span>R120</span>
-        </button>
-
-      </div>
-
-
-      <div
-        id="addItemFeedback"
-        class="add-feedback hidden"
-      ></div>
-
-
       <button
-        class="secondary"
-        onclick="closeAddItemMenu()"
+        class="success"
+        onclick="doneAddingItems()"
       >
         Done
       </button>
@@ -857,2445 +650,2864 @@
 
   </div>
 
-
-  <footer class="app-footer">
-
-    EasyBev ©
-    <span id="footerYear"></span>
-
-    <br>
-
-    <a
-      href="https://easybev.co.za"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      Official Website
-    </a>
-
-    •
-
-    <a
-      href="https://easybev.co.za/help"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      Help
-    </a>
-
-    •
-
-    <a
-      href="https://easybev.co.za/contact"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      Contact
-    </a>
-
-  </footer>
+</div>
 
 
-  <script type="module">
 
-    import {
-      initializeApp
-    } from
-      "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+<script>
 
+/* =========================================================
+   FIREBASE
+   ========================================================= */
 
-    import {
-      getDatabase,
-      ref,
-      get,
-      set,
-      update,
-      push,
-      onValue,
-      runTransaction
-    } from
-      "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
+const firebaseConfig = {
+  apiKey: "PASTE_YOUR_EXISTING_API_KEY",
+  authDomain: "PASTE_YOUR_EXISTING_AUTH_DOMAIN",
+  databaseURL: "PASTE_YOUR_EXISTING_DATABASE_URL",
+  projectId: "PASTE_YOUR_EXISTING_PROJECT_ID",
+  storageBucket: "PASTE_YOUR_EXISTING_STORAGE_BUCKET",
+  messagingSenderId: "PASTE_YOUR_EXISTING_MESSAGING_SENDER_ID",
+  appId: "PASTE_YOUR_EXISTING_APP_ID"
+};
 
+firebase.initializeApp(firebaseConfig);
 
-    const firebaseConfig = {
-
-      apiKey:
-        "AIzaSyDydmFMOw3Kd5lTXq_n0WGRIamM5cgO08o",
-
-      authDomain:
-        "easybev-prototype.firebaseapp.com",
-
-      databaseURL:
-        "https://easybev-prototype-default-rtdb.firebaseio.com",
-
-      projectId:
-        "easybev-prototype",
-
-      storageBucket:
-        "easybev-prototype.firebasestorage.app",
-
-      messagingSenderId:
-        "1006818240163",
-
-      appId:
-        "1:1006818240163:web:765843bafcd931ff98c116"
-
-    };
+const db = firebase.database();
 
 
-    const app =
-      initializeApp(firebaseConfig);
 
-    const database =
-      getDatabase(app);
+/* =========================================================
+   GENERAL
+   ========================================================= */
 
+const params =
+  new URLSearchParams(
+    window.location.search
+  );
 
-    const DEMO_VENUE = {
+const tableId =
+  params.get("table");
 
-      id:
-        "easybev-demo",
+const waiterMode =
+  params.get("waiter") === "1";
 
-      name:
-        "EasyBev Demo Venue"
-
-    };
-
-
-    const DEMO_WAITERS = {
-
-      THABO7X: {
-
-        waiterId:
-          "thabo",
-
-        name:
-          "Thabo",
-
-        qrToken:
-          "THABO7X"
-
-      }
-
-    };
+const adminMode =
+  params.get("admin") === "1";
 
 
-    let currentVenueId =
-      DEMO_VENUE.id;
+let currentSessionId = null;
+let currentSession = null;
 
-    let currentWaiterToken =
-      null;
+let itemModalSessionId = null;
+let itemModalTableId = null;
 
-    let currentWaiter =
-      null;
-
-    let currentSessionId =
-      null;
-
-    let pendingGuestName =
-      "";
-
-    let pendingGuestPhone =
-      "";
-
-    let unsubscribeGuestSession =
-      null;
-
-    let waiterDashboardStarted =
-      false;
-
-    let currentAddItemSessionId =
-      null;
-
-    let sessionEndedLocally =
-      false;
+const DEMO_TABLES = ["7", "8"];
 
 
-    function activeSessionRef(
-      sessionId = currentSessionId
+
+function money(value) {
+
+  return (
+    "R" +
+    Number(value || 0).toFixed(2)
+  );
+}
+
+
+
+function cleanPhone(phone) {
+
+  return String(phone || "")
+    .replace(/\s+/g, "")
+    .replace(/-/g, "");
+}
+
+
+
+function maskPhone(phone) {
+
+  const cleaned =
+    cleanPhone(phone);
+
+  if (!cleaned) {
+    return "Unknown";
+  }
+
+  if (cleaned.length <= 4) {
+    return cleaned;
+  }
+
+  return (
+    cleaned.slice(0, 3) +
+    "****" +
+    cleaned.slice(-3)
+  );
+}
+
+
+
+function escapeHtml(value) {
+
+  return String(value || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+
+
+function calculateTotal(items) {
+
+  if (!items)
+    return 0;
+
+  let total = 0;
+
+  Object.values(items)
+    .forEach(item => {
+
+      total +=
+        Number(item.price || 0) *
+        Number(item.qty || 1);
+
+    });
+
+  return total;
+}
+
+
+
+function formatDate(timestamp) {
+
+  if (!timestamp)
+    return "Unknown";
+
+  try {
+
+    return new Date(
+      timestamp
+    ).toLocaleString();
+
+  }
+  catch {
+
+    return "Unknown";
+  }
+}
+
+
+
+/* =========================================================
+   ROUTING
+   ========================================================= */
+
+if (adminMode) {
+
+  document.getElementById(
+    "adminView"
+  ).classList.remove("hidden");
+
+  document.getElementById(
+    "headerMode"
+  ).textContent =
+    "Restaurant Admin";
+
+  startAdminDashboard();
+
+}
+else if (waiterMode) {
+
+  document.getElementById(
+    "waiterView"
+  ).classList.remove("hidden");
+
+  document.getElementById(
+    "headerMode"
+  ).textContent =
+    "Waiter";
+
+  startWaiterDashboard();
+
+}
+else if (tableId) {
+
+  document.getElementById(
+    "guestView"
+  ).classList.remove("hidden");
+
+  document.getElementById(
+    "guestTableNumber"
+  ).textContent =
+    tableId;
+
+  document.getElementById(
+    "headerMode"
+  ).textContent =
+    "Guest";
+
+  startGuestFlow();
+
+}
+else {
+
+  document.getElementById(
+    "homeView"
+  ).classList.remove("hidden");
+
+}
+
+
+
+/* =========================================================
+   GUEST SESSION RECOVERY
+   ========================================================= */
+
+async function startGuestFlow() {
+
+  const rememberedPhone =
+    localStorage.getItem(
+      "easybev_guest_phone"
+    );
+
+  if (rememberedPhone) {
+
+    document.getElementById(
+      "guestPhone"
+    ).value =
+      rememberedPhone;
+
+  }
+
+
+  const tableSnap =
+    await db.ref(
+      `tables/${tableId}`
+    ).once("value");
+
+  const table =
+    tableSnap.val();
+
+
+  if (
+    table &&
+    table.activeSessionId
+  ) {
+
+    const sessionSnap =
+      await db.ref(
+        `sessions/${table.activeSessionId}`
+      ).once("value");
+
+    const session =
+      sessionSnap.val();
+
+
+    if (
+      session &&
+      session.status === "active"
     ) {
-
-      return ref(
-
-        database,
-
-        "venues/" +
-        currentVenueId +
-        "/activeSessions/" +
-        sessionId
-
-      );
-
-    }
-
-
-    function sessionStorageKey() {
-
-      return (
-
-        "easybev:" +
-        currentVenueId +
-        ":" +
-        currentWaiter.waiterId +
-        ":activeSession"
-
-      );
-
-    }
-
-
-    function saveLocalSession(
-      sessionId
-    ) {
-
-      localStorage.setItem(
-        sessionStorageKey(),
-        sessionId
-      );
-
-    }
-
-
-    function getLocalSession() {
-
-      return localStorage.getItem(
-        sessionStorageKey()
-      );
-
-    }
-
-
-    function clearLocalSession() {
-
-      localStorage.removeItem(
-        sessionStorageKey()
-      );
-
-    }
-
-
-    function hideAllViews() {
-
-      document
-        .getElementById("landingView")
-        .classList.add("hidden");
-
-      document
-        .getElementById("guestView")
-        .classList.add("hidden");
-
-      document
-        .getElementById("waiterView")
-        .classList.add("hidden");
-
-    }
-
-
-    function hideGuestSections() {
-
-      document
-        .getElementById("guestLogin")
-        .classList.add("hidden");
-
-      document
-        .getElementById("otpArea")
-        .classList.add("hidden");
-
-      document
-        .getElementById("activeGuestSession")
-        .classList.add("hidden");
-
-      document
-        .getElementById("sessionComplete")
-        .classList.add("hidden");
-
-    }
-
-
-    function showGuestLogin() {
-
-      hideGuestSections();
-
-      document
-        .getElementById("guestLogin")
-        .classList.remove("hidden");
-
-    }
-
-
-    function showSessionComplete(
-      title,
-      message
-    ) {
-
-      hideGuestSections();
-
-      document
-        .getElementById("sessionComplete")
-        .classList.remove("hidden");
-
-
-      document.getElementById(
-        "completionTitle"
-      ).innerText =
-        title;
-
-
-      document.getElementById(
-        "completionMessage"
-      ).innerText =
-        message;
-
-    }
-
-
-    async function readRouteFromURL() {
-
-      const params =
-        new URLSearchParams(
-          window.location.search
-        );
-
-
-      if (
-        params.get("dev") === "1"
-      ) {
-
-        document
-          .getElementById("developerControls")
-          .classList.remove("hidden");
-
-      }
-
-
-      const waiterToken =
-        params.get("w");
-
-
-      if (
-        waiterToken
-      ) {
-
-        await openWaiterQR(
-          waiterToken
-        );
-
-      }
-
-    }
-
-
-    window.openDemoWaiter =
-      async function() {
-
-        const url =
-          new URL(
-            window.location.href
-          );
-
-
-        url.searchParams.set(
-          "v",
-          DEMO_VENUE.id
-        );
-
-        url.searchParams.set(
-          "w",
-          "THABO7X"
-        );
-
-
-        history.replaceState(
-          {},
-          "",
-          url
-        );
-
-
-        await openWaiterQR(
-          "THABO7X"
-        );
-
-      };
-
-
-    async function openWaiterQR(
-      token
-    ) {
-
-      const waiter =
-        DEMO_WAITERS[
-          token
-        ];
-
-
-      if (
-        !waiter
-      ) {
-
-        alert(
-          "This EasyBev waiter QR is not recognised."
-        );
-
-        return;
-
-      }
-
-
-      currentWaiter =
-        waiter;
-
-      currentWaiterToken =
-        token;
-
-
-      hideAllViews();
-
-
-      document
-        .getElementById("guestView")
-        .classList.remove("hidden");
-
-
-      document.getElementById(
-        "waiterIntro"
-      ).innerHTML =
-
-        "<strong>" +
-        escapeHtml(
-          waiter.name
-        ) +
-        "</strong> is looking after you.";
-
-
-      const saved =
-        getLocalSession();
-
-
-      if (
-        saved
-      ) {
-
-        const snapshot =
-          await get(
-            activeSessionRef(
-              saved
-            )
-          );
-
-
-        if (
-          snapshot.exists() &&
-          snapshot.val().status === "active"
-        ) {
-
-          currentSessionId =
-            saved;
-
-          listenToGuestSession();
-
-          return;
-
-        }
-
-
-        clearLocalSession();
-
-      }
-
-
-      showGuestLogin();
-
-    }
-
-
-    window.sendOTP =
-      function() {
-
-        pendingGuestName =
-          document
-            .getElementById("guestName")
-            .value
-            .trim();
-
-
-        pendingGuestPhone =
-          document
-            .getElementById("guestPhone")
-            .value
-            .trim();
-
-
-        if (
-          !pendingGuestName ||
-          !pendingGuestPhone
-        ) {
-
-          alert(
-            "Enter your name and mobile number."
-          );
-
-          return;
-
-        }
-
-
-        document
-          .getElementById("guestLogin")
-          .classList.add("hidden");
-
-
-        document
-          .getElementById("otpArea")
-          .classList.remove("hidden");
-
-    };
-
-
-    window.verifyOTP =
-      async function() {
-
-        const otp =
-          document
-            .getElementById("otpInput")
-            .value
-            .trim();
-
-
-        if (
-          otp !== "1234"
-        ) {
-
-          alert(
-            "Incorrect OTP."
-          );
-
-          return;
-
-        }
-
-
-        await createPatronSession();
-
-    };
-
-
-    async function createPatronSession() {
-
-      const newRef =
-        push(
-
-          ref(
-
-            database,
-
-            "venues/" +
-            currentVenueId +
-            "/activeSessions"
-
-          )
-
-        );
-
-
-      const sessionId =
-        newRef.key;
-
-
-      const now =
-        Date.now();
-
-
-      await set(
-
-        newRef,
-
-        {
-
-          sessionId,
-
-          venueId:
-            currentVenueId,
-
-          waiterId:
-            currentWaiter.waiterId,
-
-          waiterName:
-            currentWaiter.name,
-
-          waiterToken:
-            currentWaiterToken,
-
-          guest: {
-
-            name:
-              pendingGuestName,
-
-            phone:
-              pendingGuestPhone,
-
-            verified:
-              true,
-
-            joinedAt:
-              now
-
-          },
-
-          locationLabel:
-            "",
-
-          status:
-            "active",
-
-          openedAt:
-            now,
-
-          runningTotal:
-            0,
-
-          billRequested:
-            false,
-
-          billFinalised:
-            false,
-
-          paid:
-            false
-
-        }
-
-      );
-
 
       currentSessionId =
-        sessionId;
-
-
-      saveLocalSession(
-        sessionId
-      );
-
-
-      listenToGuestSession();
-
-    }
-
-
-    function listenToGuestSession() {
-
-      if (
-        !currentSessionId
-      ) {
-
-        return;
-
-      }
-
-
-      if (
-        unsubscribeGuestSession
-      ) {
-
-        unsubscribeGuestSession();
-
-      }
-
-
-      unsubscribeGuestSession =
-        onValue(
-
-          activeSessionRef(),
-
-          function(snapshot) {
-
-            if (
-              !snapshot.exists()
-            ) {
-
-              clearLocalSession();
-
-              currentSessionId =
-                null;
-
-
-              if (
-                !sessionEndedLocally
-              ) {
-
-                showSessionComplete(
-
-                  "Session complete ✅",
-
-                  "Thanks for using EasyBev. Your session has been closed."
-
-                );
-
-              }
-
-
-              return;
-
-            }
-
-
-            const session =
-              snapshot.val();
-
-
-            if (
-              session.status !==
-              "active"
-            ) {
-
-              clearLocalSession();
-
-              currentSessionId =
-                null;
-
-
-              showSessionComplete(
-
-                "Session complete ✅",
-
-                "Thanks for using EasyBev."
-
-              );
-
-
-              return;
-
-            }
-
-
-            renderGuestSession(
-              session
-            );
-
-          }
-
-        );
-
-    }
-
-
-    function renderGuestSession(
-      session
-    ) {
-
-      hideGuestSections();
-
-
-      document
-        .getElementById("activeGuestSession")
-        .classList.remove("hidden");
+        table.activeSessionId;
 
 
       document.getElementById(
-        "activeGuestName"
-      ).innerText =
-        session.guest?.name ||
-        "Guest";
+        "verificationMessage"
+      ).innerHTML =
+        `
+        <strong>
+          An active session already exists
+          for Table ${escapeHtml(tableId)}.
+        </strong>
+
+        <br><br>
+
+        Verify with the same mobile number
+        to reconnect.
+        `;
+
+
+      if (
+        rememberedPhone &&
+        cleanPhone(session.guestPhone) ===
+        cleanPhone(rememberedPhone)
+      ) {
+
+        connectGuestToSession(
+          currentSessionId
+        );
+
+      }
+
+      return;
+    }
+  }
+
+
+  document.getElementById(
+    "verificationMessage"
+  ).textContent =
+    "Verify your mobile number to start your table session.";
+}
+
+
+
+/* =========================================================
+   OTP DEMO
+   ========================================================= */
+
+function requestOtp() {
+
+  const phone =
+    cleanPhone(
+      document.getElementById(
+        "guestPhone"
+      ).value
+    );
+
+
+  if (phone.length < 9) {
+
+    document.getElementById(
+      "verificationStatus"
+    ).innerHTML =
+      `
+      <div class="status danger">
+        Enter a valid mobile number.
+      </div>
+      `;
+
+    return;
+  }
+
+
+  sessionStorage.setItem(
+    "easybev_pending_phone",
+    phone
+  );
+
+
+  document.getElementById(
+    "otpArea"
+  ).classList.remove("hidden");
+
+
+  document.getElementById(
+    "verificationStatus"
+  ).innerHTML =
+    `
+    <div class="status">
+      OTP sent.
+      Demo code is 123456.
+    </div>
+    `;
+}
+
+
+
+async function verifyOtp() {
+
+  const otp =
+    document.getElementById(
+      "guestOtp"
+    ).value;
+
+  const phone =
+    sessionStorage.getItem(
+      "easybev_pending_phone"
+    );
+
+
+  if (otp !== "123456") {
+
+    document.getElementById(
+      "verificationStatus"
+    ).innerHTML =
+      `
+      <div class="status danger">
+        Incorrect OTP.
+      </div>
+      `;
+
+    return;
+  }
+
+
+  if (!phone)
+    return;
+
+
+  localStorage.setItem(
+    "easybev_guest_phone",
+    phone
+  );
+
+
+  await findOrCreateSession(
+    phone
+  );
+}
+
+
+
+/* =========================================================
+   FIND OR CREATE SESSION
+   ========================================================= */
+
+async function findOrCreateSession(phone) {
+
+  const tableRef =
+    db.ref(
+      `tables/${tableId}`
+    );
+
+  const tableSnap =
+    await tableRef.once(
+      "value"
+    );
+
+  const table =
+    tableSnap.val() || {};
+
+
+  if (table.activeSessionId) {
+
+    const existingSessionId =
+      table.activeSessionId;
+
+    const sessionSnap =
+      await db.ref(
+        `sessions/${existingSessionId}`
+      ).once("value");
+
+    const session =
+      sessionSnap.val();
+
+
+    if (
+      session &&
+      session.status === "active"
+    ) {
+
+      if (
+        cleanPhone(session.guestPhone) ===
+        cleanPhone(phone)
+      ) {
+
+        connectGuestToSession(
+          existingSessionId
+        );
+
+        return;
+      }
 
 
       document.getElementById(
-        "activeWaiterName"
-      ).innerText =
-        session.waiterName ||
-        "Your waiter";
+        "verificationStatus"
+      ).innerHTML =
+        `
+        <div class="status danger">
 
+          Table ${escapeHtml(tableId)}
+          currently has an active session
+          belonging to another verified guest.
 
-      const total =
-        Number(
-          session.runningTotal ||
-          0
-        );
+          Please ask your waiter for assistance.
 
+        </div>
+        `;
 
-      document.getElementById(
-        "guestTotal"
-      ).innerText =
-        "R" +
-        total.toFixed(2);
-
-
-      const requestBillButton =
-        document.getElementById(
-          "requestBillButton"
-        );
-
-
-      const payButton =
-        document.getElementById(
-          "payButton"
-        );
-
-
-      if (
-        total <= 0
-      ) {
-
-        requestBillButton
-          .classList.add("hidden");
-
-        payButton
-          .classList.add("hidden");
-
-
-        document.getElementById(
-          "guestBillState"
-        ).innerText =
-          "No charges yet.";
-
-      }
-
-      else if (
-        session.billFinalised
-      ) {
-
-        requestBillButton
-          .classList.add("hidden");
-
-
-        payButton
-          .classList.remove("hidden");
-
-
-        payButton.disabled =
-          false;
-
-
-        payButton.innerText =
-
-          "Pay R" +
-          total.toFixed(2);
-
-
-        document.getElementById(
-          "guestBillState"
-        ).innerText =
-          "Bill finalised — ready for payment.";
-
-      }
-
-      else {
-
-        requestBillButton
-          .classList.remove("hidden");
-
-
-        requestBillButton.disabled =
-          Boolean(
-            session.billRequested
-          );
-
-
-        payButton
-          .classList.add("hidden");
-
-
-        document.getElementById(
-          "guestBillState"
-        ).innerText =
-
-          session.billRequested
-
-            ? "Bill requested. Waiting for your waiter."
-
-            : "Your bill updates automatically.";
-
-      }
-
-
-      renderGuestItems(
-        session.items
-      );
-
-
-      renderGuestRequestStatuses(
-        session.requests,
-        session.waiterName
-      );
-
+      return;
     }
 
 
-    function renderGuestItems(
-      items
-    ) {
+    await tableRef.update({
 
-      const box =
-        document.getElementById(
-          "guestItems"
-        );
+      activeSessionId: null,
 
+      status: "available",
 
-      box.innerHTML =
-        "";
+      updatedAt:
+        firebase.database.ServerValue.TIMESTAMP
 
+    });
+  }
 
-      if (
-        !items
-      ) {
 
-        box.innerHTML =
-          "<div class='small-text'>No items added yet.</div>";
+  const sessionRef =
+    db.ref("sessions").push();
 
-        return;
+  const newSessionId =
+    sessionRef.key;
 
-      }
 
+  const newSession = {
 
-      Object.values(
-        items
-      ).forEach(
+    tableId:
+      String(tableId),
 
-        item => {
+    guestPhone:
+      phone,
 
-          const row =
-            document.createElement(
-              "div"
-            );
+    status:
+      "active",
 
+    createdAt:
+      firebase.database.ServerValue.TIMESTAMP,
 
-          row.className =
-            "item-row";
+    lastActivityAt:
+      firebase.database.ServerValue.TIMESTAMP,
 
+    latestRequest:
+      null,
 
-          row.innerHTML =
+    bill: {
+      status: "open"
+    },
 
-            "<span>" +
-            escapeHtml(
-              item.name
-            ) +
-            "</span>" +
+    total:
+      0
+  };
 
-            "<strong>R" +
-            Number(
-              item.price
-            ).toFixed(2) +
-            "</strong>";
 
+  const transaction =
+    await tableRef.transaction(
+      current => {
 
-          box.appendChild(
-            row
-          );
-
-        }
-
-      );
-
-    }
-
-
-    function renderGuestRequestStatuses(
-      requests,
-      waiterName
-    ) {
-
-      const box =
-        document.getElementById(
-          "guestRequestStatus"
-        );
-
-
-      box.innerHTML =
-        "";
-
-
-      if (
-        !requests
-      ) {
-
-        box.classList.add(
-          "hidden"
-        );
-
-        return;
-
-      }
-
-
-      const serviceRequests =
-        Object.values(
-          requests
-        )
-        .filter(
-          request =>
-            request.type !==
-            "bill"
-        )
-        .sort(
-          (a, b) =>
-            Number(
-              b.createdAt ||
-              0
-            ) -
-            Number(
-              a.createdAt ||
-              0
-            )
-        )
-        .slice(
-          0,
-          3
-        );
-
-
-      if (
-        serviceRequests.length === 0
-      ) {
-
-        box.classList.add(
-          "hidden"
-        );
-
-        return;
-
-      }
-
-
-      box.classList.remove(
-        "hidden"
-      );
-
-
-      serviceRequests.forEach(
-
-        request => {
-
-          const div =
-            document.createElement(
-              "div"
-            );
-
-
-          div.className =
-            "request-status-line";
-
-
-          div.innerHTML =
-
-            request.status ===
-            "acknowledged"
-
-              ? "<span class='request-seen'>" +
-                escapeHtml(
-                  waiterName
-                ) +
-                " has seen your request ✅</span><br>" +
-                "<span class='small-text'>" +
-                escapeHtml(
-                  request.message
-                ) +
-                "</span>"
-
-              : "<span class='request-sent'>Request sent to " +
-                escapeHtml(
-                  waiterName
-                ) +
-                " ✅</span><br>" +
-                "<span class='small-text'>" +
-                escapeHtml(
-                  request.message
-                ) +
-                "</span>";
-
-
-          box.appendChild(
-            div
-          );
-
-        }
-
-      );
-
-    }
-
-
-    window.showGuestRequestModal =
-      function() {
-
-        document
-          .getElementById("guestRequestModal")
-          .classList.remove("hidden");
-
-    };
-
-
-    window.closeGuestRequestModal =
-      function() {
-
-        document
-          .getElementById("guestRequestModal")
-          .classList.add("hidden");
-
-    };
-
-
-    window.guestRequestBackgroundClick =
-      function(event) {
-
-        if (
-          event.target.id ===
-          "guestRequestModal"
-        ) {
-
-          closeGuestRequestModal();
-
-        }
-
-    };
-
-
-    window.submitGuestTextRequest =
-      async function() {
-
-        const message =
-          document
-            .getElementById("guestRequestText")
-            .value
-            .trim();
+        current =
+          current || {};
 
 
         if (
-          !message
+          current.activeSessionId
         ) {
-
-          alert(
-            "Type your request first."
-          );
 
           return;
-
         }
 
 
-        await createGuestRequest(
-          "service",
-          message
-        );
+        return {
 
+          ...current,
 
-        document.getElementById(
-          "guestRequestText"
-        ).value =
-          "";
-
-
-        closeGuestRequestModal();
-
-    };
-
-
-    window.sendAssistanceRequest =
-      async function() {
-
-        await createGuestRequest(
-          "assistance",
-          "Need assistance"
-        );
-
-    };
-
-
-    async function createGuestRequest(
-      type,
-      message
-    ) {
-
-      const requestRef =
-        push(
-
-          ref(
-
-            database,
-
-            "venues/" +
-            currentVenueId +
-            "/activeSessions/" +
-            currentSessionId +
-            "/requests"
-
-          )
-
-        );
-
-
-      await set(
-
-        requestRef,
-
-        {
-
-          requestId:
-            requestRef.key,
-
-          type,
-
-          message,
+          tableId:
+            String(tableId),
 
           status:
-            "pending",
+            "occupied",
 
-          createdAt:
-            Date.now()
+          activeSessionId:
+            newSessionId,
 
-        }
-
-      );
-
-    }
-
-
-    window.requestBill =
-      async function() {
-
-        const snapshot =
-          await get(
-            activeSessionRef()
-          );
-
-
-        if (
-          !snapshot.exists()
-        ) {
-
-          return;
-
-        }
-
-
-        const session =
-          snapshot.val();
-
-
-        if (
-          Number(
-            session.runningTotal ||
-            0
-          ) <= 0 ||
-          session.billRequested
-        ) {
-
-          return;
-
-        }
-
-
-        const requestRef =
-          push(
-
-            ref(
-
-              database,
-
-              "venues/" +
-              currentVenueId +
-              "/activeSessions/" +
-              currentSessionId +
-              "/requests"
-
-            )
-
-          );
-
-
-        const now =
-          Date.now();
-
-
-        const updates =
-          {};
-
-
-        updates[
-
-          "venues/" +
-          currentVenueId +
-          "/activeSessions/" +
-          currentSessionId +
-          "/billRequested"
-
-        ] =
-          true;
-
-
-        updates[
-
-          "venues/" +
-          currentVenueId +
-          "/activeSessions/" +
-          currentSessionId +
-          "/billRequestedAt"
-
-        ] =
-          now;
-
-
-        updates[
-
-          "venues/" +
-          currentVenueId +
-          "/activeSessions/" +
-          currentSessionId +
-          "/requests/" +
-          requestRef.key
-
-        ] = {
-
-          requestId:
-            requestRef.key,
-
-          type:
-            "bill",
-
-          message:
-            "Bill requested",
-
-          status:
-            "pending",
-
-          createdAt:
-            now
+          updatedAt:
+            firebase.database.ServerValue.TIMESTAMP
 
         };
+      }
+    );
 
 
-        await update(
-          ref(database),
-          updates
-        );
+  if (!transaction.committed) {
 
-    };
+    alert(
+      "This table was claimed by another session. Please try again."
+    );
 
-
-    window.payBill =
-      async function() {
-
-        const sessionId =
-          currentSessionId;
+    return;
+  }
 
 
-        const snapshot =
-          await get(
-            activeSessionRef(
-              sessionId
-            )
-          );
+  await sessionRef.set(
+    newSession
+  );
 
 
-        if (
-          !snapshot.exists()
-        ) {
-
-          return;
-
-        }
+  connectGuestToSession(
+    newSessionId
+  );
+}
 
 
-        const session =
-          snapshot.val();
+
+/* =========================================================
+   CONNECT GUEST
+   ========================================================= */
+
+function connectGuestToSession(
+  sessionId
+) {
+
+  currentSessionId =
+    sessionId;
 
 
-        const total =
-          Number(
-            session.runningTotal ||
-            0
-          );
+  document.getElementById(
+    "guestVerification"
+  ).classList.add("hidden");
 
 
-        if (
-          !session.billFinalised ||
-          total <= 0
-        ) {
-
-          return;
-
-        }
+  document.getElementById(
+    "guestSessionInfo"
+  ).classList.remove("hidden");
 
 
-        if (
-          !confirm(
-            "SIMULATED PAYMENT\n\nPay R" +
-            total.toFixed(2) +
-            "?"
-          )
-        ) {
-
-          return;
-
-        }
+  document.getElementById(
+    "guestControls"
+  ).classList.remove("hidden");
 
 
-        const now =
-          Date.now();
+  document.getElementById(
+    "connectedTable"
+  ).textContent =
+    tableId;
 
 
-        sessionEndedLocally =
-          true;
+  db.ref(
+    `sessions/${sessionId}`
+  ).on(
+    "value",
+    snap => {
+
+      const session =
+        snap.val();
 
 
-        await archiveSession(
+      if (!session) {
 
-          sessionId,
-
-          {
-
-            ...session,
-
-            paid:
-              true,
-
-            paidAt:
-              now,
-
-            status:
-              "closed",
-
-            closedAt:
-              now
-
-          }
-
-        );
-
-
-        clearLocalSession();
-
-        currentSessionId =
-          null;
-
-
-        showSessionComplete(
-
-          "Payment complete ✅",
-
-          "Your payment was successful and your EasyBev session is closed."
-
-        );
-
-    };
-
-
-    window.showWaiterDashboard =
-      function() {
-
-        currentWaiter =
-          DEMO_WAITERS.THABO7X;
-
-
-        currentWaiterToken =
-          "THABO7X";
-
-
-        hideAllViews();
-
-
-        document
-          .getElementById("waiterView")
-          .classList.remove("hidden");
-
-
-        listenToWaiterSessions();
-
-    };
-
-
-    function listenToWaiterSessions() {
-
-      if (
-        waiterDashboardStarted
-      ) {
+        showGuestSessionEnded();
 
         return;
-
       }
 
 
-      waiterDashboardStarted =
-        true;
+      currentSession =
+        session;
 
 
-      onValue(
+      if (
+        session.status !== "active"
+      ) {
 
-        ref(
+        showGuestSessionEnded();
 
-          database,
-
-          "venues/" +
-          DEMO_VENUE.id +
-          "/activeSessions"
-
-        ),
-
-        snapshot => {
-
-          const container =
-            document.getElementById(
-              "waiterSessions"
-            );
+        return;
+      }
 
 
-          const summary =
-            document.getElementById(
-              "dashboardSummary"
-            );
-
-
-          container.innerHTML =
-            "";
-
-
-          const sessions =
-            snapshot.exists()
-
-              ? Object.values(
-                  snapshot.val()
-                ).filter(
-
-                  session =>
-
-                    session.waiterId ===
-                    currentWaiter.waiterId &&
-
-                    session.status ===
-                    "active"
-
-                )
-
-              : [];
-
-
-          summary.innerText =
-
-            sessions.length +
-            (
-              sessions.length === 1
-
-                ? " active patron"
-
-                : " active patrons"
-            );
-
-
-          if (
-            sessions.length === 0
-          ) {
-
-            container.innerHTML =
-              "<div class='small-text'>No active EasyBev patrons.</div>";
-
-            return;
-
-          }
-
-
-          sessions.forEach(
-
-            session =>
-              renderWaiterSessionCard(
-                session,
-                container
-              )
-
-          );
-
-        }
-
+      renderGuestSession(
+        session
       );
-
     }
+  );
+}
 
 
-    function renderWaiterSessionCard(
-      session,
-      container
-    ) {
 
-      const card =
-        document.createElement(
-          "div"
-        );
+function showGuestSessionEnded() {
+
+  document.getElementById(
+    "guestControls"
+  ).classList.add("hidden");
 
 
-      card.className =
-        "session-card";
+  document.getElementById(
+    "guestSessionInfo"
+  ).classList.add("hidden");
 
 
-      const total =
-        Number(
-          session.runningTotal ||
-          0
-        );
+  document.getElementById(
+    "guestClosedView"
+  ).classList.remove("hidden");
+}
 
 
-      const pending =
-        session.requests
 
-          ? Object.values(
-              session.requests
-            ).filter(
-              r =>
-                r.status ===
-                "pending"
-            )
+/* =========================================================
+   GUEST REQUESTS
+   ========================================================= */
 
-          : [];
+async function sendRequest(type) {
+
+  if (!currentSessionId)
+    return;
 
 
-      let requestHTML =
-        "";
+  const labels = {
+
+    assistance:
+      "Waiter assistance",
+
+    drinks:
+      "Drinks requested",
+
+    food:
+      "Food requested"
+
+  };
 
 
-      pending.forEach(
+  await db.ref(
+    `sessions/${currentSessionId}`
+  ).update({
 
-        request => {
+    latestRequest: {
 
-          requestHTML += `
+      type,
 
-            <div class="request-card">
+      label:
+        labels[type],
+
+      status:
+        "new",
+
+      createdAt:
+        firebase.database.ServerValue.TIMESTAMP
+
+    },
+
+    lastActivityAt:
+      firebase.database.ServerValue.TIMESTAMP
+
+  });
+}
+
+
+
+async function requestBill() {
+
+  if (!currentSessionId)
+    return;
+
+
+  const total =
+    calculateTotal(
+      currentSession &&
+      currentSession.items
+    );
+
+
+  if (total <= 0) {
+
+    alert(
+      "There are no items on this bill yet."
+    );
+
+    return;
+  }
+
+
+  await db.ref(
+    `sessions/${currentSessionId}`
+  ).update({
+
+    latestRequest: {
+
+      type:
+        "bill",
+
+      label:
+        "Bill requested",
+
+      status:
+        "new",
+
+      createdAt:
+        firebase.database.ServerValue.TIMESTAMP
+
+    },
+
+    "bill/status":
+      "requested",
+
+    "bill/requestedAt":
+      firebase.database.ServerValue.TIMESTAMP,
+
+    lastActivityAt:
+      firebase.database.ServerValue.TIMESTAMP
+
+  });
+}
+
+
+
+async function payBill() {
+
+  if (!currentSessionId)
+    return;
+
+
+  const confirmPayment =
+    confirm(
+      "Demo payment: mark this bill as paid?"
+    );
+
+
+  if (!confirmPayment)
+    return;
+
+
+  await db.ref(
+    `sessions/${currentSessionId}`
+  ).update({
+
+    "bill/status":
+      "paid",
+
+    "bill/paidAt":
+      firebase.database.ServerValue.TIMESTAMP,
+
+    latestRequest: {
+
+      type:
+        "payment",
+
+      label:
+        "Payment completed",
+
+      status:
+        "new",
+
+      createdAt:
+        firebase.database.ServerValue.TIMESTAMP
+
+    },
+
+    lastActivityAt:
+      firebase.database.ServerValue.TIMESTAMP
+
+  });
+}
+
+
+
+/* =========================================================
+   RENDER GUEST
+   ========================================================= */
+
+function renderGuestSession(
+  session
+) {
+
+  const items =
+    session.items || {};
+
+  const total =
+    calculateTotal(
+      items
+    );
+
+  const itemsDiv =
+    document.getElementById(
+      "guestBillItems"
+    );
+
+  const entries =
+    Object.values(items);
+
+
+  if (!entries.length) {
+
+    itemsDiv.innerHTML =
+      `
+      <p class="muted">
+        No items added yet.
+      </p>
+      `;
+
+  }
+  else {
+
+    itemsDiv.innerHTML =
+      entries.map(
+        item => {
+
+          const subtotal =
+            Number(item.price) *
+            Number(item.qty || 1);
+
+
+          return `
+            <div class="bill-row">
+
+              <span>
+                ${escapeHtml(item.name)}
+                × ${item.qty || 1}
+              </span>
 
               <strong>
-                ${escapeHtml(
-                  request.message
-                )}
+                ${money(subtotal)}
               </strong>
 
-              <button
-                onclick="
-                  acknowledgeRequest(
-                    '${session.sessionId}',
-                    '${request.requestId}'
-                  )
-                "
-              >
-                Acknowledge
-              </button>
-
             </div>
-
           `;
 
         }
+      ).join("");
+  }
 
+
+  document.getElementById(
+    "guestTotal"
+  ).textContent =
+    money(total);
+
+
+  document.getElementById(
+    "guestBillButton"
+  ).disabled =
+    total <= 0;
+
+
+  const request =
+    session.latestRequest;
+
+  const requestStatus =
+    document.getElementById(
+      "guestRequestStatus"
+    );
+
+
+  if (request) {
+
+    let message =
+      escapeHtml(
+        request.label || ""
       );
 
 
-      card.innerHTML = `
-
-        <div class="patron-top">
-
-          <div class="patron-name">
-            ${escapeHtml(
-              session.guest?.name ||
-              "Guest"
-            )}
-          </div>
-
-          <span class="location-label">
-            ${escapeHtml(
-              session.locationLabel ||
-              "Location not set"
-            )}
-          </span>
-
-        </div>
-
-
-        <div class="patron-summary">
-
-          <div class="patron-total">
-            R${total.toFixed(2)}
-          </div>
-
-          <div class="badge-area">
-
-            ${
-              pending.length
-
-                ? `<span class="badge badge-request">
-                     ${pending.length} REQUEST
-                   </span>`
-
-                : ""
-            }
-
-            ${
-              session.billRequested &&
-              !session.billFinalised
-
-                ? `<span class="badge badge-bill">
-                     BILL REQUESTED
-                   </span>`
-
-                : ""
-            }
-
-            ${
-              session.billFinalised
-
-                ? `<span class="badge badge-ready">
-                     READY TO PAY
-                   </span>`
-
-                : ""
-            }
-
-          </div>
-
-        </div>
-
-
-        <div class="compact-actions">
-
-          <button
-            class="muted-button"
-            onclick="
-              togglePatronDetails(
-                '${session.sessionId}'
-              )
-            "
-          >
-            Open
-          </button>
-
-
-          <button
-            onclick="
-              showAddItemMenu(
-                '${session.sessionId}'
-              )
-            "
-            ${
-              session.billFinalised
-                ? "disabled"
-                : ""
-            }
-          >
-            + Add Item
-          </button>
-
-        </div>
-
-
-        <div
-          id="details-${session.sessionId}"
-          class="patron-details hidden"
-        >
-
-          <div class="detail-heading">
-            Requests
-          </div>
-
-          ${
-            requestHTML ||
-            "<div class='small-text'>No pending requests.</div>"
-          }
-
-
-          <div class="detail-heading">
-            Patron details
-          </div>
-
-          <div class="small-text">
-
-            Mobile:
-            ${escapeHtml(
-              session.guest?.phone ||
-              ""
-            )}
-
-          </div>
-
-          <br>
-
-
-          <input
-            id="location-${session.sessionId}"
-            placeholder="Table 7, VIP Booth, Outside..."
-            value="${escapeHtml(
-              session.locationLabel ||
-              ""
-            )}"
-          >
-
-
-          <button
-            class="secondary"
-            onclick="
-              setLocation(
-                '${session.sessionId}'
-              )
-            "
-          >
-            Save Location
-          </button>
-
-
-          <div class="detail-heading">
-            Bill
-          </div>
-
-
-          <strong>
-            R${total.toFixed(2)}
-          </strong>
-
-
-          <button
-            class="warning-button"
-            onclick="
-              finaliseBill(
-                '${session.sessionId}'
-              )
-            "
-            ${
-              total > 0 &&
-              session.billRequested &&
-              !session.billFinalised
-
-                ? ""
-
-                : "disabled"
-            }
-          >
-            Finalise Bill
-          </button>
-
-
-          <button
-            class="danger"
-            onclick="
-              closeSession(
-                '${session.sessionId}'
-              )
-            "
-            ${
-              total === 0 ||
-              session.paid
-
-                ? ""
-
-                : "disabled"
-            }
-          >
-
-            ${
-              total === 0
-
-                ? "Close Session — No Bill"
-
-                : "Close Session"
-            }
-
-          </button>
-
-        </div>
-
-      `;
-
-
-      container.appendChild(
-        card
-      );
-
-    }
-
-
-    window.togglePatronDetails =
-      function(
-        sessionId
-      ) {
-
-        document
-          .getElementById(
-            "details-" +
-            sessionId
-          )
-          ?.classList.toggle(
-            "hidden"
-          );
-
-    };
-
-
-    window.showAddItemMenu =
-      async function(
-        sessionId
-      ) {
-
-        const snapshot =
-          await get(
-            activeSessionRef(
-              sessionId
-            )
-          );
-
-
-        if (
-          !snapshot.exists() ||
-          snapshot.val().billFinalised
-        ) {
-
-          return;
-
-        }
-
-
-        currentAddItemSessionId =
-          sessionId;
-
-
-        document.getElementById(
-          "addItemPatronName"
-        ).innerText =
-
-          "Adding to " +
-          (
-            snapshot.val().guest?.name ||
-            "Guest"
-          );
-
-
-        document
-          .getElementById("addItemFeedback")
-          .classList.add("hidden");
-
-
-        document
-          .getElementById("addItemModal")
-          .classList.remove("hidden");
-
-    };
-
-
-    window.closeAddItemMenu =
-      function() {
-
-        currentAddItemSessionId =
-          null;
-
-
-        document
-          .getElementById("addItemModal")
-          .classList.add("hidden");
-
-    };
-
-
-    window.modalBackgroundClick =
-      function(event) {
-
-        if (
-          event.target.id ===
-          "addItemModal"
-        ) {
-
-          closeAddItemMenu();
-
-        }
-
-    };
-
-
-    window.addSelectedItem =
-      async function(
-        itemName,
-        price
-      ) {
-
-        if (
-          !currentAddItemSessionId
-        ) {
-
-          return;
-
-        }
-
-
-        await addItem(
-
-          currentAddItemSessionId,
-
-          itemName,
-
-          price
-
-        );
-
-
-        const feedback =
-          document.getElementById(
-            "addItemFeedback"
-          );
-
-
-        feedback.innerText =
-
-          "✓ " +
-          itemName +
-          " added";
-
-
-        feedback.classList.remove(
-          "hidden"
-        );
-
-    };
-
-
-    async function addItem(
-      sessionId,
-      itemName,
-      price
+    if (
+      request.status ===
+      "acknowledged"
     ) {
 
-      const itemRef =
-        push(
-
-          ref(
-
-            database,
-
-            "venues/" +
-            DEMO_VENUE.id +
-            "/activeSessions/" +
-            sessionId +
-            "/items"
-
-          )
-
-        );
-
-
-      await set(
-
-        itemRef,
-
-        {
-
-          itemId:
-            itemRef.key,
-
-          name:
-            itemName,
-
-          price:
-            Number(
-              price
-            ),
-
-          createdAt:
-            Date.now()
-
-        }
-
-      );
-
-
-      await runTransaction(
-
-        ref(
-
-          database,
-
-          "venues/" +
-          DEMO_VENUE.id +
-          "/activeSessions/" +
-          sessionId +
-          "/runningTotal"
-
-        ),
-
-        current =>
-
-          Number(
-            current ||
-            0
-          ) +
-
-          Number(
-            price
-          )
-
-      );
-
+      message +=
+        " — Thabo acknowledged";
     }
 
 
-    window.setLocation =
-      async function(
-        sessionId
+    if (
+      request.status ===
+      "completed"
+    ) {
+
+      message +=
+        " — completed";
+    }
+
+
+    requestStatus.innerHTML =
+      `
+      <div class="status">
+        ${message}
+      </div>
+      `;
+
+  }
+  else {
+
+    requestStatus.innerHTML =
+      "";
+  }
+
+
+  const billStatus =
+    session.bill &&
+    session.bill.status
+      ? session.bill.status
+      : "open";
+
+
+  const billStatusDiv =
+    document.getElementById(
+      "guestBillStatus"
+    );
+
+
+  const payButton =
+    document.getElementById(
+      "guestPayButton"
+    );
+
+
+  if (
+    billStatus === "requested"
+  ) {
+
+    billStatusDiv.innerHTML =
+      `
+      <div class="status warning">
+        Bill requested.
+        Waiting for Thabo
+        to finalise it.
+      </div>
+      `;
+
+    payButton.classList.add(
+      "hidden"
+    );
+
+  }
+  else if (
+    billStatus === "finalized"
+  ) {
+
+    billStatusDiv.innerHTML =
+      `
+      <div class="status success">
+        Bill finalised.
+      </div>
+      `;
+
+    payButton.classList.remove(
+      "hidden"
+    );
+
+  }
+  else if (
+    billStatus === "paid"
+  ) {
+
+    billStatusDiv.innerHTML =
+      `
+      <div class="status success">
+        Payment received.
+        Waiting for the session
+        to be closed.
+      </div>
+      `;
+
+    payButton.classList.add(
+      "hidden"
+    );
+
+  }
+  else {
+
+    billStatusDiv.innerHTML =
+      "";
+
+    payButton.classList.add(
+      "hidden"
+    );
+  }
+}
+
+
+
+/* =========================================================
+   WAITER DASHBOARD
+   ========================================================= */
+
+function startWaiterDashboard() {
+
+  db.ref(
+    "sessions"
+  ).on(
+    "value",
+    snap => {
+
+      const sessions =
+        snap.val() || {};
+
+      renderWaiterDashboard(
+        sessions
+      );
+
+    }
+  );
+}
+
+
+
+function renderWaiterDashboard(
+  sessions
+) {
+
+  const container =
+    document.getElementById(
+      "waiterTables"
+    );
+
+
+  const activeByTable =
+    {};
+
+
+  Object.entries(
+    sessions
+  ).forEach(
+    ([sessionId, session]) => {
+
+      if (
+        session.status === "active" &&
+        session.tableId
       ) {
 
-        const location =
-          document
-            .getElementById(
-              "location-" +
-              sessionId
-            )
-            .value
-            .trim();
-
-
-        await update(
-
-          activeSessionRef(
-            sessionId
-          ),
-
-          {
-
-            locationLabel:
-              location,
-
-            locationUpdatedAt:
-              Date.now()
-
-          }
-
-        );
-
-    };
-
-
-    window.acknowledgeRequest =
-      async function(
-        sessionId,
-        requestId
-      ) {
-
-        await update(
-
-          ref(
-
-            database,
-
-            "venues/" +
-            DEMO_VENUE.id +
-            "/activeSessions/" +
-            sessionId +
-            "/requests/" +
-            requestId
-
-          ),
-
-          {
-
-            status:
-              "acknowledged",
-
-            acknowledgedAt:
-              Date.now()
-
-          }
-
-        );
-
-    };
-
-
-    window.finaliseBill =
-      async function(
-        sessionId
-      ) {
-
-        const snapshot =
-          await get(
-            activeSessionRef(
-              sessionId
-            )
-          );
-
-
-        if (
-          !snapshot.exists()
-        ) {
-
-          return;
-
-        }
-
-
-        const session =
-          snapshot.val();
-
-
-        if (
-          !session.billRequested ||
-          Number(
-            session.runningTotal ||
-            0
-          ) <= 0
-        ) {
-
-          return;
-
-        }
-
-
-        const updates =
-          {};
-
-
-        updates[
-
-          "venues/" +
-          DEMO_VENUE.id +
-          "/activeSessions/" +
-          sessionId +
-          "/billFinalised"
-
-        ] =
-          true;
-
-
-        updates[
-
-          "venues/" +
-          DEMO_VENUE.id +
-          "/activeSessions/" +
-          sessionId +
-          "/billFinalisedAt"
-
-        ] =
-          Date.now();
-
-
-        if (
-          session.requests
-        ) {
-
-          Object.values(
-            session.requests
-          ).forEach(
-
-            request => {
-
-              if (
-                request.type === "bill" &&
-                request.status === "pending"
-              ) {
-
-                updates[
-
-                  "venues/" +
-                  DEMO_VENUE.id +
-                  "/activeSessions/" +
-                  sessionId +
-                  "/requests/" +
-                  request.requestId +
-                  "/status"
-
-                ] =
-                  "acknowledged";
-
-              }
-
-            }
-
-          );
-
-        }
-
-
-        await update(
-          ref(database),
-          updates
-        );
-
-    };
-
-
-    window.closeSession =
-      async function(
-        sessionId
-      ) {
-
-        const snapshot =
-          await get(
-            activeSessionRef(
-              sessionId
-            )
-          );
-
-
-        if (
-          !snapshot.exists()
-        ) {
-
-          return;
-
-        }
-
-
-        const session =
-          snapshot.val();
-
-
-        const total =
-          Number(
-            session.runningTotal ||
-            0
-          );
-
-
-        if (
-          total > 0 &&
-          !session.paid
-        ) {
-
-          alert(
-
-            "This session still has an unpaid balance of R" +
-            total.toFixed(2) +
-            "."
-
-          );
-
-          return;
-
-        }
-
-
-        if (
-          !confirm(
-            "Close this EasyBev session?"
-          )
-        ) {
-
-          return;
-
-        }
-
-
-        await archiveSession(
+        activeByTable[
+          String(session.tableId)
+        ] = {
 
           sessionId,
 
-          {
+          ...session
 
-            ...session,
+        };
+      }
+    }
+  );
 
-            status:
-              "closed",
 
-            closedAt:
-              Date.now()
+  const knownTables =
+    new Set(
+      DEMO_TABLES
+    );
 
+
+  Object.keys(
+    activeByTable
+  ).forEach(
+    table =>
+      knownTables.add(table)
+  );
+
+
+  container.innerHTML =
+    Array.from(
+      knownTables
+    )
+      .sort(
+        (a, b) =>
+          Number(a) - Number(b)
+      )
+      .map(
+        table => {
+
+          const session =
+            activeByTable[table];
+
+
+          if (!session) {
+
+            return `
+              <div class="waiter-table">
+
+                <div class="table-heading">
+
+                  <h3>
+                    Table ${escapeHtml(table)}
+                  </h3>
+
+                  <span class="badge">
+                    Available
+                  </span>
+
+                </div>
+
+                <p class="muted">
+                  No active session.
+                </p>
+
+              </div>
+            `;
           }
 
-        );
 
-    };
+          return waiterTableHtml(
+            table,
+            session
+          );
 
-
-    async function archiveSession(
-      sessionId,
-      finalSession
-    ) {
-
-      const now =
-        Date.now();
+        }
+      ).join("");
+}
 
 
-      const closedSession = {
 
-        ...finalSession,
+function waiterTableHtml(
+  table,
+  session
+) {
 
-        status:
-          "closed",
+  const sessionId =
+    session.sessionId;
 
-        closedAt:
-          finalSession.closedAt ||
-          now,
+  const items =
+    session.items || {};
 
-        archivedAt:
-          now
+  const total =
+    calculateTotal(
+      items
+    );
 
-      };
+  const request =
+    session.latestRequest;
 
-
-      const updates =
-        {};
-
-
-      updates[
-
-        "venues/" +
-        DEMO_VENUE.id +
-        "/sessionHistory/" +
-        sessionId
-
-      ] =
-        closedSession;
+  const billStatus =
+    session.bill &&
+    session.bill.status
+      ? session.bill.status
+      : "open";
 
 
-      updates[
-
-        "venues/" +
-        DEMO_VENUE.id +
-        "/activeSessions/" +
-        sessionId
-
-      ] =
-        null;
+  let requestHtml =
+    "";
 
 
-      await update(
-        ref(database),
-        updates
+  if (
+    request &&
+    request.status !==
+      "completed"
+  ) {
+
+    requestHtml =
+      `
+      <div
+        class="status ${
+          request.status === "new"
+            ? "danger"
+            : ""
+        }"
+      >
+
+        <strong>
+          ${escapeHtml(request.label || "")}
+        </strong>
+
+        <br>
+
+        Status:
+        ${escapeHtml(request.status)}
+
+        <br><br>
+
+        ${
+          request.status === "new"
+            ? `
+              <button
+                class="blue"
+                onclick="acknowledgeRequest('${sessionId}')"
+              >
+                Accept
+              </button>
+            `
+            : ""
+        }
+
+        ${
+          request.status ===
+            "acknowledged" &&
+          request.type !== "bill"
+
+            ? `
+              <button
+                class="success"
+                onclick="completeRequest('${sessionId}')"
+              >
+                Delivered / Done
+              </button>
+            `
+            : ""
+        }
+
+      </div>
+      `;
+  }
+
+
+  let billAction =
+    "";
+
+
+  if (
+    billStatus ===
+    "requested"
+  ) {
+
+    billAction =
+      `
+      <button
+        class="success"
+        onclick="finalizeBill('${sessionId}')"
+      >
+        Done – Finalise Bill
+      </button>
+      `;
+
+  }
+  else if (
+    billStatus ===
+    "finalized"
+  ) {
+
+    billAction =
+      `
+      <span class="badge active">
+        Bill Finalised –
+        Awaiting Payment
+      </span>
+      `;
+
+  }
+  else if (
+    billStatus ===
+    "paid"
+  ) {
+
+    billAction =
+      `
+      <button
+        class="success"
+        onclick="closePaidSession(
+          '${sessionId}',
+          '${table}'
+        )"
+      >
+        Close Session
+      </button>
+      `;
+  }
+
+
+  return `
+    <div class="waiter-table active">
+
+      <div class="table-heading">
+
+        <h3>
+          Table ${escapeHtml(table)}
+        </h3>
+
+        <span class="badge active">
+          Active
+        </span>
+
+      </div>
+
+
+      ${requestHtml}
+
+
+      <div>
+
+        <strong>
+          Current total
+        </strong>
+
+        <div class="big-number">
+          ${money(total)}
+        </div>
+
+      </div>
+
+
+      <br>
+
+
+      <button
+        class="blue"
+        onclick="openItemModal(
+          '${sessionId}',
+          '${table}'
+        )"
+      >
+        Add Items
+      </button>
+
+
+      ${billAction}
+
+
+      <hr>
+
+
+      <button
+        class="danger"
+        onclick="endSessionOverride(
+          '${sessionId}',
+          '${table}'
+        )"
+      >
+        End Session
+      </button>
+
+
+      <p class="muted">
+        End Session is the waiter override
+        for abandoned or stuck sessions.
+      </p>
+
+    </div>
+  `;
+}
+
+
+
+/* =========================================================
+   ADMIN DASHBOARD
+   ========================================================= */
+
+function startAdminDashboard() {
+
+  /*
+    For the prototype we listen to the root
+    so Admin always sees tables AND sessions
+    from the same live Firebase state.
+
+    Later this should be scoped by restaurantId.
+  */
+
+  db.ref().on(
+    "value",
+    snap => {
+
+      const data =
+        snap.val() || {};
+
+      const tables =
+        data.tables || {};
+
+      const sessions =
+        data.sessions || {};
+
+
+      renderAdminDashboard(
+        tables,
+        sessions
       );
 
     }
+  );
+}
 
 
-    function escapeHtml(
-      value
-    ) {
 
-      return String(
-        value ??
-        ""
+function renderAdminDashboard(
+  tables,
+  sessions
+) {
+
+  const container =
+    document.getElementById(
+      "adminTables"
+    );
+
+
+  const knownTables =
+    new Set(
+      DEMO_TABLES
+    );
+
+
+  Object.keys(
+    tables
+  ).forEach(
+    table =>
+      knownTables.add(
+        String(table)
       )
+  );
 
-        .replaceAll(
-          "&",
-          "&amp;"
-        )
 
-        .replaceAll(
-          "<",
-          "&lt;"
-        )
+  /*
+    Find every active session,
+    including sessions that are no longer
+    correctly linked by the table record.
+  */
 
-        .replaceAll(
-          ">",
-          "&gt;"
-        )
+  const activeSessionsByTable =
+    {};
 
-        .replaceAll(
-          '"',
-          "&quot;"
-        )
 
-        .replaceAll(
-          "'",
-          "&#039;"
+  Object.entries(
+    sessions
+  ).forEach(
+    ([sessionId, session]) => {
+
+      if (
+        session &&
+        session.status === "active" &&
+        session.tableId
+      ) {
+
+        const sessionTable =
+          String(
+            session.tableId
+          );
+
+
+        knownTables.add(
+          sessionTable
         );
 
+
+        if (
+          !activeSessionsByTable[
+            sessionTable
+          ]
+        ) {
+
+          activeSessionsByTable[
+            sessionTable
+          ] = [];
+
+        }
+
+
+        activeSessionsByTable[
+          sessionTable
+        ].push({
+
+          sessionId,
+
+          ...session
+
+        });
+      }
+    }
+  );
+
+
+  let activeCount =
+    0;
+
+  let availableCount =
+    0;
+
+  let problemCount =
+    0;
+
+
+  const cards =
+    Array.from(
+      knownTables
+    )
+      .sort(
+        (a, b) =>
+          Number(a) - Number(b)
+      )
+      .map(
+        table => {
+
+          const tableRecord =
+            tables[table] || {};
+
+          const activeSessionId =
+            tableRecord.activeSessionId
+              ? String(
+                  tableRecord.activeSessionId
+                )
+              : null;
+
+
+          const tableActiveSessions =
+            activeSessionsByTable[
+              table
+            ] || [];
+
+
+          const linkedSession =
+            activeSessionId
+              ? sessions[
+                  activeSessionId
+                ]
+              : null;
+
+
+          /*
+            NORMAL ACTIVE TABLE
+          */
+
+          if (
+            activeSessionId &&
+            linkedSession &&
+            linkedSession.status ===
+              "active"
+          ) {
+
+            activeCount++;
+
+
+            const sessionWithId =
+              {
+
+                sessionId:
+                  activeSessionId,
+
+                ...linkedSession
+
+              };
+
+
+            return adminActiveTableHtml(
+              table,
+              sessionWithId,
+              false
+            );
+          }
+
+
+          /*
+            STALE TABLE POINTER
+
+            Table says occupied,
+            but the session is missing,
+            closed or ended.
+          */
+
+          if (activeSessionId) {
+
+            problemCount++;
+
+
+            return adminStaleTableHtml(
+              table,
+              activeSessionId,
+              linkedSession
+            );
+          }
+
+
+          /*
+            ORPHANED ACTIVE SESSION
+
+            Active session exists,
+            but the table no longer points at it.
+
+            This is exactly the sort of state
+            that can otherwise leave EasyBev stuck.
+          */
+
+          if (
+            tableActiveSessions.length
+          ) {
+
+            activeCount +=
+              tableActiveSessions.length;
+
+            problemCount +=
+              tableActiveSessions.length;
+
+
+            return tableActiveSessions
+              .map(
+                session =>
+                  adminActiveTableHtml(
+                    table,
+                    session,
+                    true
+                  )
+              )
+              .join("");
+          }
+
+
+          availableCount++;
+
+
+          return `
+            <div class="waiter-table">
+
+              <div class="table-heading">
+
+                <h3>
+                  Table ${escapeHtml(table)}
+                </h3>
+
+                <span class="badge">
+                  Available
+                </span>
+
+              </div>
+
+              <p class="muted">
+                No active session.
+              </p>
+
+            </div>
+          `;
+        }
+      );
+
+
+  document.getElementById(
+    "adminActiveCount"
+  ).textContent =
+    activeCount;
+
+
+  document.getElementById(
+    "adminAvailableCount"
+  ).textContent =
+    availableCount;
+
+
+  document.getElementById(
+    "adminProblemCount"
+  ).textContent =
+    problemCount;
+
+
+  container.innerHTML =
+    cards.join("");
+}
+
+
+
+function adminActiveTableHtml(
+  table,
+  session,
+  orphaned
+) {
+
+  const sessionId =
+    session.sessionId;
+
+  const total =
+    calculateTotal(
+      session.items || {}
+    );
+
+
+  const billStatus =
+    session.bill &&
+    session.bill.status
+      ? session.bill.status
+      : "open";
+
+
+  const request =
+    session.latestRequest;
+
+
+  return `
+    <div
+      class="waiter-table ${
+        orphaned
+          ? "orphan"
+          : "active"
+      }"
+    >
+
+      <div class="table-heading">
+
+        <h3>
+          Table ${escapeHtml(table)}
+        </h3>
+
+        ${
+          orphaned
+            ? `
+              <span class="badge alert">
+                Orphaned Session
+              </span>
+            `
+            : `
+              <span class="badge active">
+                Active
+              </span>
+            `
+        }
+
+      </div>
+
+
+      ${
+        orphaned
+          ? `
+            <div class="status danger">
+
+              <strong>
+                Session lifecycle issue detected.
+              </strong>
+
+              <br><br>
+
+              This session is active,
+              but Table ${escapeHtml(table)}
+              does not point to it correctly.
+
+            </div>
+          `
+          : ""
+      }
+
+
+      <div class="admin-detail">
+
+        <strong>
+          Guest:
+        </strong>
+
+        ${escapeHtml(
+          maskPhone(
+            session.guestPhone
+          )
+        )}
+
+      </div>
+
+
+      <div class="admin-detail">
+
+        <strong>
+          Bill status:
+        </strong>
+
+        ${escapeHtml(
+          billStatus
+        )}
+
+      </div>
+
+
+      <div class="admin-detail">
+
+        <strong>
+          Total:
+        </strong>
+
+        ${money(total)}
+
+      </div>
+
+
+      <div class="admin-detail">
+
+        <strong>
+          Started:
+        </strong>
+
+        ${escapeHtml(
+          formatDate(
+            session.createdAt
+          )
+        )}
+
+      </div>
+
+
+      <div class="admin-detail">
+
+        <strong>
+          Last activity:
+        </strong>
+
+        ${escapeHtml(
+          formatDate(
+            session.lastActivityAt
+          )
+        )}
+
+      </div>
+
+
+      ${
+        request
+          ? `
+            <div class="admin-detail">
+
+              <strong>
+                Latest request:
+              </strong>
+
+              ${escapeHtml(
+                request.label || ""
+              )}
+
+              (${escapeHtml(
+                request.status || ""
+              )})
+
+            </div>
+          `
+          : ""
+      }
+
+
+      <div class="session-id">
+
+        Session:
+        ${escapeHtml(sessionId)}
+
+      </div>
+
+
+      <hr>
+
+
+      <button
+        class="danger"
+        onclick="adminForceCloseSession(
+          '${sessionId}',
+          '${table}'
+        )"
+      >
+        Force Close / Release Table
+      </button>
+
+
+      <p class="muted">
+        Manager override.
+        This ends the live session,
+        preserves the bill history
+        and releases the table.
+      </p>
+
+    </div>
+  `;
+}
+
+
+
+function adminStaleTableHtml(
+  table,
+  activeSessionId,
+  session
+) {
+
+  let reason =
+    "The table points to a session that no longer exists.";
+
+
+  if (session) {
+
+    reason =
+      `The table points to a session with status "${escapeHtml(
+        session.status || "unknown"
+      )}".`;
+  }
+
+
+  return `
+    <div class="waiter-table stale">
+
+      <div class="table-heading">
+
+        <h3>
+          Table ${escapeHtml(table)}
+        </h3>
+
+        <span class="badge warning">
+          Stale Table Lock
+        </span>
+
+      </div>
+
+
+      <div class="status warning">
+
+        <strong>
+          Table record requires repair.
+        </strong>
+
+        <br><br>
+
+        ${reason}
+
+      </div>
+
+
+      <div class="session-id">
+
+        Stored activeSessionId:
+        ${escapeHtml(activeSessionId)}
+
+      </div>
+
+
+      <hr>
+
+
+      <button
+        class="warning"
+        onclick="repairStaleTable(
+          '${table}'
+        )"
+      >
+        Repair / Release Table
+      </button>
+
+
+      <p class="muted">
+        This removes the stale session pointer
+        and marks the table as available.
+      </p>
+
+    </div>
+  `;
+}
+
+
+
+/* =========================================================
+   ADMIN SESSION OVERRIDE
+   ========================================================= */
+
+async function adminForceCloseSession(
+  sessionId,
+  table
+) {
+
+  const confirmed =
+    confirm(
+      `ADMIN OVERRIDE\n\n` +
+      `Force close the active session for Table ${table}?\n\n` +
+      `The session history and bill items will remain stored.`
+    );
+
+
+  if (!confirmed)
+    return;
+
+
+  const secondConfirm =
+    confirm(
+      `Confirm manager override for Table ${table}.`
+    );
+
+
+  if (!secondConfirm)
+    return;
+
+
+  await closeSessionAtomic(
+    sessionId,
+    table,
+    "admin_override"
+  );
+}
+
+
+
+/* =========================================================
+   ADMIN STALE TABLE REPAIR
+   ========================================================= */
+
+async function repairStaleTable(
+  table
+) {
+
+  const tableRef =
+    db.ref(
+      `tables/${table}`
+    );
+
+
+  const tableSnap =
+    await tableRef.once(
+      "value"
+    );
+
+
+  const tableData =
+    tableSnap.val() || {};
+
+
+  const activeSessionId =
+    tableData.activeSessionId;
+
+
+  if (!activeSessionId) {
+
+    await tableRef.update({
+
+      status:
+        "available",
+
+      updatedAt:
+        firebase.database.ServerValue.TIMESTAMP
+
+    });
+
+
+    alert(
+      `Table ${table} is available.`
+    );
+
+    return;
+  }
+
+
+  const sessionSnap =
+    await db.ref(
+      `sessions/${activeSessionId}`
+    ).once("value");
+
+
+  const session =
+    sessionSnap.val();
+
+
+  /*
+    Safety check:
+    if it really is still active,
+    don't accidentally delete a good pointer.
+  */
+
+  if (
+    session &&
+    session.status === "active"
+  ) {
+
+    alert(
+      `Table ${table} still has a valid active session. No repair was performed.`
+    );
+
+    return;
+  }
+
+
+  const confirmed =
+    confirm(
+      `Release stale lock on Table ${table}?`
+    );
+
+
+  if (!confirmed)
+    return;
+
+
+  await tableRef.update({
+
+    activeSessionId:
+      null,
+
+    status:
+      "available",
+
+    updatedAt:
+      firebase.database.ServerValue.TIMESTAMP
+
+  });
+
+
+  alert(
+    `Table ${table} has been repaired and released.`
+  );
+}
+
+
+
+/* =========================================================
+   REQUEST MANAGEMENT
+   ========================================================= */
+
+async function acknowledgeRequest(
+  sessionId
+) {
+
+  await db.ref(
+    `sessions/${sessionId}/latestRequest`
+  ).update({
+
+    status:
+      "acknowledged",
+
+    acknowledgedAt:
+      firebase.database.ServerValue.TIMESTAMP
+
+  });
+}
+
+
+
+async function completeRequest(
+  sessionId
+) {
+
+  await db.ref(
+    `sessions/${sessionId}/latestRequest`
+  ).update({
+
+    status:
+      "completed",
+
+    completedAt:
+      firebase.database.ServerValue.TIMESTAMP
+
+  });
+}
+
+
+
+/* =========================================================
+   ITEM MODAL
+   ========================================================= */
+
+function openItemModal(
+  sessionId,
+  table
+) {
+
+  itemModalSessionId =
+    sessionId;
+
+  itemModalTableId =
+    table;
+
+
+  document.getElementById(
+    "itemModalTable"
+  ).textContent =
+    table;
+
+
+  document.getElementById(
+    "itemModal"
+  ).classList.remove(
+    "hidden"
+  );
+
+
+  document.getElementById(
+    "itemName"
+  ).value =
+    "";
+
+
+  document.getElementById(
+    "itemPrice"
+  ).value =
+    "";
+
+
+  document.getElementById(
+    "itemQty"
+  ).value =
+    "1";
+
+
+  refreshModalBill();
+
+
+  setTimeout(
+    () => {
+
+      document.getElementById(
+        "itemName"
+      ).focus();
+
+    },
+    100
+  );
+}
+
+
+
+function closeItemModal() {
+
+  document.getElementById(
+    "itemModal"
+  ).classList.add(
+    "hidden"
+  );
+
+
+  itemModalSessionId =
+    null;
+
+  itemModalTableId =
+    null;
+}
+
+
+
+/* =========================================================
+   ADD ITEM
+   ========================================================= */
+
+async function addItemToBill() {
+
+  if (!itemModalSessionId)
+    return;
+
+
+  const name =
+    document.getElementById(
+      "itemName"
+    ).value.trim();
+
+
+  const price =
+    Number(
+      document.getElementById(
+        "itemPrice"
+      ).value
+    );
+
+
+  const qty =
+    Number(
+      document.getElementById(
+        "itemQty"
+      ).value || 1
+    );
+
+
+  if (
+    !name ||
+    !Number.isFinite(price) ||
+    price < 0 ||
+    qty < 1
+  ) {
+
+    alert(
+      "Enter an item name, valid price and quantity."
+    );
+
+    return;
+  }
+
+
+  const itemRef =
+    db.ref(
+      `sessions/${itemModalSessionId}/items`
+    ).push();
+
+
+  await itemRef.set({
+
+    name,
+
+    price,
+
+    qty,
+
+    addedBy:
+      "Thabo",
+
+    addedAt:
+      firebase.database.ServerValue.TIMESTAMP
+
+  });
+
+
+  const snap =
+    await db.ref(
+      `sessions/${itemModalSessionId}/items`
+    ).once("value");
+
+
+  const total =
+    calculateTotal(
+      snap.val()
+    );
+
+
+  await db.ref(
+    `sessions/${itemModalSessionId}`
+  ).update({
+
+    total,
+
+    lastActivityAt:
+      firebase.database.ServerValue.TIMESTAMP
+
+  });
+
+
+  document.getElementById(
+    "itemName"
+  ).value =
+    "";
+
+
+  document.getElementById(
+    "itemPrice"
+  ).value =
+    "";
+
+
+  document.getElementById(
+    "itemQty"
+  ).value =
+    "1";
+
+
+  document.getElementById(
+    "itemName"
+  ).focus();
+
+
+  refreshModalBill();
+}
+
+
+
+/* =========================================================
+   REFRESH ITEM MODAL
+   ========================================================= */
+
+async function refreshModalBill() {
+
+  if (!itemModalSessionId)
+    return;
+
+
+  const snap =
+    await db.ref(
+      `sessions/${itemModalSessionId}/items`
+    ).once("value");
+
+
+  const items =
+    snap.val() || {};
+
+
+  const entries =
+    Object.values(
+      items
+    );
+
+
+  const list =
+    document.getElementById(
+      "modalBillItems"
+    );
+
+
+  if (!entries.length) {
+
+    list.innerHTML =
+      `
+      <p class="muted">
+        No items yet.
+      </p>
+      `;
+
+  }
+  else {
+
+    list.innerHTML =
+      entries.map(
+        item => {
+
+          return `
+            <div class="item-row">
+
+              <span>
+                ${escapeHtml(item.name)}
+                × ${item.qty || 1}
+              </span>
+
+              <strong>
+                ${money(
+                  Number(item.price) *
+                  Number(item.qty || 1)
+                )}
+              </strong>
+
+            </div>
+          `;
+
+        }
+      ).join("");
+  }
+
+
+  document.getElementById(
+    "modalTotal"
+  ).textContent =
+    money(
+      calculateTotal(
+        items
+      )
+    );
+}
+
+
+
+function doneAddingItems() {
+
+  closeItemModal();
+}
+
+
+
+/* =========================================================
+   BILL FINALISATION
+   ========================================================= */
+
+async function finalizeBill(
+  sessionId
+) {
+
+  const snap =
+    await db.ref(
+      `sessions/${sessionId}`
+    ).once("value");
+
+
+  const session =
+    snap.val();
+
+
+  if (!session)
+    return;
+
+
+  const total =
+    calculateTotal(
+      session.items || {}
+    );
+
+
+  if (total <= 0) {
+
+    alert(
+      "There are no billable items."
+    );
+
+    return;
+  }
+
+
+  await db.ref(
+    `sessions/${sessionId}`
+  ).update({
+
+    total,
+
+    "bill/status":
+      "finalized",
+
+    "bill/finalizedAt":
+      firebase.database.ServerValue.TIMESTAMP,
+
+    latestRequest: {
+
+      type:
+        "bill",
+
+      label:
+        "Bill finalised",
+
+      status:
+        "completed",
+
+      completedAt:
+        firebase.database.ServerValue.TIMESTAMP
+
+    },
+
+    lastActivityAt:
+      firebase.database.ServerValue.TIMESTAMP
+
+  });
+}
+
+
+
+/* =========================================================
+   NORMAL PAID SESSION CLOSURE
+   ========================================================= */
+
+async function closePaidSession(
+  sessionId,
+  table
+) {
+
+  const snap =
+    await db.ref(
+      `sessions/${sessionId}`
+    ).once("value");
+
+
+  const session =
+    snap.val();
+
+
+  if (
+    !session ||
+    !session.bill ||
+    session.bill.status !==
+      "paid"
+  ) {
+
+    alert(
+      "The session can only be closed normally after payment."
+    );
+
+    return;
+  }
+
+
+  const confirmed =
+    confirm(
+      `Close Table ${table} session and release the table?`
+    );
+
+
+  if (!confirmed)
+    return;
+
+
+  await closeSessionAtomic(
+    sessionId,
+    table,
+    "paid"
+  );
+}
+
+
+
+/* =========================================================
+   WAITER OVERRIDE
+   ========================================================= */
+
+async function endSessionOverride(
+  sessionId,
+  table
+) {
+
+  const confirmed =
+    confirm(
+      `End the active session for Table ${table}?\n\n` +
+      `Use this for an abandoned, broken or stuck session.\n\n` +
+      `The current session will remain in history and the table will be released.`
+    );
+
+
+  if (!confirmed)
+    return;
+
+
+  const secondConfirm =
+    confirm(
+      `Confirm: release Table ${table} now?`
+    );
+
+
+  if (!secondConfirm)
+    return;
+
+
+  await closeSessionAtomic(
+    sessionId,
+    table,
+    "waiter_override"
+  );
+}
+
+
+
+/* =========================================================
+   ATOMIC SESSION CLOSURE
+   ========================================================= */
+
+async function closeSessionAtomic(
+  sessionId,
+  table,
+  reason
+) {
+
+  const sessionSnap =
+    await db.ref(
+      `sessions/${sessionId}`
+    ).once("value");
+
+
+  const session =
+    sessionSnap.val();
+
+
+  /*
+    Session missing:
+    still attempt to release a stale table pointer.
+  */
+
+  if (!session) {
+
+    const tableSnap =
+      await db.ref(
+        `tables/${table}`
+      ).once("value");
+
+
+    const tableData =
+      tableSnap.val();
+
+
+    if (
+      tableData &&
+      tableData.activeSessionId ===
+        sessionId
+    ) {
+
+      await db.ref(
+        `tables/${table}`
+      ).update({
+
+        activeSessionId:
+          null,
+
+        status:
+          "available",
+
+        updatedAt:
+          firebase.database.ServerValue.TIMESTAMP
+
+      });
     }
 
 
-    document.getElementById(
-      "footerYear"
-    ).innerText =
-      new Date().getFullYear();
+    return;
+  }
 
 
-    readRouteFromURL();
+  const finalStatus =
+    reason === "paid"
+      ? "closed"
+      : "ended";
 
-  </script>
+
+  let closedBy =
+    "system";
+
+
+  if (
+    reason === "paid"
+  ) {
+
+    closedBy =
+      "Thabo";
+
+  }
+  else if (
+    reason ===
+      "waiter_override"
+  ) {
+
+    closedBy =
+      "Thabo";
+
+  }
+  else if (
+    reason ===
+      "admin_override"
+  ) {
+
+    closedBy =
+      "Restaurant Admin";
+  }
+
+
+  const updates =
+    {};
+
+
+  updates[
+    `sessions/${sessionId}/status`
+  ] =
+    finalStatus;
+
+
+  updates[
+    `sessions/${sessionId}/endedAt`
+  ] =
+    firebase.database.ServerValue.TIMESTAMP;
+
+
+  updates[
+    `sessions/${sessionId}/closeReason`
+  ] =
+    reason;
+
+
+  updates[
+    `sessions/${sessionId}/closedBy`
+  ] =
+    closedBy;
+
+
+  updates[
+    `sessions/${sessionId}/latestRequest`
+  ] =
+    null;
+
+
+  updates[
+    `sessions/${sessionId}/lastActivityAt`
+  ] =
+    firebase.database.ServerValue.TIMESTAMP;
+
+
+  const tableSnap =
+    await db.ref(
+      `tables/${table}`
+    ).once("value");
+
+
+  const tableData =
+    tableSnap.val();
+
+
+  /*
+    Release the table only if this session
+    actually owns the activeSessionId.
+  */
+
+  if (
+    tableData &&
+    tableData.activeSessionId ===
+      sessionId
+  ) {
+
+    updates[
+      `tables/${table}/activeSessionId`
+    ] =
+      null;
+
+
+    updates[
+      `tables/${table}/status`
+    ] =
+      "available";
+
+
+    updates[
+      `tables/${table}/updatedAt`
+    ] =
+      firebase.database.ServerValue.TIMESTAMP;
+  }
+
+
+  await db.ref().update(
+    updates
+  );
+
+
+  if (
+    reason ===
+    "admin_override"
+  ) {
+
+    alert(
+      `Admin override complete. Table ${table} session has been ended.`
+    );
+
+  }
+  else if (
+    reason ===
+    "paid"
+  ) {
+
+    alert(
+      `Table ${table} closed successfully.`
+    );
+
+  }
+  else {
+
+    alert(
+      `Table ${table} session ended and the table has been released.`
+    );
+  }
+}
+
+</script>
 
 </body>
 </html>
