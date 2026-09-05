@@ -7,6 +7,7 @@
 
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <style>
   :root {
@@ -220,6 +221,36 @@
   .big-number { font-size: 34px; font-weight: 850; letter-spacing: -1px; }
   .code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: #eef1f2; border: 1px solid #dfe5e7; border-radius: 10px; padding: 10px; word-break: break-all; font-size: 12px; margin: 8px 0; }
   .slot-name { font-weight: 850; font-size: 19px; letter-spacing: -.35px; }
+
+
+  .manager-toolbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:14px; }
+  .manager-toolbar button { width:auto; margin:0; }
+  .waiter-slot-card.summary { cursor:pointer; transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease; }
+  .waiter-slot-card.summary:hover { border-color: rgba(242,182,50,.55); box-shadow: 0 16px 38px rgba(7,19,28,.13); }
+  .waiter-slot-card.summary.selected { border-color: rgba(242,182,50,.72); }
+  .slot-summary-meta { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:10px; }
+  .slot-detail { margin-top:16px; padding-top:16px; border-top:1px solid var(--line); cursor:default; }
+  .slot-detail-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+  .slot-detail-actions { display:flex; gap:9px; flex-wrap:wrap; margin-top:10px; }
+  .slot-detail-actions button { width:auto; margin:0; }
+  .qr-lanyard { display:grid; grid-template-columns:170px 1fr; gap:18px; align-items:center; margin-top:16px; padding:16px; border:1px solid var(--line); border-radius:16px; background:#f8faf9; }
+  .qr-box { width:160px; min-height:160px; display:flex; align-items:center; justify-content:center; background:#fff; border:1px solid #dfe5e7; border-radius:12px; padding:8px; }
+  .qr-box img, .qr-box canvas { max-width:144px !important; width:144px !important; height:144px !important; }
+  .manager-load { font-weight:800; color:var(--ink); }
+  .manager-load.available { color:var(--green); }
+  .manager-load.inactive { color:var(--muted); }
+  .usual-card { border-color:rgba(242,182,50,.34); }
+  .usual-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  .usual-actions { display:flex; gap:9px; flex-wrap:wrap; }
+  .usual-actions button { width:auto; margin:0; }
+  .guest-name-line { font-size:20px; font-weight:850; letter-spacing:-.3px; }
+  .guest-code-line { color:var(--muted); font-size:12px; font-weight:700; margin-top:2px; }
+
+  @media (max-width: 650px) {
+    .slot-detail-grid, .usual-grid { grid-template-columns:1fr; }
+    .qr-lanyard { grid-template-columns:1fr; }
+    .qr-box { margin:0 auto; }
+  }
 
   .hero {
     position: relative;
@@ -673,10 +704,22 @@
         </p>
 
         <input
+          id="guestName"
+          type="text"
+          maxlength="60"
+          placeholder="First name"
+        />
+
+        <input
           id="guestPhone"
           type="tel"
           placeholder="Mobile number e.g. 0821234567"
         />
+
+        <label style="display:flex;align-items:center;gap:9px;margin:8px 0 12px;font-weight:700">
+          <input id="guestRememberMe" type="checkbox" checked style="width:auto;margin:0" />
+          Remember me on this device
+        </label>
 
         <button onclick="requestOtp()">
           Send OTP
@@ -794,6 +837,41 @@
       </div>
 
 
+      <div class="card usual-card">
+
+        <div class="heading-row">
+          <div>
+            <h3 style="margin-bottom:4px">My Usual</h3>
+            <p class="muted" style="margin:0">Save your favourites once, then send them to your waiter whenever you want.</p>
+          </div>
+          <span class="badge">Guest preference</span>
+        </div>
+
+        <div class="usual-grid" style="margin-top:12px">
+          <label>
+            Favourite drink
+            <input id="usualDrink" type="text" maxlength="100" placeholder="e.g. Castle Lite" />
+          </label>
+          <label>
+            Favourite meal
+            <input id="usualMeal" type="text" maxlength="120" placeholder="e.g. Sirloin, medium rare" />
+          </label>
+        </div>
+
+        <label>
+          Optional note
+          <input id="usualNote" type="text" maxlength="160" placeholder="e.g. No ice, lemon on the side" />
+        </label>
+
+        <div class="usual-actions">
+          <button class="secondary" onclick="saveMyUsual()">Save My Usual</button>
+          <button class="warning" onclick="sendMyUsual()">Send My Usual</button>
+        </div>
+
+        <div id="usualStatus"></div>
+
+      </div>
+
       <div class="card">
 
         <h3>Your Bill</h3>
@@ -894,22 +972,17 @@
       <h2>Management Dashboard</h2>
 
       <p class="muted">
-        Assign staff names to permanent waiter slots.
-        Guest QR links remain unchanged when staff change.
+        See service load at a glance. Select a waiter for assignment, QR/lanyard and session controls.
       </p>
+
+      <div class="manager-toolbar">
+        <button class="warning" onclick="addWaiterSlot()">+ Add Waiter Slot</button>
+        <span class="muted">Slots are permanent. Deactivate rather than delete.</span>
+      </div>
 
     </div>
 
     <div id="managerWaiterSlots"></div>
-
-
-    <div class="card">
-
-      <h3>Active Sessions</h3>
-
-      <div id="managerActiveSessions"></div>
-
-    </div>
 
   </section>
 
@@ -1107,9 +1180,12 @@ if (
 }
 
 
-const WAITER_SLOTS =
-  ["1", "2", "3", "4", "5", "6"];
+let managerSelectedSlot = null;
+let latestManagerWaiters = {};
+let latestManagerSessions = {};
 
+let currentGuestUserId = null;
+let currentGuestProfile = null;
 
 let currentSessionId = null;
 let currentSession = null;
@@ -1480,6 +1556,13 @@ function guestLabel(
 }
 
 
+function guestName(session) {
+  return String(
+    (session && (session.guestNameAtStart || session.guestName)) || "Guest"
+  ).trim() || "Guest";
+}
+
+
 function waiterFallbackName(
   slot
 ) {
@@ -1530,6 +1613,38 @@ function phoneStorageKey(
     `easybev_guest_phone_${slot}`
   );
 
+}
+
+
+function guestUserStorageKey() {
+  return "easybev_guest_user_id";
+}
+
+function rememberedGuestNameKey() {
+  return "easybev_guest_name";
+}
+
+function rememberGuestStorageKey() {
+  return "easybev_guest_remembered";
+}
+
+function phoneIndexKey(phone) {
+  let digits = String(cleanPhone(phone) || "").replace(/[^0-9]/g, "");
+  if (digits.length === 10 && digits.startsWith("0")) {
+    digits = `27${digits.slice(1)}`;
+  }
+  return digits;
+}
+
+function activeWaiterEntries(waiters) {
+  return Object.entries(waiters || {})
+    .filter(([, waiter]) => waiter)
+    .sort((a, b) => Number(a[0]) - Number(b[0]));
+}
+
+async function getAllWaiters() {
+  const snap = await db.ref("waiters").once("value");
+  return snap.val() || {};
 }
 
 
@@ -1730,61 +1845,20 @@ async function initialiseEasyBev() {
 
 async function ensureWaiterSlots() {
 
-  const snap =
-    await db
-      .ref("waiters")
-      .once("value");
+  const snap = await db.ref("waiters").once("value");
 
-  const existing =
-    snap.val() || {};
-
-  const updates = {};
-
-
-  WAITER_SLOTS.forEach(
-    slot => {
-
-      if (
-        !existing[slot]
-      ) {
-
-        updates[
-          `waiters/${slot}`
-        ] = {
-
-          slot,
-
-          name: "",
-
-          active: true,
-
-          createdAt:
-            firebase.database
-              .ServerValue
-              .TIMESTAMP
-
-        };
-
-      }
-
-    }
-  );
-
-
-  if (
-    Object.keys(
-      updates
-    ).length
-  ) {
-
-    await db
-      .ref()
-      .update(
-        updates
-      );
-
+  if (snap.exists()) {
+    return;
   }
 
+  /* Fresh prototype only: begin with one permanent service slot.
+     Existing venues retain every slot already stored in Firebase. */
+  await db.ref("waiters/1").set({
+    slot: "1",
+    name: "",
+    active: true,
+    createdAt: firebase.database.ServerValue.TIMESTAMP
+  });
 }
 
 
@@ -1792,34 +1866,18 @@ async function getWaiter(
   slot
 ) {
 
-  const snap =
-    await db
-      .ref(
-        `waiters/${slot}`
-      )
-      .once(
-        "value"
-      );
+  const snap = await db
+    .ref(`waiters/${slot}`)
+    .once("value");
 
-  const waiter =
-    snap.val() || {};
+  const waiter = snap.val() || {};
 
   return {
-
-    slot:
-      String(slot),
-
-    name:
-      String(
-        waiter.name || ""
-      )
-        .trim(),
-
-    active:
-      waiter.active !== false
-
+    exists: snap.exists(),
+    slot: String(slot),
+    name: String(waiter.name || "").trim(),
+    active: snap.exists() && waiter.active !== false
   };
-
 }
 
 
@@ -2016,7 +2074,9 @@ async function loadRememberedGuestSessions() {
 
     const activeSessions = [];
 
-    for (const slot of WAITER_SLOTS) {
+    const waiters = await getAllWaiters();
+
+    for (const [slot] of activeWaiterEntries(waiters)) {
 
       const sessionId =
         localStorage.getItem(
@@ -2184,6 +2244,27 @@ async function startGuestFlow() {
 
     }
 
+    const rememberedName = localStorage.getItem(rememberedGuestNameKey());
+    if (rememberedName) {
+      document.getElementById("guestName").value = rememberedName;
+    }
+
+    const rememberedUserId = localStorage.getItem(guestUserStorageKey());
+    if (rememberedUserId) {
+      try {
+        const userSnap = await db.ref(`users/${rememberedUserId}`).once("value");
+        if (userSnap.exists()) {
+          currentGuestUserId = rememberedUserId;
+          currentGuestProfile = userSnap.val() || {};
+          if (currentGuestProfile.firstName) {
+            document.getElementById("guestName").value = currentGuestProfile.firstName;
+          }
+        }
+      } catch (error) {
+        console.warn("Could not restore EasyBev guest profile", error);
+      }
+    }
+
 
     const rememberedSessionId =
       localStorage.getItem(
@@ -2229,6 +2310,17 @@ async function startGuestFlow() {
         currentSessionId =
           rememberedSessionId;
 
+        if (session.guestUserId) {
+          currentGuestUserId = session.guestUserId;
+          localStorage.setItem(guestUserStorageKey(), session.guestUserId);
+          try {
+            const profileSnap = await db.ref(`users/${session.guestUserId}`).once("value");
+            if (profileSnap.exists()) currentGuestProfile = profileSnap.val() || {};
+          } catch (error) {
+            console.warn("Could not restore session guest profile", error);
+          }
+        }
+
 
         document
           .getElementById(
@@ -2237,15 +2329,13 @@ async function startGuestFlow() {
           .innerHTML = `
 
             <strong>
-              An active EasyBev
-              session was found
-              on this device.
+              Welcome back${currentGuestProfile && currentGuestProfile.firstName ? `, ${escapeHtml(currentGuestProfile.firstName)}` : ""}.
             </strong>
 
             <br><br>
 
-            Verify with the same
-            mobile number to reconnect.
+            An active EasyBev session was found on this device.
+            Verify with the same mobile number to reconnect.
 
           `;
 
@@ -2283,6 +2373,15 @@ async function startGuestFlow() {
 
     }
 
+    const rememberMe = localStorage.getItem(rememberGuestStorageKey()) === "true";
+    if (rememberMe && rememberedPhone && currentGuestUserId && currentGuestProfile) {
+      document.getElementById("verificationMessage").innerHTML = `
+        <strong>Welcome back, ${escapeHtml(currentGuestProfile.firstName || "Guest")}.</strong><br><br>
+        Connecting you to ${escapeHtml(currentGuestWaiterName)}…
+      `;
+      await findOrCreateGuestSession(rememberedPhone);
+      return;
+    }
 
     document
       .getElementById(
@@ -2311,6 +2410,17 @@ async function startGuestFlow() {
    ========================================================= */
 
 function requestOtp() {
+
+  const firstName = String(document.getElementById("guestName").value || "").trim();
+
+  if (!firstName) {
+    document.getElementById("verificationStatus").innerHTML = `
+      <div class="status danger">Enter your first name.</div>
+    `;
+    return;
+  }
+
+  sessionStorage.setItem("easybev_pending_name", firstName);
 
   const phone =
     cleanPhone(
@@ -2421,18 +2531,170 @@ async function verifyOtp() {
   }
 
 
-  localStorage.setItem(
-    phoneStorageKey(
-      guestSlot
-    ),
-    phone
-  );
+  const rememberMe = document.getElementById("guestRememberMe")?.checked !== false;
 
+  if (rememberMe) {
+    localStorage.setItem(phoneStorageKey(guestSlot), phone);
+    localStorage.setItem(rememberGuestStorageKey(), "true");
+  } else {
+    localStorage.removeItem(phoneStorageKey(guestSlot));
+    localStorage.removeItem(rememberGuestStorageKey());
+  }
+
+  const firstName = String(sessionStorage.getItem("easybev_pending_name") || "").trim();
+  await findOrCreateGuestProfile(phone, firstName, rememberMe);
 
   await findOrCreateGuestSession(
     phone
   );
 
+}
+
+
+/* =========================================================
+   PERSISTENT GUEST PROFILE
+
+   Prototype identity is resolved from the verified mobile number.
+   The profile gets its own generated user id so the session model
+   already references a durable EasyBev member rather than a phone key.
+   When Firebase Authentication is resumed, this layer can be migrated
+   to auth.uid without changing the session idea.
+   ========================================================= */
+
+async function findOrCreateGuestProfile(phone, firstName, rememberMe = true) {
+  const clean = phoneIndexKey(phone);
+  if (!clean) return null;
+
+  const indexSnap = await db.ref(`userPhoneIndex/${clean}`).once("value");
+  let userId = indexSnap.val();
+
+  if (!userId) {
+    const userRef = db.ref("users").push();
+    userId = userRef.key;
+
+    const profile = {
+      firstName: String(firstName || "Guest").trim() || "Guest",
+      phone: cleanPhone(phone),
+      createdAt: firebase.database.ServerValue.TIMESTAMP,
+      updatedAt: firebase.database.ServerValue.TIMESTAMP,
+      preferences: {
+        usual: {
+          drink: "",
+          meal: "",
+          note: ""
+        }
+      }
+    };
+
+    const updates = {};
+    updates[`users/${userId}`] = profile;
+    updates[`userPhoneIndex/${clean}`] = userId;
+    await db.ref().update(updates);
+    currentGuestProfile = profile;
+  } else {
+    const userSnap = await db.ref(`users/${userId}`).once("value");
+    const existing = userSnap.val() || {};
+    const resolvedName = String(firstName || existing.firstName || "Guest").trim() || "Guest";
+
+    await db.ref(`users/${userId}`).update({
+      firstName: resolvedName,
+      phone: cleanPhone(phone),
+      updatedAt: firebase.database.ServerValue.TIMESTAMP
+    });
+
+    currentGuestProfile = {
+      ...existing,
+      firstName: resolvedName,
+      phone: cleanPhone(phone)
+    };
+  }
+
+  currentGuestUserId = userId;
+  if (rememberMe) {
+    localStorage.setItem(guestUserStorageKey(), userId);
+    localStorage.setItem(rememberedGuestNameKey(), currentGuestProfile.firstName || firstName || "Guest");
+    localStorage.setItem(rememberGuestStorageKey(), "true");
+  }
+  return userId;
+}
+
+async function loadGuestProfileIntoControls() {
+  if (!currentGuestUserId) return;
+
+  const snap = await db.ref(`users/${currentGuestUserId}`).once("value");
+  if (!snap.exists()) return;
+
+  currentGuestProfile = snap.val() || {};
+  const usual = (((currentGuestProfile || {}).preferences || {}).usual) || {};
+
+  const drink = document.getElementById("usualDrink");
+  const meal = document.getElementById("usualMeal");
+  const note = document.getElementById("usualNote");
+
+  if (drink) drink.value = String(usual.drink || "");
+  if (meal) meal.value = String(usual.meal || "");
+  if (note) note.value = String(usual.note || "");
+}
+
+async function saveMyUsual(showConfirmation = true) {
+  if (!currentGuestUserId) {
+    showUsualStatus("Your EasyBev profile is not available yet.", "danger");
+    return null;
+  }
+
+  const usual = {
+    drink: String(document.getElementById("usualDrink").value || "").trim(),
+    meal: String(document.getElementById("usualMeal").value || "").trim(),
+    note: String(document.getElementById("usualNote").value || "").trim()
+  };
+
+  if (!usual.drink && !usual.meal && !usual.note) {
+    showUsualStatus("Add at least one preference first.", "warning");
+    return null;
+  }
+
+  await db.ref(`users/${currentGuestUserId}/preferences/usual`).set({
+    ...usual,
+    updatedAt: firebase.database.ServerValue.TIMESTAMP
+  });
+
+  if (showConfirmation) {
+    showUsualStatus("My Usual saved.", "success");
+  }
+
+  return usual;
+}
+
+function showUsualStatus(message, kind = "") {
+  const target = document.getElementById("usualStatus");
+  if (!target) return;
+  target.innerHTML = `<div class="status ${kind}">${escapeHtml(message)}</div>`;
+}
+
+async function sendMyUsual() {
+  if (!currentSessionId) return;
+
+  const usual = await saveMyUsual(false);
+  if (!usual) return;
+
+  const parts = [];
+  if (usual.drink) parts.push(`Drink: ${usual.drink}`);
+  if (usual.meal) parts.push(`Meal: ${usual.meal}`);
+  if (usual.note) parts.push(`Note: ${usual.note}`);
+
+  const messageRef = db.ref(`sessions/${currentSessionId}/messages`).push();
+  await messageRef.set({
+    sender: "guest",
+    kind: "usual",
+    text: `My Usual — ${parts.join(" · ")}`,
+    createdAt: firebase.database.ServerValue.TIMESTAMP
+  });
+
+  await db.ref(`sessions/${currentSessionId}`).update({
+    lastActivityAt: firebase.database.ServerValue.TIMESTAMP
+  });
+
+  showUsualStatus("My Usual sent to your waiter.", "success");
 }
 
 
@@ -2484,12 +2746,11 @@ async function findOrCreateGuestSession(
             guestSlot
           ) &&
 
-        cleanPhone(
-          session.guestPhone
-        ) ===
-          cleanPhone(
-            phone
-          )
+        (
+          (currentGuestUserId && session.guestUserId === currentGuestUserId)
+          ||
+          cleanPhone(session.guestPhone) === cleanPhone(phone)
+        )
 
     );
 
@@ -2512,6 +2773,13 @@ async function findOrCreateGuestSession(
       existingSessionId
 
     );
+
+    if (currentGuestUserId) {
+      await db.ref(`sessions/${existingSessionId}`).update({
+        guestUserId: currentGuestUserId,
+        guestNameAtStart: String((currentGuestProfile && currentGuestProfile.firstName) || sessionStorage.getItem("easybev_pending_name") || "Guest").trim()
+      });
+    }
 
 
     connectGuestToSession(
@@ -2558,6 +2826,12 @@ async function findOrCreateGuestSession(
       getWaiterDisplayName(
         waiter
       ),
+
+    guestUserId:
+      currentGuestUserId || null,
+
+    guestNameAtStart:
+      String((currentGuestProfile && currentGuestProfile.firstName) || sessionStorage.getItem("easybev_pending_name") || "Guest").trim(),
 
     guestPhone:
       phone,
@@ -2664,6 +2938,8 @@ function connectGuestToSession(
     .add(
       "hidden"
     );
+
+  loadGuestProfileIntoControls();
 
 
   db
@@ -3337,6 +3613,11 @@ async function startWaiterDashboard(
         slot
       );
 
+    if (!waiter.exists) {
+      showStartupError(`Waiter slot ${slot} does not exist.`);
+      return;
+    }
+
 
     const waiterName =
       getWaiterDisplayName(
@@ -3719,11 +4000,10 @@ function waiterSessionHtml(
 
       <div class="heading-row">
 
-        <h3>
-          ${escapeHtml(
-            label
-          )}
-        </h3>
+        <div>
+          <div class="guest-name-line">${escapeHtml(guestName(session))}</div>
+          <div class="guest-code-line">${escapeHtml(label)}</div>
+        </div>
 
         <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
           ${unreadCount ? `<span class="unread-badge">${unreadCount} new</span>` : ""}
@@ -4903,57 +5183,21 @@ function startManagerDashboard() {
 
   try {
 
-    db
-      .ref(
-        "waiters"
-      )
-      .on(
-        "value",
-        snap => {
+    db.ref("waiters").on("value", snap => {
+      latestManagerWaiters = snap.val() || {};
+      renderManagerWaiterSlots(latestManagerWaiters, latestManagerSessions);
+    });
 
-          const waiters =
-            snap.val() || {};
-
-
-          renderManagerWaiterSlots(
-            waiters
-          );
-
-        }
-      );
-
-
-    db
-      .ref(
-        "sessions"
-      )
-      .on(
-        "value",
-        snap => {
-
-          const sessions =
-            snap.val() || {};
-
-
-          renderManagerActiveSessions(
-            sessions
-          );
-
-        }
-      );
+    db.ref("sessions").on("value", snap => {
+      latestManagerSessions = snap.val() || {};
+      renderManagerWaiterSlots(latestManagerWaiters, latestManagerSessions);
+    });
 
   }
   catch (error) {
-
     console.error(error);
-
-    showStartupError(
-      error.message ||
-      "Could not load management dashboard."
-    );
-
+    showStartupError(error.message || "Could not load management dashboard.");
   }
-
 }
 
 
@@ -4962,190 +5206,231 @@ function startManagerDashboard() {
    ========================================================= */
 
 function renderManagerWaiterSlots(
-  waiters
+  waiters,
+  sessions = latestManagerSessions
 ) {
 
-  const container =
-    document.getElementById(
-      "managerWaiterSlots"
-    );
+  const container = document.getElementById("managerWaiterSlots");
+  const slots = activeWaiterEntries(waiters);
 
+  if (!slots.length) {
+    container.innerHTML = `
+      <div class="card">
+        <p class="muted">No waiter slots yet.</p>
+        <button class="warning" onclick="addWaiterSlot()">+ Add Waiter Slot</button>
+      </div>
+    `;
+    return;
+  }
 
-  container.innerHTML =
+  container.innerHTML = slots.map(([slot, waiter]) => {
+    const name = String(waiter.name || "").trim();
+    const active = waiter.active !== false;
+    const displayName = name || `Waiter ${slot}`;
+    const activeSessions = managerSessionsForSlot(slot, sessions);
+    const guestCount = activeSessions.length;
+    const selected = String(managerSelectedSlot) === String(slot);
 
-    WAITER_SLOTS
-      .map(
-        slot => {
+    const loadLabel = !active
+      ? "Inactive"
+      : guestCount === 0
+        ? "Available"
+        : guestCount === 1
+          ? "1 active guest"
+          : `${guestCount} active guests`;
 
-          const waiter =
-            waiters[slot] || {};
+    const loadClass = !active ? "inactive" : guestCount === 0 ? "available" : "";
 
+    const guestLink = `${window.location.origin}${window.location.pathname}?guest=${slot}`;
+    const waiterLink = `${window.location.origin}${window.location.pathname}?waiter=${slot}`;
 
-          const name =
-            String(
-              waiter.name || ""
-            );
+    return `
+      <div class="waiter-slot-card summary ${selected ? "selected" : ""}" onclick="toggleManagerWaiterDetails('${slot}')">
+        <div class="heading-row">
+          <div>
+            <div class="slot-name">${escapeHtml(displayName)}</div>
+            <div class="muted">Waiter ${escapeHtml(slot)}</div>
+          </div>
+          <span class="badge ${active ? "active" : ""}">${active ? "Active" : "Inactive"}</span>
+        </div>
 
+        <div class="slot-summary-meta">
+          <span class="manager-load ${loadClass}">${escapeHtml(loadLabel)}</span>
+          ${guestCount ? `<span class="badge">${guestCount}</span>` : ""}
+        </div>
 
-          const active =
-            waiter.active !== false;
+        ${selected ? managerWaiterDetailHtml(slot, waiter, activeSessions, guestLink, waiterLink) : ""}
+      </div>
+    `;
+  }).join("");
 
+  if (managerSelectedSlot) {
+    requestAnimationFrame(() => generateManagerQr(managerSelectedSlot));
+  }
+}
 
-          const guestLink =
+function managerSessionsForSlot(slot, sessions) {
+  return Object.entries(sessions || {})
+    .filter(([, session]) => session && session.status === "active" && String(session.waiterSlot) === String(slot))
+    .sort((a, b) => Number(b[1].lastActivityAt || b[1].createdAt || 0) - Number(a[1].lastActivityAt || a[1].createdAt || 0));
+}
 
-            `${window.location.origin}` +
+function managerWaiterDetailHtml(slot, waiter, activeSessions, guestLink, waiterLink) {
+  const name = String(waiter.name || "").trim();
+  const active = waiter.active !== false;
 
-            `${window.location.pathname}` +
+  const sessionHtml = activeSessions.length
+    ? activeSessions.map(([sessionId, session]) => `
+        <div class="manager-row">
+          <div>
+            <strong>${escapeHtml(guestName(session))}</strong>
+            <div class="muted">${escapeHtml(guestLabel(sessionId, session))}</div>
+          </div>
+          <strong>${money(calculateTotal(session.items || {}))}</strong>
+        </div>
+      `).join("")
+    : `<p class="muted">No active guests for this waiter.</p>`;
 
-            `?guest=${slot}`;
+  return `
+    <div class="slot-detail" onclick="event.stopPropagation()">
+      <div class="slot-detail-grid">
+        <div>
+          <label>
+            Assigned staff name
+            <input id="managerWaiterName${slot}" type="text" value="${escapeHtml(name)}" placeholder="e.g. Thabo" />
+          </label>
+          <div class="slot-detail-actions">
+            <button class="success" onclick="saveWaiterName('${slot}')">Save Name</button>
+            <button class="${active ? "danger" : "blue"}" onclick="toggleWaiterSlot('${slot}', ${active})">${active ? "Deactivate Slot" : "Reactivate Slot"}</button>
+            <button class="blue" onclick="location.href='?waiter=${slot}'">Open Waiter Dashboard</button>
+          </div>
+        </div>
 
+        <div>
+          <strong>Active guests</strong>
+          ${sessionHtml}
+        </div>
+      </div>
 
-          const waiterLink =
+      <div class="qr-lanyard">
+        <div id="managerQr${slot}" class="qr-box" aria-label="QR code for Waiter ${escapeHtml(slot)}"></div>
+        <div>
+          <div class="eyebrow" style="color:#a8750e">Permanent lanyard QR</div>
+          <h3 style="margin:5px 0">Waiter ${escapeHtml(slot)}</h3>
+          <p class="muted">Print once and keep the lanyard with this service slot. Staff names can change without replacing the QR.</p>
+          <div class="code">${escapeHtml(guestLink)}</div>
+          <div class="slot-detail-actions">
+            <button class="warning" onclick="printWaiterLanyard('${slot}')">Print Lanyard</button>
+            <button class="secondary" onclick="downloadWaiterQr('${slot}')">Download QR</button>
+            <button class="secondary" onclick="copyText('${escapeHtml(guestLink)}')">Copy Guest Link</button>
+          </div>
+          <details style="margin-top:12px">
+            <summary class="muted" style="cursor:pointer;font-weight:800">Technical links</summary>
+            <p class="muted">Waiter dashboard</p>
+            <div class="code">${escapeHtml(waiterLink)}</div>
+          </details>
+        </div>
+      </div>
+    </div>
+  `;
+}
 
-            `${window.location.origin}` +
+function toggleManagerWaiterDetails(slot) {
+  managerSelectedSlot = String(managerSelectedSlot) === String(slot) ? null : String(slot);
+  renderManagerWaiterSlots(latestManagerWaiters, latestManagerSessions);
+}
 
-            `${window.location.pathname}` +
+async function addWaiterSlot() {
+  const snap = await db.ref("waiters").once("value");
+  const waiters = snap.val() || {};
+  const numericSlots = Object.keys(waiters).map(Number).filter(Number.isFinite);
+  const nextSlot = String((numericSlots.length ? Math.max(...numericSlots) : 0) + 1);
 
-            `?waiter=${slot}`;
+  await db.ref(`waiters/${nextSlot}`).set({
+    slot: nextSlot,
+    name: "",
+    active: true,
+    createdAt: firebase.database.ServerValue.TIMESTAMP
+  });
 
+  managerSelectedSlot = nextSlot;
+  showEasyBevToast("Waiter slot created", `Waiter ${nextSlot} is ready for assignment and lanyard printing.`);
+}
 
-          return `
+function generateManagerQr(slot) {
+  const target = document.getElementById(`managerQr${slot}`);
+  if (!target || typeof QRCode === "undefined") return;
 
-            <div class="waiter-slot-card">
+  target.innerHTML = "";
+  const url = `${window.location.origin}${window.location.pathname}?guest=${slot}`;
+  new QRCode(target, {
+    text: url,
+    width: 144,
+    height: 144,
+    correctLevel: QRCode.CorrectLevel.H
+  });
+}
 
-              <div class="heading-row">
+function qrDataUrlForSlot(slot) {
+  const target = document.getElementById(`managerQr${slot}`);
+  if (!target) return null;
+  const canvas = target.querySelector("canvas");
+  if (canvas) return canvas.toDataURL("image/png");
+  const img = target.querySelector("img");
+  return img ? img.src : null;
+}
 
-                <div>
+function downloadWaiterQr(slot) {
+  generateManagerQr(slot);
+  setTimeout(() => {
+    const dataUrl = qrDataUrlForSlot(slot);
+    if (!dataUrl) {
+      alert("QR code is still loading. Please try again.");
+      return;
+    }
+    const link = document.createElement("a");
+    link.href = dataUrl;
+    link.download = `easybev-waiter-${slot}-qr.png`;
+    link.click();
+  }, 40);
+}
 
-                  <div class="slot-name">
-                    Waiter ${escapeHtml(
-                      slot
-                    )}
-                  </div>
+function printWaiterLanyard(slot) {
+  generateManagerQr(slot);
+  setTimeout(() => {
+    const dataUrl = qrDataUrlForSlot(slot);
+    if (!dataUrl) {
+      alert("QR code is still loading. Please try again.");
+      return;
+    }
 
-                  <div class="muted">
-                    Permanent QR/service slot
-                  </div>
+    const waiter = latestManagerWaiters[slot] || {};
+    const assignedName = String(waiter.name || "").trim();
+    const guestLink = `${window.location.origin}${window.location.pathname}?guest=${slot}`;
+    const popup = window.open("", "_blank", "width=520,height=760");
+    if (!popup) {
+      alert("Allow pop-ups to print the lanyard.");
+      return;
+    }
 
-                </div>
-
-
-                <span
-                  class="badge ${
-                    active
-                      ? "active"
-                      : ""
-                  }"
-                >
-
-                  ${
-                    active
-                      ? "Enabled"
-                      : "Disabled"
-                  }
-
-                </span>
-
-              </div>
-
-
-              <br>
-
-
-              <label>
-
-                Assigned staff name
-
-                <input
-                  id="managerWaiterName${slot}"
-                  type="text"
-                  value="${escapeHtml(name)}"
-                  placeholder="e.g. Thabo"
-                />
-
-              </label>
-
-
-              <button
-                class="success"
-                onclick="saveWaiterName('${slot}')"
-              >
-                Save Name
-              </button>
-
-
-              <button
-                class="${
-                  active
-                    ? "danger"
-                    : "blue"
-                }"
-                onclick="toggleWaiterSlot(
-                  '${slot}',
-                  ${active}
-                )"
-              >
-
-                ${
-                  active
-                    ? "Disable Slot"
-                    : "Enable Slot"
-                }
-
-              </button>
-
-
-              <p class="muted">
-                Guest QR link
-              </p>
-
-
-              <div class="code">
-                ${escapeHtml(
-                  guestLink
-                )}
-              </div>
-
-
-              <button
-                class="secondary"
-                onclick="copyText(
-                  '${escapeHtml(
-                    guestLink
-                  )}'
-                )"
-              >
-                Copy Guest Link
-              </button>
-
-
-              <button
-                class="blue"
-                onclick="location.href='?waiter=${slot}'"
-              >
-                Open Waiter Dashboard
-              </button>
-
-
-              <p class="muted">
-                Waiter dashboard link
-              </p>
-
-
-              <div class="code">
-                ${escapeHtml(
-                  waiterLink
-                )}
-              </div>
-
-            </div>
-
-          `;
-
-        }
-      )
-      .join("");
-
+    popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>EasyBev Waiter ${escapeHtml(slot)} Lanyard</title><style>
+      *{box-sizing:border-box} body{margin:0;padding:24px;font-family:Arial,Helvetica,sans-serif;background:#fff;color:#07131c}
+      .sheet{display:flex;justify-content:center}.lanyard{width:90mm;min-height:125mm;border:1px solid #d9dde0;border-radius:8mm;padding:10mm;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
+      .brand{font-size:28px;font-weight:900;letter-spacing:-1px}.brand span{color:#b57b08}.eyebrow{margin-top:5mm;font-size:11px;font-weight:900;letter-spacing:1.3px;text-transform:uppercase;color:#7c5a11}
+      h1{margin:2mm 0 1mm;font-size:24px}.name{font-size:14px;color:#59656d;margin-bottom:6mm}.qr{width:48mm;height:48mm}.scan{margin-top:6mm;font-size:17px;font-weight:900}.tag{margin-top:4mm;font-size:11px;color:#68747b}.url{margin-top:4mm;font-size:8px;word-break:break-all;color:#89939a}
+      @media print{body{padding:0}.lanyard{border:0}}
+    </style></head><body><div class="sheet"><div class="lanyard">
+      <div class="brand">Easy<span>Bev</span></div>
+      <div class="eyebrow">Your waiter</div>
+      <h1>Waiter ${escapeHtml(slot)}</h1>
+      <div class="name">${assignedName ? escapeHtml(assignedName) : "Service slot"}</div>
+      <img class="qr" src="${dataUrl}" alt="Waiter ${escapeHtml(slot)} QR code">
+      <div class="scan">Scan for service</div>
+      <div class="tag">Good Drinks. Better Times.</div>
+      <div class="url">${escapeHtml(guestLink)}</div>
+    </div></div><script>window.onload=()=>{window.print()}<\/script></body></html>`);
+    popup.document.close();
+  }, 40);
 }
 
 
@@ -5257,211 +5542,6 @@ async function copyText(
     );
 
   }
-
-}
-
-
-/* =========================================================
-   MANAGER ACTIVE SESSIONS
-   ========================================================= */
-
-async function renderManagerActiveSessions(
-  sessions
-) {
-
-  const container =
-    document.getElementById(
-      "managerActiveSessions"
-    );
-
-
-  const active =
-
-    Object.entries(
-      sessions
-    )
-
-      .filter(
-        ([, session]) =>
-
-          session &&
-
-          session.status ===
-            "active"
-
-      )
-
-      .sort(
-        (a, b) =>
-
-          Number(
-            b[1].lastActivityAt ||
-            b[1].createdAt ||
-            0
-          )
-
-          -
-
-          Number(
-            a[1].lastActivityAt ||
-            a[1].createdAt ||
-            0
-          )
-      );
-
-
-  if (
-    !active.length
-  ) {
-
-    container.innerHTML = `
-
-      <p class="muted">
-        No active guest sessions.
-      </p>
-
-    `;
-
-    return;
-
-  }
-
-
-  const cards =
-    await Promise.all(
-
-      active.map(
-
-        async (
-          [sessionId, session]
-        ) => {
-
-          const waiter =
-            await getWaiter(
-              session.waiterSlot
-            );
-
-
-          const waiterName =
-            getWaiterDisplayName(
-              waiter
-            );
-
-
-          const label =
-            guestLabel(
-              sessionId,
-              session
-            );
-
-
-          const total =
-            calculateTotal(
-              session.items || {}
-            );
-
-
-          const request =
-            session.latestRequest;
-
-
-          return `
-
-            <div class="session-card">
-
-              <div class="heading-row">
-
-                <div>
-
-                  <strong>
-                    ${escapeHtml(
-                      label
-                    )}
-                  </strong>
-
-                  <div class="muted">
-
-                    ${escapeHtml(
-                      waiterName
-                    )}
-
-                    · Waiter slot
-
-                    ${escapeHtml(
-                      session.waiterSlot ||
-                      "?"
-                    )}
-
-                  </div>
-
-                </div>
-
-
-                <strong>
-                  ${money(
-                    total
-                  )}
-                </strong>
-
-              </div>
-
-
-              ${
-                request &&
-                request.status !==
-                  "completed"
-
-                  ? `
-
-                    <div
-                      class="status ${
-                        request.status === "new"
-                          ? "danger"
-                          : ""
-                      }"
-                    >
-
-                      ${escapeHtml(
-                        request.label || ""
-                      )}
-
-                      —
-
-                      ${escapeHtml(
-                        request.status || ""
-                      )}
-
-                    </div>
-
-                  `
-
-                  : ""
-              }
-
-
-              <button
-                class="danger"
-                onclick="endSessionOverride(
-                  '${sessionId}',
-                  'manager_override'
-                )"
-              >
-                Manager End Session
-              </button>
-
-            </div>
-
-          `;
-
-        }
-
-      )
-
-    );
-
-
-  container.innerHTML =
-    cards.join("");
 
 }
 
