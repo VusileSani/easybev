@@ -215,6 +215,19 @@
   .modal { position: fixed; inset: 0; padding: 16px; background: rgba(3,13,20,.68); display: flex; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(8px); }
   .modal-content { width: 100%; max-width: 620px; max-height: 90vh; overflow-y: auto; background: #fff; border-radius: 22px; padding: 24px; border: 1px solid rgba(242,182,50,.28); box-shadow: 0 28px 80px rgba(0,0,0,.28); }
   .modal-actions { display: flex; justify-content: space-between; gap: 10px; margin-top: 18px; }
+  .reconcile-sheet { max-width: 720px; }
+  .reconcile-head { display:flex; justify-content:space-between; gap:14px; align-items:flex-start; margin-bottom:14px; }
+  .reconcile-meta { display:grid; gap:4px; }
+  .reconcile-list { border-top:1px solid var(--line); margin-top:14px; }
+  .reconcile-row { display:grid; grid-template-columns:72px 1fr 110px 120px; gap:12px; align-items:center; padding:13px 0; border-bottom:1px solid var(--line); }
+  .reconcile-row.header { font-size:.78rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); font-weight:700; }
+  .reconcile-row .num { text-align:right; }
+  .reconcile-total { display:flex; justify-content:space-between; gap:16px; align-items:center; padding:18px 0 4px; font-size:1.18rem; }
+  .reconcile-status { margin-top:12px; }
+  @media (max-width: 620px) {
+    .reconcile-row { grid-template-columns:52px 1fr 92px; }
+    .reconcile-row .unit-price, .reconcile-row.header .unit-price { display:none; }
+  }
   .added-items { margin-top: 16px; background: #f4f6f6; border: 1px solid #e4e9eb; border-radius: 14px; padding: 14px; }
 
   .muted { color: var(--muted); font-size: 14px; line-height: 1.55; }
@@ -793,6 +806,8 @@
           Verify your mobile number to start your service session.
         </p>
 
+        <div id="alternativeWaiterPanel" class="hidden" style="margin:12px 0"></div>
+
         <input
           id="guestName"
           type="text"
@@ -1167,6 +1182,40 @@
 </div>
 
 
+<!-- =========================================================
+     POS RECONCILIATION MODAL
+     ========================================================= -->
+
+<div id="reconcileModal" class="modal hidden">
+  <div class="modal-content reconcile-sheet">
+    <div class="reconcile-head">
+      <div class="reconcile-meta">
+        <div class="eyebrow" style="color:#a8750e">POS reconciliation</div>
+        <h2 style="margin:0">EasyBev Order List</h2>
+        <span id="reconcileGuest" class="muted"></span>
+      </div>
+      <button class="secondary" onclick="closeReconcileModal()">Close</button>
+    </div>
+
+    <p class="muted" style="margin-top:0">Use this list while capturing or checking the order in the venue POS. EasyBev is the reconciliation reference; the venue POS remains the source of the official bill.</p>
+
+    <div id="reconcileItems" class="reconcile-list"></div>
+
+    <div class="reconcile-total">
+      <strong>EasyBev Total</strong>
+      <strong id="reconcileTotal">R0.00</strong>
+    </div>
+
+    <div id="reconcileStatus" class="reconcile-status muted"></div>
+
+    <div class="modal-actions">
+      <button class="secondary" onclick="closeReconcileModal()">Close</button>
+      <button id="markReconciledButton" class="success" onclick="markSessionReconciled()">Mark Reconciled</button>
+    </div>
+  </div>
+</div>
+
+
 <script>
 
 /* =========================================================
@@ -1270,6 +1319,7 @@ let itemModalWaiterName = null;
 let itemModalCatalog = [];
 let itemModalLastRound = [];
 let itemModalBatchId = null;
+let reconcileModalSessionId = null;
 
 
 /* Lightweight attention state. Unread state stays local to the waiter device. */
@@ -2424,6 +2474,7 @@ async function startGuestFlow() {
             You have an active session with ${escapeHtml(currentGuestWaiterName)}.
             <br><br>
             <button class="success" onclick="connectGuestToSession('${rememberedSessionId}')">Reconnect to ${escapeHtml(currentGuestWaiterName)}</button>
+            <button class="secondary" style="margin-left:8px" onclick="showAlternativeWaiters()">Use Another Waiter</button>
           `;
         }
 
@@ -2447,6 +2498,7 @@ async function startGuestFlow() {
         Ready to connect to ${escapeHtml(currentGuestWaiterName)}.
         <br><br>
         <button class="success" onclick="connectRememberedGuest()">Connect to ${escapeHtml(currentGuestWaiterName)}</button>
+        <button class="secondary" style="margin-left:8px" onclick="showAlternativeWaiters()">Use Another Waiter</button>
       `;
       return;
     }
@@ -2455,8 +2507,8 @@ async function startGuestFlow() {
       .getElementById(
         "verificationMessage"
       )
-      .textContent =
-        `Verify your mobile number to connect to ${currentGuestWaiterName}.`;
+      .innerHTML =
+        `Verify your mobile number to connect to ${escapeHtml(currentGuestWaiterName)}.<br><br><button class="secondary" onclick="showAlternativeWaiters()">Use Another Waiter</button>`;
 
   }
   catch (error) {
@@ -3152,6 +3204,75 @@ function showGuestSessionEnded() {
       "hidden"
     );
 
+}
+
+
+async function showAlternativeWaiters() {
+
+  const panel = document.getElementById("alternativeWaiterPanel");
+  if (!panel) return;
+
+  panel.classList.remove("hidden");
+  panel.innerHTML = `<div class="status"><strong>Available waiters</strong><br><span class="muted">Choose the waiter serving you.</span></div>`;
+
+  try {
+    const snap = await db.ref("waiters").once("value");
+    const waiters = snap.val() || {};
+
+    const rows = Object.entries(waiters)
+      .filter(([slot, waiter]) => waiter && waiter.active && String(slot) !== String(guestSlot))
+      .sort((a, b) => Number(a[0]) - Number(b[0]));
+
+    if (!rows.length) {
+      panel.innerHTML = `
+        <div class="status warning">
+          No other waiter slots are currently available.<br>
+          <span class="muted">You can continue with ${escapeHtml(currentGuestWaiterName || `Waiter ${guestSlot}`)} or ask a staff member for assistance.</span>
+        </div>
+        <button class="secondary" onclick="hideAlternativeWaiters()">Back</button>
+      `;
+      return;
+    }
+
+    panel.innerHTML = `
+      <div class="status">
+        <strong>Choose another waiter</strong><br>
+        <span class="muted">Only active waiter slots are shown.</span>
+      </div>
+      <div style="display:grid;gap:8px;margin:10px 0">
+        ${rows.map(([slot, waiter]) => `
+          <button class="secondary" onclick="switchGuestWaiter('${escapeHtml(String(slot))}')">
+            ${escapeHtml(getWaiterDisplayName({...waiter, slot}))}
+          </button>
+        `).join("")}
+      </div>
+      <button class="secondary" onclick="hideAlternativeWaiters()">Cancel</button>
+    `;
+  }
+  catch (error) {
+    console.error(error);
+    panel.innerHTML = `
+      <div class="status warning">Could not load alternative waiters right now.</div>
+      <button class="secondary" onclick="hideAlternativeWaiters()">Back</button>
+    `;
+  }
+}
+
+function hideAlternativeWaiters() {
+  const panel = document.getElementById("alternativeWaiterPanel");
+  if (!panel) return;
+  panel.classList.add("hidden");
+  panel.innerHTML = "";
+}
+
+function switchGuestWaiter(slot) {
+  const nextSlot = String(slot || "").trim();
+  if (!nextSlot || nextSlot === String(guestSlot)) {
+    hideAlternativeWaiters();
+    return;
+  }
+
+  window.location.href = `?guest=${encodeURIComponent(nextSlot)}`;
 }
 
 
@@ -4139,6 +4260,13 @@ function waiterSessionHtml(
         Add Items
       </button>
 
+      <button
+        class="secondary"
+        onclick="openReconcileModal('${sessionId}')"
+      >
+        View POS List
+      </button>
+
 
       ${billAction}
 
@@ -4174,6 +4302,94 @@ function waiterSessionHtml(
 
   `;
 
+}
+
+
+/* =========================================================
+   POS RECONCILIATION
+   ========================================================= */
+
+async function openReconcileModal(sessionId) {
+  reconcileModalSessionId = sessionId;
+
+  const snap = await db.ref(`sessions/${sessionId}`).once("value");
+  const session = snap.val() || {};
+  const items = Object.values(session.items || {});
+  const label = guestLabel(sessionId, session);
+
+  document.getElementById("reconcileGuest").textContent =
+    `${guestName(session)} · ${label}`;
+
+  const list = document.getElementById("reconcileItems");
+
+  if (!items.length) {
+    list.innerHTML = `<p class="muted">No items have been captured for this guest yet.</p>`;
+  } else {
+    const rows = items.map(item => {
+      const qty = Number(item.qty || 1);
+      const price = Number(item.price || 0);
+      return `
+        <div class="reconcile-row">
+          <strong>${qty}×</strong>
+          <span>${escapeHtml(item.name || "Item")}</span>
+          <span class="num unit-price">${money(price)}</span>
+          <strong class="num">${money(price * qty)}</strong>
+        </div>`;
+    }).join("");
+
+    list.innerHTML = `
+      <div class="reconcile-row header">
+        <span>Qty</span>
+        <span>Item</span>
+        <span class="num unit-price">Unit</span>
+        <span class="num">Line total</span>
+      </div>
+      ${rows}`;
+  }
+
+  document.getElementById("reconcileTotal").textContent =
+    money(calculateTotal(session.items || {}));
+
+  renderReconcileStatus(session.reconciliation || {});
+  document.getElementById("reconcileModal").classList.remove("hidden");
+}
+
+function renderReconcileStatus(reconciliation) {
+  const status = document.getElementById("reconcileStatus");
+  const button = document.getElementById("markReconciledButton");
+  const reconciledAt = Number(reconciliation.reconciledAt || 0);
+
+  if (reconciliation.status === "reconciled") {
+    const when = reconciledAt
+      ? new Date(reconciledAt).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })
+      : "recorded";
+    status.innerHTML = `<span class="badge active">Reconciled</span> <span>Marked ${escapeHtml(when)}</span>`;
+    button.textContent = "Reconciled";
+    button.disabled = true;
+  } else {
+    status.textContent = "Not yet marked as reconciled with the venue POS.";
+    button.textContent = "Mark Reconciled";
+    button.disabled = false;
+  }
+}
+
+function closeReconcileModal() {
+  document.getElementById("reconcileModal").classList.add("hidden");
+  reconcileModalSessionId = null;
+}
+
+async function markSessionReconciled() {
+  if (!reconcileModalSessionId) return;
+
+  const sessionId = reconcileModalSessionId;
+  await db.ref(`sessions/${sessionId}`).update({
+    "reconciliation/status": "reconciled",
+    "reconciliation/reconciledAt": firebase.database.ServerValue.TIMESTAMP,
+    lastActivityAt: firebase.database.ServerValue.TIMESTAMP
+  });
+
+  const snap = await db.ref(`sessions/${sessionId}/reconciliation`).once("value");
+  renderReconcileStatus(snap.val() || { status: "reconciled" });
 }
 
 
