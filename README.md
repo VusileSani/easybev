@@ -1,33 +1,79 @@
-# EasyBev
+# GoodKota v5.0 — Platform Governance
 
-EasyBev is a lightweight guest-service and digital waiter-pad layer for hospitality venues.
+GoodKota v5.0 retains the location-first ordering, verified quality, merchant, delivery and customer foundations while adding a protected company-governance layer.
 
-## Core operating model
-- Guests connect to a permanent waiter service slot by QR.
-- Management assigns staff members to those permanent slots.
-- Waiters capture orders directly into EasyBev and respond to guest requests/messages.
-- Guests see a live running bill and request the official bill when ready.
-- Waiters reconcile the EasyBev order list in the venue POS before finalising.
+## Actors
 
-## Project structure
-- `index.html` — application shell
-- `css/styles.css` — product styling
-- `js/` — separated application responsibilities
-- `website.html` — public-facing EasyBev website
+- **Customer** — discover nearby merchants, order, pay and track delivery.
+- **Merchant** — manage orders, menu, settlement and request GoodKota support.
+- **Driver** — manage assigned delivery and proof of delivery.
+- **Delivery Ops** — dispatch and monitor deliveries.
+- **GoodKota Admin** — run merchant support, compliance, commercial status, announcements and routine platform operations.
+- **GoodKota Owner** — govern platform authority, protected company controls and the full privileged audit.
 
-The actor switcher provides fast role navigation while each actor view remains isolated to the controls and information that role needs.
+The actor dropdown is a testing convenience. Production authorization must be enforced server-side.
 
+## Merchant model
 
-## EasyBev company governance
+A Merchant is the actual operating store/location. Merchant records directly own address, coordinates, operations, delivery, compliance, settlement, quality and commercial status. Orders reference `merchantId` only.
 
-The application now separates venue operations from EasyBev company operations:
+Merchant onboarding now accepts any real South African address and resolves it to coordinates. Manual latitude/longitude entry remains available if address lookup is unavailable.
 
-- Guest: requests service and sees the running bill.
-- Waiter: serves guests and captures/reconciles orders.
-- Venue Management: manages the venue team, waiter slots, items and service reporting.
-- EasyBev Admin: operates venues, support, announcements and routine platform controls.
-- Owner: governs EasyBev staff authority, critical platform controls and the privileged audit trail.
+## Platform continuity
 
-The browser role switch exists for product testing. In production, Owner/Admin access must not be granted by query-string routing or UI visibility. Use Firebase Authentication and server-issued custom claims, enforce them in Realtime Database Security Rules, and place high-risk privileged changes behind trusted server-side functions. The platform audit data in this build demonstrates the product behavior; production audit integrity should be protected so ordinary clients cannot alter or delete historical audit records.
+GoodKota now includes:
+- platform staff authority
+- support cases
+- announcements
+- operational and privileged audit history
+- protected company controls
+- merchant commercial status
 
-The existing restaurant service data remains the current single-venue operational model. `platform/venues` is the company venue registry and onboarding/support layer; a later multi-venue backend migration should namespace operational data by venue before more than one venue is considered fully live in the same database.
+See `PLATFORM-GOVERNANCE.md` for the authority model and production security rules.
+
+## Core product invariants
+
+- location-first merchant discovery
+- verified GoodKota-order quality signals
+- direct merchant settlement architecture
+- delivery as a separate operational domain
+- hybrid GoodKota/merchant/future third-party delivery support
+- customer PIN proof of delivery
+- no silent deletion/rewrite of financial or privileged audit history in production
+- at least one active GoodKota Owner at all times
+
+## Architecture
+
+```text
+index.html
+css/styles.css
+js/app.js
+js/core/store.js
+js/core/utils.js
+js/data/seed.js
+js/services/
+  location-service.js
+  geocoding-service.js
+  notification-service.js
+  payment-service.js
+  quality-service.js
+  delivery-service.js
+js/views/
+  customer-view.js
+  merchant-view.js
+  driver-view.js
+  delivery-ops-view.js
+  admin-view.js
+  owner-view.js
+service-worker.js
+manifest.webmanifest
+PLATFORM-GOVERNANCE.md
+FIREBASE-SCHEMA.md
+DELIVERY-ARCHITECTURE.md
+```
+
+## Production stack
+
+Firebase Authentication + Cloud Firestore + Cloud Functions + Firebase Cloud Messaging.
+
+Privileged Owner/Admin transitions, payment confirmation, merchant suspension, order/delivery state transitions and audit writes must be enforced by trusted server-side logic and Security Rules rather than the browser UI.
