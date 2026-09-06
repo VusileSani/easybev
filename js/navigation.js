@@ -36,6 +36,16 @@ function switchEasyBevActor(actor) {
     return;
   }
 
+  if (selected === "admin") {
+    window.location.href = "?admin=1";
+    return;
+  }
+
+  if (selected === "owner") {
+    window.location.href = "?owner=1";
+    return;
+  }
+
   goEasyBevHome();
 }
 
@@ -75,6 +85,24 @@ function routeApplication() {
 
   try {
 
+    if (ownerMode) {
+      document.getElementById("platformView").classList.remove("hidden");
+      document.getElementById("headerMode").textContent = "Owner";
+      showActorNavigation("EasyBev Owner", "owner");
+      subscribeToPlatformAnnouncements("owner");
+      startPlatformDashboard("owner");
+      return;
+    }
+
+    if (adminMode) {
+      document.getElementById("platformView").classList.remove("hidden");
+      document.getElementById("headerMode").textContent = "EasyBev Admin";
+      showActorNavigation("EasyBev Admin", "admin");
+      subscribeToPlatformAnnouncements("admin");
+      startPlatformDashboard("admin");
+      return;
+    }
+
     if (
       managerMode
     ) {
@@ -96,6 +124,7 @@ function routeApplication() {
           "Management";
 
       showActorNavigation("Management", "manager");
+      subscribeToPlatformAnnouncements("manager");
 
       startManagerDashboard();
 
@@ -127,6 +156,7 @@ function routeApplication() {
           "Waiter";
 
       showActorNavigation(`Waiter ${waiterSlot}`, "waiter");
+      subscribeToPlatformAnnouncements("waiter");
 
       startWaiterDashboard(
         waiterSlot
@@ -160,6 +190,7 @@ function routeApplication() {
           "Guest";
 
       showActorNavigation(`Guest · Waiter ${guestSlot}`, "guest");
+      subscribeToPlatformAnnouncements("guest");
 
       startGuestFlow();
 
@@ -169,6 +200,7 @@ function routeApplication() {
 
 
     hideActorNavigation();
+    clearPlatformNoticeBanner();
 
     document
       .getElementById(

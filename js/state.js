@@ -42,6 +42,12 @@ const params =
 const managerMode =
   params.get("manager") === "1";
 
+const adminMode =
+  params.get("admin") === "1";
+
+const ownerMode =
+  params.get("owner") === "1";
+
 const waiterSlot =
   params.get("waiter");
 
@@ -98,3 +104,17 @@ let lastGuestWaiterMessageAt = 0;
 let easyBevAudioContext = null;
 
 
+
+
+/* Platform governance state */
+let currentPlatformRole = null;
+let latestPlatformCompany = {};
+let latestPlatformVenues = {};
+let latestPlatformStaff = {};
+let latestPlatformAnnouncements = {};
+let latestPlatformSupportCases = {};
+let latestPlatformFeatureFlags = {};
+let latestPlatformAudit = {};
+let latestPlatformSessions = {};
+let latestPlatformWaiters = {};
+let platformAnnouncementUnsubscribe = null;

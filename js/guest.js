@@ -1310,7 +1310,9 @@ function renderGuestBillStatus(session) {
       <div class="status success">
         Bill finalised at ${money(sessionBillTotal(session))}. Order items are now locked.
       </div>`;
-    payButton.classList.remove("hidden");
+    if (typeof platformFeatureEnabled !== "function" || platformFeatureEnabled("onlinePayment", true)) {
+      payButton.classList.remove("hidden");
+    }
     return;
   }
 

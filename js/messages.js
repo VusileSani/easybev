@@ -96,6 +96,10 @@ function waiterChatHtml(
   messages
 ) {
 
+  if (typeof platformFeatureEnabled === "function" && !platformFeatureEnabled("guestMessaging", true)) {
+    return "";
+  }
+
   const ordered =
     orderedMessages(messages);
 
@@ -131,6 +135,11 @@ function waiterChatHtml(
 
 
 async function sendGuestMessage() {
+
+  if (typeof platformFeatureEnabled === "function" && !platformFeatureEnabled("guestMessaging", true)) {
+    showEasyBevToast("Messaging unavailable", "EasyBev messaging is temporarily disabled.");
+    return;
+  }
 
   if (!currentSessionId || !currentSession || currentSession.status !== "active") {
     return;
@@ -184,6 +193,11 @@ async function sendGuestMessage() {
 async function sendWaiterMessage(
   sessionId
 ) {
+
+  if (typeof platformFeatureEnabled === "function" && !platformFeatureEnabled("guestMessaging", true)) {
+    showEasyBevToast("Messaging unavailable", "EasyBev messaging is temporarily disabled.");
+    return;
+  }
 
   const session = latestWaiterSessions && latestWaiterSessions[sessionId];
   if (!session || session.status !== "active") {

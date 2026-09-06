@@ -78,6 +78,9 @@ function showStartupError(
       "hidden"
     );
 
+  const platformView = document.getElementById("platformView");
+  if (platformView) platformView.classList.add("hidden");
+
   document
     .getElementById(
       "startupErrorView"
@@ -94,7 +97,7 @@ function showStartupError(
     .textContent =
       "Service unavailable";
 
-  showActorNavigation("Service unavailable", waiterSlot ? "waiter" : guestSlot ? "guest" : managerMode ? "manager" : "guest");
+  showActorNavigation("Service unavailable", ownerMode ? "owner" : adminMode ? "admin" : managerMode ? "manager" : waiterSlot ? "waiter" : guestSlot ? "guest" : "guest");
 
   document
     .getElementById(
@@ -162,6 +165,7 @@ async function initialiseEasyBev() {
     */
 
     await ensureWaiterSlots();
+    await ensurePlatformFoundation();
 
 
     /*

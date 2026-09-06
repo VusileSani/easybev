@@ -41,6 +41,8 @@
         <option value="guest">Guest</option>
         <option value="waiter">Waiter</option>
         <option value="manager">Management</option>
+        <option value="admin">EasyBev Admin</option>
+        <option value="owner">Owner</option>
       </select>
     </div>
     <div class="actor-nav-context">
@@ -49,6 +51,8 @@
     </div>
   </div>
 </nav>
+
+<div id="platformNoticeBanner" class="platform-notice hidden" role="status" aria-live="polite"></div>
 
 <div class="container">
 
@@ -98,6 +102,16 @@
           <button class="access-btn" onclick="location.href='?manager=1'">
             <span class="access-icon">⚙</span>
             <span class="access-copy"><strong>Management</strong><small>Run service, team and venue setup</small></span>
+          </button>
+
+          <button class="access-btn" onclick="location.href='?admin=1'">
+            <span class="access-icon">◎</span>
+            <span class="access-copy"><strong>EasyBev Admin</strong><small>Operate venues, support and platform communications</small></span>
+          </button>
+
+          <button class="access-btn" onclick="location.href='?owner=1'">
+            <span class="access-icon">◆</span>
+            <span class="access-copy"><strong>Owner</strong><small>Govern EasyBev access and critical platform controls</small></span>
           </button>
         </div>
       </div>
@@ -279,11 +293,13 @@
 
         <div class="bill-heading"><div><span class="section-kicker">Live tab</span><h3>Your Bill</h3></div><span class="bill-live-dot">Live</span></div>
 
-        <div id="guestBillItems"></div>
+        <div id="guestBillLiveContent">
+          <div id="guestBillItems"></div>
 
-        <div class="total">
-          Total:
-          <span id="guestTotal">R0.00</span>
+          <div class="total">
+            Total:
+            <span id="guestTotal">R0.00</span>
+          </div>
         </div>
 
         <div id="guestBillStatus"></div>
@@ -391,6 +407,7 @@
         <button class="secondary" onclick="toggleManagerStaff()">Team</button>
         <button class="secondary" onclick="toggleManagerMenuItems()">Items</button>
         <button class="secondary" onclick="toggleManagerReports()">Service</button>
+        <button class="secondary" onclick="toggleVenueSupportPanel()">Support</button>
       </div>
 
     </div>
@@ -399,8 +416,35 @@
     <div id="managerStaff" class="card manager-staff-panel hidden"></div>
     <div id="managerMenuItems" class="card manager-menu-panel hidden"></div>
     <div id="managerReports" class="card manager-report-panel hidden"></div>
+    <div id="managerSupport" class="card platform-panel hidden"></div>
     <div id="managerWaiterSlots"></div>
 
+  </section>
+
+
+  <!-- =====================================================
+       EASYBEV PLATFORM GOVERNANCE
+       ===================================================== -->
+
+  <section id="platformView" class="hidden">
+    <div class="card section-intro platform-intro">
+      <div id="platformRoleKicker" class="section-kicker">EasyBev company</div>
+      <h2 id="platformRoleTitle">Platform Operations</h2>
+      <p id="platformRoleDescription" class="muted">Keep venues supported and EasyBev operating normally.</p>
+
+      <div class="manager-toolbar platform-toolbar">
+        <button class="warning" onclick="showPlatformPanel('venues')">Venues</button>
+        <button class="secondary" onclick="showPlatformPanel('support')">Support</button>
+        <button class="secondary" onclick="showPlatformPanel('announcements')">Announcements</button>
+        <button class="secondary" onclick="showPlatformPanel('controls')">Controls</button>
+        <button id="platformPeopleButton" class="secondary hidden" onclick="showPlatformPanel('people')">EasyBev Team</button>
+        <button id="platformAuditButton" class="secondary" onclick="showPlatformPanel('audit')">Activity</button>
+      </div>
+    </div>
+
+    <div id="platformServicePulse" class="platform-pulse-grid"></div>
+    <div id="platformAttention" class="card platform-attention"></div>
+    <div id="platformPanel" class="card platform-panel hidden"></div>
   </section>
 
 </div>
@@ -565,6 +609,7 @@
 <script src="js/waiter.js"></script>
 <script src="js/orders.js"></script>
 <script src="js/manager.js"></script>
+<script src="js/platform.js"></script>
 <script src="js/app.js"></script>
 
 </body>
