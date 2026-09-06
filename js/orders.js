@@ -2,109 +2,78 @@
    ADD ITEMS MODAL
    ========================================================= */
 
+/* =========================================================
+   ORDER INVARIANTS
+   ========================================================= */
+
+async function readEditableOrderSession(sessionId, showAlert = true) {
+  const snap = await db.ref(`sessions/${sessionId}`).once("value");
+  const session = snap.val();
+
+  if (!session || session.status !== "active") {
+    if (showAlert) alert("This guest session is no longer active.");
+    return null;
+  }
+
+  if (sessionOrderIsLocked(session)) {
+    if (showAlert) alert("This bill has been finalised. Order items are locked.");
+    return null;
+  }
+
+  return session;
+}
+
+
+function orderMutationRootUpdates(sessionId, session, total) {
+  const timestamp = firebase.database.ServerValue.TIMESTAMP;
+  const base = `sessions/${sessionId}`;
+  const updates = {};
+
+  updates[`${base}/total`] = total;
+  updates[`${base}/lastActivityAt`] = timestamp;
+
+  if (session && session.reconciliation && session.reconciliation.status === "reconciled") {
+    updates[`${base}/reconciliation/status`] = "stale";
+    updates[`${base}/reconciliation/staleAt`] = timestamp;
+  }
+
+  return updates;
+}
+
+
 async function openItemModal(
   sessionId,
   label
 ) {
 
-  itemModalSessionId =
-    sessionId;
+  const session = await readEditableOrderSession(sessionId);
+  if (!session) return;
 
+  itemModalSessionId = sessionId;
+  itemModalWaiterName = sessionWaiterSnapshotName(session);
+  itemModalWaiterStaffId = sessionWaiterSnapshotId(session);
 
-  itemModalGuestLabel =
-    label;
+  if (!itemModalWaiterName) {
+    const waiter = await getWaiter(session.waiterSlot);
+    itemModalWaiterName = getWaiterDisplayName(waiter);
+  }
 
-
-  const sessionSnap =
-    await db
-      .ref(
-        `sessions/${sessionId}`
-      )
-      .once(
-        "value"
-      );
-
-
-  const session =
-    sessionSnap.val() || {};
-
-
-  const waiter =
-    await getWaiter(
-      session.waiterSlot
-    );
-
-
-  itemModalWaiterName =
-    getWaiterDisplayName(
-      waiter
-    );
-
-
-  document
-    .getElementById(
-      "itemModalGuest"
-    )
-    .textContent =
-      label;
-
-
-  document
-    .getElementById(
-      "itemModal"
-    )
-    .classList
-    .remove(
-      "hidden"
-    );
-
-
-  document
-    .getElementById(
-      "itemName"
-    )
-    .value =
-      "";
-
-
-  document
-    .getElementById(
-      "itemPrice"
-    )
-    .value =
-      "";
-
-
-  document
-    .getElementById(
-      "itemQty"
-    )
-    .value =
-      "1";
-
+  document.getElementById("itemModalGuest").textContent = label;
+  document.getElementById("itemModal").classList.remove("hidden");
+  document.getElementById("itemName").value = "";
+  document.getElementById("itemPrice").value = "";
+  document.getElementById("itemQty").value = "1";
 
   itemModalBatchId = `round-${Date.now()}`;
 
   await loadOrderPadContext();
   renderQuickItems();
   updateRepeatLastRoundButton();
-
   refreshModalBill();
 
-
-  setTimeout(
-    () => {
-
-      document
-        .getElementById(
-          "itemName"
-        )
-        .focus();
-
-    },
-    100
-  );
-
+  setTimeout(() => {
+    document.getElementById("itemName").focus();
+  }, 100);
 }
 
 
@@ -123,10 +92,10 @@ function closeItemModal() {
   itemModalSessionId =
     null;
 
-  itemModalGuestLabel =
+  itemModalWaiterName =
     null;
 
-  itemModalWaiterName =
+  itemModalWaiterStaffId =
     null;
 
   itemModalCatalog = [];
@@ -154,6 +123,12 @@ async function addItemToBill() {
 
     return;
 
+  }
+
+  const session = await readEditableOrderSession(itemModalSessionId);
+  if (!session) {
+    closeItemModal();
+    return;
   }
 
 
@@ -219,67 +194,31 @@ async function addItemToBill() {
   }
 
 
-  const itemRef =
-    db
-      .ref(
-        `sessions/${itemModalSessionId}/items`
-      )
-      .push();
-
-
-  await itemRef.set({
-
+  const itemRef = db.ref(`sessions/${itemModalSessionId}/items`).push();
+  const newItem = {
     name,
-
     price,
-
     qty,
+    addedBy: itemModalWaiterName || "Waiter",
+    addedByStaffId: itemModalWaiterStaffId || null,
+    batchId: itemModalBatchId || `round-${Date.now()}`,
+    addedAt: firebase.database.ServerValue.TIMESTAMP
+  };
 
-    addedBy:
-      itemModalWaiterName ||
-      "Waiter",
+  const nextItems = {
+    ...(session.items || {}),
+    [itemRef.key]: newItem
+  };
 
-    batchId:
-      itemModalBatchId || `round-${Date.now()}`,
+  const updates = orderMutationRootUpdates(
+    itemModalSessionId,
+    session,
+    calculateTotal(nextItems)
+  );
+  updates[`sessions/${itemModalSessionId}/items/${itemRef.key}`] = newItem;
 
-    addedAt:
-      firebase.database
-        .ServerValue
-        .TIMESTAMP
-
-  });
-
-
-  const snap =
-    await db
-      .ref(
-        `sessions/${itemModalSessionId}/items`
-      )
-      .once(
-        "value"
-      );
-
-
-  const total =
-    calculateTotal(
-      snap.val()
-    );
-
-
-  await db
-    .ref(
-      `sessions/${itemModalSessionId}`
-    )
-    .update({
-
-      total,
-
-      lastActivityAt:
-        firebase.database
-          .ServerValue
-          .TIMESTAMP
-
-    });
+  /* Item write, total update and reconciliation invalidation are one atomic Firebase update. */
+  await db.ref().update(updates);
 
 
   /*
@@ -415,14 +354,6 @@ function renderQuickItems() {
     .join("");
 }
 
-function escapeJsString(value) {
-  return String(value || "")
-    .replace(/\\/g, "\\\\")
-    .replace(/'/g, "\\'")
-    .replace(/\r/g, "")
-    .replace(/\n/g, " ");
-}
-
 function selectQuickItem(name, price) {
   document.getElementById("itemName").value = name;
   document.getElementById("itemPrice").value = Number(price).toFixed(2);
@@ -477,32 +408,47 @@ function updateRepeatLastRoundButton() {
 async function repeatLastRound() {
   if (!itemModalSessionId || !itemModalLastRound.length) return;
 
-  const root = db.ref(`sessions/${itemModalSessionId}/items`);
+  const session = await readEditableOrderSession(itemModalSessionId);
+  if (!session) {
+    closeItemModal();
+    return;
+  }
+
+  const itemRoot = db.ref(`sessions/${itemModalSessionId}/items`);
   const updates = {};
+  const nextItems = { ...(session.items || {}) };
   const nowBatch = itemModalBatchId || `round-${Date.now()}`;
 
   itemModalLastRound.forEach(item => {
-    const key = root.push().key;
-    updates[key] = {
+    const key = itemRoot.push().key;
+    const repeatedItem = {
       name: item.name,
       price: Number(item.price),
       qty: Number(item.qty || 1),
       addedBy: itemModalWaiterName || "Waiter",
+      addedByStaffId: itemModalWaiterStaffId || null,
       batchId: nowBatch,
       addedAt: firebase.database.ServerValue.TIMESTAMP
     };
+
+    updates[`sessions/${itemModalSessionId}/items/${key}`] = repeatedItem;
+    nextItems[key] = repeatedItem;
   });
 
-  await root.update(updates);
+  Object.assign(
+    updates,
+    orderMutationRootUpdates(
+      itemModalSessionId,
+      session,
+      calculateTotal(nextItems)
+    )
+  );
 
-  const snap = await root.once("value");
-  await db.ref(`sessions/${itemModalSessionId}`).update({
-    total: calculateTotal(snap.val()),
-    lastActivityAt: firebase.database.ServerValue.TIMESTAMP
-  });
+  await db.ref().update(updates);
+
 
   refreshModalBill();
-  showEasyBevToast("Last round added.", "success");
+  showEasyBevToast("Last round added", "The previous round was added to this bill.");
 }
 
 /* =========================================================
@@ -651,11 +597,30 @@ async function finalizeBill(
 
 
   if (
-    !session
+    !session ||
+    session.status !== "active"
   ) {
 
     return;
 
+  }
+
+  if (sessionBillStatus(session) !== "requested") {
+    alert("This bill is not awaiting finalisation.");
+    return;
+  }
+
+  const reconciliationStatus = String(
+    (session.reconciliation && session.reconciliation.status) || ""
+  );
+
+  if (reconciliationStatus !== "reconciled") {
+    alert(
+      reconciliationStatus === "stale"
+        ? "The order changed after POS reconciliation. Reconcile the POS list again before finalising the bill."
+        : "Reconcile the EasyBev order list with the venue POS before finalising the bill."
+    );
+    return;
   }
 
 
@@ -693,6 +658,12 @@ async function finalizeBill(
         firebase.database
           .ServerValue
           .TIMESTAMP,
+
+      "bill/finalizedTotal":
+        total,
+
+      "bill/finalizedItemCount":
+        Object.values(session.items || {}).reduce((sum, item) => sum + Number(item.qty || 1), 0),
 
       latestRequest: {
 
@@ -823,6 +794,11 @@ async function endSessionOverride(
 
     return;
 
+  }
+
+  if (sessionBillStatus(session) === "paid") {
+    alert("This session has been paid. Use Close Session to finish it normally.");
+    return;
   }
 
 

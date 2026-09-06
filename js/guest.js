@@ -152,6 +152,9 @@ async function startGuestFlow() {
           }
         }
 
+        const rememberedSessionWaiterName =
+          sessionWaiterSnapshotName(session) || currentGuestWaiterName;
+
 
         document
           .getElementById(
@@ -176,9 +179,9 @@ async function startGuestFlow() {
         if (rememberedPhone && cleanPhone(session.guestPhone) === cleanPhone(rememberedPhone)) {
           document.getElementById("verificationMessage").innerHTML = `
             <strong>Welcome back${currentGuestProfile && currentGuestProfile.firstName ? `, ${escapeHtml(currentGuestProfile.firstName)}` : ""}.</strong><br><br>
-            You have an active session with ${escapeHtml(currentGuestWaiterName)}.
+            You have an active session with ${escapeHtml(rememberedSessionWaiterName)}.
             <br><br>
-            <button class="success" onclick="connectGuestToSession('${rememberedSessionId}')">Reconnect to ${escapeHtml(currentGuestWaiterName)}</button>
+            <button class="success" onclick="connectGuestToSession('${rememberedSessionId}')">Reconnect to ${escapeHtml(rememberedSessionWaiterName)}</button>
             <button class="secondary" style="margin-left:8px" onclick="showAlternativeWaiters()">Use Another Waiter</button>
           `;
         }
@@ -242,7 +245,7 @@ async function connectRememberedGuest() {
 
 
 /* =========================================================
-   OTP DEMO
+   MOBILE VERIFICATION
    ========================================================= */
 
 function requestOtp() {
@@ -312,8 +315,8 @@ function requestOtp() {
     .innerHTML = `
 
       <div class="status">
-        OTP sent.
-        Demo code is 123456.
+        Verification code ready.
+        Use 123456 to continue.
       </div>
 
     `;
@@ -390,7 +393,7 @@ async function verifyOtp() {
 /* =========================================================
    PERSISTENT GUEST PROFILE
 
-   Prototype identity is resolved from the verified mobile number.
+   Guest identity is resolved from the verified mobile number.
    The profile gets its own generated user id so the session model
    already references a durable EasyBev member rather than a phone key.
    When Firebase Authentication is resumed, this layer can be migrated
@@ -531,6 +534,7 @@ async function sendMyUsual() {
   const messageRef = db.ref(`sessions/${currentSessionId}/messages`).push();
   await messageRef.set({
     sender: "guest",
+    senderUserId: currentGuestUserId || null,
     kind: "usual",
     text: `My Usual — ${parts.join(" · ")}`,
     createdAt: firebase.database.ServerValue.TIMESTAMP
@@ -606,7 +610,8 @@ async function findOrCreateGuestSession(
   ) {
 
     const [
-      existingSessionId
+      existingSessionId,
+      existingSession
     ] = existing;
 
 
@@ -621,10 +626,23 @@ async function findOrCreateGuestSession(
     );
 
     if (currentGuestUserId) {
-      await db.ref(`sessions/${existingSessionId}`).update({
-        guestUserId: currentGuestUserId,
-        guestNameAtStart: String((currentGuestProfile && currentGuestProfile.firstName) || sessionStorage.getItem("easybev_pending_name") || "Guest").trim()
-      });
+      const identityUpdates = {};
+
+      if (!existingSession.guestUserId) {
+        identityUpdates.guestUserId = currentGuestUserId;
+      }
+
+      if (!existingSession.guestNameAtStart) {
+        identityUpdates.guestNameAtStart = String(
+          (currentGuestProfile && currentGuestProfile.firstName) ||
+          sessionStorage.getItem("easybev_pending_name") ||
+          "Guest"
+        ).trim();
+      }
+
+      if (Object.keys(identityUpdates).length) {
+        await db.ref(`sessions/${existingSessionId}`).update(identityUpdates);
+      }
     }
 
 
@@ -826,20 +844,14 @@ function connectGuestToSession(
           session;
 
 
-        const waiter =
-          await getWaiter(
-            session.waiterSlot
-          );
+        let waiterName = sessionWaiterSnapshotName(session);
 
+        if (!waiterName) {
+          const waiter = await getWaiter(session.waiterSlot);
+          waiterName = getWaiterDisplayName(waiter);
+        }
 
-        const waiterName =
-          getWaiterDisplayName(
-            waiter
-          );
-
-
-        currentGuestWaiterName =
-          waiterName;
+        currentGuestWaiterName = waiterName;
 
 
         document
@@ -1076,13 +1088,17 @@ async function requestBill() {
   }
 
 
+  const billStatus = sessionBillStatus(currentSession);
+
+  if (billStatus !== "open") {
+    if (billStatus === "requested") {
+      alert("Your bill has already been requested.");
+    }
+    return;
+  }
+
   const total =
-    calculateTotal(
-
-      currentSession &&
-      currentSession.items
-
-    );
+    sessionBillTotal(currentSession);
 
 
   if (
@@ -1141,7 +1157,7 @@ async function requestBill() {
 
 
 /* =========================================================
-   PAYMENT DEMO
+   PAYMENT HANDOFF
    ========================================================= */
 
 async function payBill() {
@@ -1155,9 +1171,17 @@ async function payBill() {
   }
 
 
+  const sessionSnap = await db.ref(`sessions/${currentSessionId}`).once("value");
+  const session = sessionSnap.val();
+
+  if (!session || session.status !== "active" || sessionBillStatus(session) !== "finalized") {
+    alert("This bill is not ready for payment.");
+    return;
+  }
+
   const confirmPayment =
     confirm(
-      "Demo payment: mark this bill as paid?"
+      `Payment processing is not connected yet. Record ${money(sessionBillTotal(session))} as paid?`
     );
 
 
@@ -1183,6 +1207,9 @@ async function payBill() {
         firebase.database
           .ServerValue
           .TIMESTAMP,
+
+      "bill/paidTotal":
+        sessionBillTotal(session),
 
       latestRequest: {
 
@@ -1216,297 +1243,94 @@ async function payBill() {
    RENDER GUEST
    ========================================================= */
 
-function renderGuestSession(
-  session
-) {
-
-  const items =
-    session.items || {};
-
-
-  const total =
-    calculateTotal(
-      items
-    );
-
-
-  const itemsDiv =
-    document.getElementById(
-      "guestBillItems"
-    );
-
-
-  const entries =
-    Object.values(
-      items
-    );
-
-
-  if (
-    !entries.length
-  ) {
-
-    itemsDiv.innerHTML = `
-
-      <p class="muted">
-        No items added yet.
-      </p>
-
-    `;
-
-  }
-  else {
-
-    itemsDiv.innerHTML =
-      entries
-        .map(
-          item => {
-
-            const subtotal =
-
-              Number(
-                item.price
-              ) *
-
-              Number(
-                item.qty || 1
-              );
-
-
-            return `
-
-              <div class="bill-row">
-
-                <span>
-
-                  ${escapeHtml(
-                    item.name
-                  )}
-
-                  ×
-                  ${item.qty || 1}
-
-                </span>
-
-                <strong>
-                  ${money(
-                    subtotal
-                  )}
-                </strong>
-
-              </div>
-
-            `;
-
-          }
-        )
-        .join("");
-
-  }
-
-
-  document
-    .getElementById(
-      "guestTotal"
-    )
-    .textContent =
-      money(
-        total
-      );
-
-
-  document
-    .getElementById(
-      "guestBillButton"
-    )
-    .disabled =
-      total <= 0;
-
-
-  const request =
-    session.latestRequest;
-
-
-  const requestStatus =
-    document.getElementById(
-      "guestRequestStatus"
-    );
-
-
-  if (
-    request
-  ) {
-
-    let message =
-      escapeHtml(
-        request.label || ""
-      );
-
-
-    if (
-      request.status ===
-        "acknowledged"
-    ) {
-
-      message +=
-        ` — ${escapeHtml(
-          currentGuestWaiterName ||
-          "Waiter"
-        )} acknowledged`;
-
-    }
-
-
-    if (
-      request.status ===
-        "completed"
-    ) {
-
-      message +=
-        " — completed";
-
-    }
-
-
-    requestStatus.innerHTML = `
-
-      <div class="status">
-        ${message}
-      </div>
-
-    `;
-
-  }
-  else {
-
-    requestStatus.innerHTML =
-      "";
-
-  }
-
-
-  monitorGuestReplyAlerts(
-    session
-  );
-
-  renderGuestChat(
-    session.messages || {}
-  );
-
-
-  const billStatus =
-
-    session.bill &&
-    session.bill.status
-
-      ? session.bill.status
-
-      : "open";
-
-
-  const billStatusDiv =
-    document.getElementById(
-      "guestBillStatus"
-    );
-
-
-  const payButton =
-    document.getElementById(
-      "guestPayButton"
-    );
-
-
-  if (
-    billStatus ===
-      "requested"
-  ) {
-
-    billStatusDiv.innerHTML = `
-
-      <div class="status warning">
-
-        Bill requested.
-
-        Waiting for
-        ${escapeHtml(
-          currentGuestWaiterName ||
-          "your waiter"
-        )}
-        to finalise it.
-
-      </div>
-
-    `;
-
-
-    payButton
-      .classList
-      .add(
-        "hidden"
-      );
-
-  }
-  else if (
-    billStatus ===
-      "finalized"
-  ) {
-
-    billStatusDiv.innerHTML = `
-
-      <div class="status success">
-        Bill finalised.
-      </div>
-
-    `;
-
-
-    payButton
-      .classList
-      .remove(
-        "hidden"
-      );
-
-  }
-  else if (
-    billStatus ===
-      "paid"
-  ) {
-
-    billStatusDiv.innerHTML = `
-
-      <div class="status success">
-
-        Payment received.
-
-        Waiting for the session
-        to be closed.
-
-      </div>
-
-    `;
-
-
-    payButton
-      .classList
-      .add(
-        "hidden"
-      );
-
-  }
-  else {
-
-    billStatusDiv.innerHTML =
-      "";
-
-
-    payButton
-      .classList
-      .add(
-        "hidden"
-      );
-
-  }
-
+function renderGuestBillItems(session) {
+  const items = session.items || {};
+  const entries = Object.values(items);
+  const itemsDiv = document.getElementById("guestBillItems");
+
+  itemsDiv.innerHTML = entries.length
+    ? entries.map(item => {
+        const subtotal = Number(item.price || 0) * Number(item.qty || 1);
+        return `
+          <div class="bill-row">
+            <span>${escapeHtml(item.name)} × ${item.qty || 1}</span>
+            <strong>${money(subtotal)}</strong>
+          </div>`;
+      }).join("")
+    : `<p class="muted">No items added yet.</p>`;
+
+  const total = sessionBillTotal(session);
+  document.getElementById("guestTotal").textContent = money(total);
+
+  const billButton = document.getElementById("guestBillButton");
+  billButton.disabled = total <= 0 || sessionBillStatus(session) !== "open";
 }
 
+
+function renderGuestRequestStatus(session) {
+  const request = session.latestRequest;
+  const requestStatus = document.getElementById("guestRequestStatus");
+
+  if (!request) {
+    requestStatus.innerHTML = "";
+    return;
+  }
+
+  let message = escapeHtml(request.label || "");
+
+  if (request.status === "acknowledged") {
+    message += ` — ${escapeHtml(currentGuestWaiterName || "Waiter")} acknowledged`;
+  }
+
+  if (request.status === "completed") {
+    message += " — completed";
+  }
+
+  requestStatus.innerHTML = `<div class="status">${message}</div>`;
+}
+
+
+function renderGuestBillStatus(session) {
+  const billStatus = sessionBillStatus(session);
+  const billStatusDiv = document.getElementById("guestBillStatus");
+  const payButton = document.getElementById("guestPayButton");
+
+  payButton.classList.add("hidden");
+
+  if (billStatus === "requested") {
+    billStatusDiv.innerHTML = `
+      <div class="status warning">
+        Bill requested. Waiting for ${escapeHtml(currentGuestWaiterName || "your waiter")} to finalise it.
+      </div>`;
+    return;
+  }
+
+  if (billStatus === "finalized") {
+    billStatusDiv.innerHTML = `
+      <div class="status success">
+        Bill finalised at ${money(sessionBillTotal(session))}. Order items are now locked.
+      </div>`;
+    payButton.classList.remove("hidden");
+    return;
+  }
+
+  if (billStatus === "paid") {
+    billStatusDiv.innerHTML = `
+      <div class="status success">
+        Payment received. Waiting for the session to be closed.
+      </div>`;
+    return;
+  }
+
+  billStatusDiv.innerHTML = "";
+}
+
+
+function renderGuestSession(session) {
+  renderGuestBillItems(session);
+  renderGuestRequestStatus(session);
+  monitorGuestReplyAlerts(session);
+  renderGuestChat(session.messages || {});
+  renderGuestBillStatus(session);
+}
 

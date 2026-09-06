@@ -8,12 +8,14 @@ function startManagerDashboard() {
 
     db.ref("waiters").on("value", snap => {
       latestManagerWaiters = snap.val() || {};
+      renderManagerServicePulse();
       renderManagerWaiterSlots(latestManagerWaiters, latestManagerSessions);
       if (!document.getElementById("managerReports")?.classList.contains("hidden")) renderManagerReports();
     });
 
     db.ref("sessions").on("value", snap => {
       latestManagerSessions = snap.val() || {};
+      renderManagerServicePulse();
       renderManagerWaiterSlots(latestManagerWaiters, latestManagerSessions);
       if (!document.getElementById("managerReports")?.classList.contains("hidden")) renderManagerReports();
     });
@@ -27,6 +29,7 @@ function startManagerDashboard() {
       latestManagerStaff = snap.val() || {};
       renderManagerWaiterSlots(latestManagerWaiters, latestManagerSessions);
       if (!document.getElementById("managerStaff")?.classList.contains("hidden")) renderManagerStaff();
+      if (!document.getElementById("managerReports")?.classList.contains("hidden")) renderManagerReports();
     });
 
   }
@@ -34,6 +37,35 @@ function startManagerDashboard() {
     console.error(error);
     showStartupError(error.message || "Could not load management dashboard.");
   }
+}
+
+
+function renderManagerServicePulse() {
+  const panel = document.getElementById("managerServicePulse");
+  if (!panel) return;
+
+  const activeSessions = Object.values(latestManagerSessions || {})
+    .filter(session => session && session.status === "active");
+  const attention = activeSessions.filter(session =>
+    session.latestRequest && session.latestRequest.status === "new"
+  ).length;
+  const billsWaiting = activeSessions.filter(session =>
+    sessionBillStatus(session) === "requested"
+  ).length;
+
+  panel.innerHTML = `
+    <div class="service-pulse-card">
+      <span>Active guests</span>
+      <strong>${activeSessions.length}</strong>
+    </div>
+    <div class="service-pulse-card ${attention ? "needs-attention" : ""}">
+      <span>Need attention</span>
+      <strong>${attention}</strong>
+    </div>
+    <div class="service-pulse-card ${billsWaiting ? "needs-attention" : ""}">
+      <span>Bills waiting</span>
+      <strong>${billsWaiting}</strong>
+    </div>`;
 }
 
 
@@ -68,7 +100,7 @@ function renderManagerReports() {
   const uniqueGuests = new Set(rows.map(([, s]) => s.guestUserId || cleanPhone(s.guestPhone) || s.sessionCode).filter(Boolean)).size;
   const closed = rows.filter(([, s]) => s.status === "closed" || s.status === "ended").length;
   const billsRequested = rows.filter(([, s]) => s.bill && s.bill.requestedAt).length;
-  const recordedValue = rows.reduce((sum, [, s]) => sum + calculateTotal(s.items || {}), 0);
+  const recordedValue = rows.reduce((sum, [, s]) => sum + sessionBillTotal(s), 0);
 
   const durations = rows
     .filter(([, s]) => s.endedAt && s.createdAt)
@@ -76,20 +108,39 @@ function renderManagerReports() {
     .filter(ms => ms > 0);
   const avgMinutes = durations.length ? Math.round(durations.reduce((a,b) => a+b, 0) / durations.length / 60000) : null;
 
-  const waiterCounts = {};
-  rows.forEach(([, s]) => {
-    const slot = String(s.waiterSlot || "?");
-    waiterCounts[slot] = (waiterCounts[slot] || 0) + 1;
+  const staffActivity = new Map();
+  rows.forEach(([, session]) => {
+    const slot = String(session.waiterSlot || "?");
+    const staffId = sessionWaiterSnapshotId(session);
+    const fallbackWaiter = { ...(latestManagerWaiters[slot] || {}), slot };
+    const currentStaff = staffId ? latestManagerStaff[staffId] : null;
+    const name = currentStaff
+      ? staffDisplayName(currentStaff)
+      : sessionWaiterDisplayName(session, fallbackWaiter);
+    const key = staffId || `legacy:${name}:${slot}`;
+    const activity = staffActivity.get(key) || { name, count: 0, slots: new Set() };
+    activity.count += 1;
+    activity.slots.add(slot);
+    staffActivity.set(key, activity);
   });
-  const waiterRows = Object.entries(waiterCounts).sort((a,b) => Number(a[0]) - Number(b[0])).map(([slot, count]) => {
-    const waiter = latestManagerWaiters[slot] || {};
-    return `<div class="manager-row"><span>${escapeHtml(getWaiterDisplayName({...waiter, slot}))}<small class="muted"> · Waiter ${escapeHtml(slot)}</small></span><strong>${count} session${count === 1 ? "" : "s"}</strong></div>`;
-  }).join("") || `<p class="muted">No service sessions in this period.</p>`;
+
+  const waiterRows = Array.from(staffActivity.values())
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(activity => {
+      const slots = Array.from(activity.slots).sort((a, b) => Number(a) - Number(b));
+      const slotLabel = slots.length === 1
+        ? ` · Waiter ${escapeHtml(slots[0])}`
+        : slots.length > 1
+          ? ` · Waiters ${slots.map(escapeHtml).join(", ")}`
+          : "";
+      return `<div class="manager-row"><span>${escapeHtml(activity.name)}<small class="muted">${slotLabel}</small></span><strong>${activity.count} session${activity.count === 1 ? "" : "s"}</strong></div>`;
+    })
+    .join("") || `<p class="muted">No service sessions in this period.</p>`;
 
   const rangeLabel = managerReportRangeDays === 1 ? "Today" : `Last ${managerReportRangeDays} days`;
   panel.innerHTML = `
     <div class="heading-row">
-      <div><h3 style="margin-bottom:3px">Service Reports</h3><p class="muted" style="margin:0">${rangeLabel} · EasyBev service activity only.</p></div>
+      <div><h3 style="margin-bottom:3px">Service Summary</h3><p class="muted" style="margin:0">${rangeLabel} · Service activity</p></div>
       <button class="secondary" onclick="toggleManagerReports()">Close</button>
     </div>
     <div class="report-controls">
@@ -101,10 +152,10 @@ function renderManagerReports() {
       <div class="report-kpi"><span class="muted">Sessions</span><strong>${rows.length}</strong></div>
       <div class="report-kpi"><span class="muted">Unique guests</span><strong>${uniqueGuests}</strong></div>
       <div class="report-kpi"><span class="muted">Bills requested</span><strong>${billsRequested}</strong></div>
-      <div class="report-kpi"><span class="muted">Recorded bill value</span><strong>${money(recordedValue)}</strong></div>
+      <div class="report-kpi"><span class="muted">Captured value</span><strong>${money(recordedValue)}</strong></div>
     </div>
     <div class="report-table">
-      <div class="heading-row"><strong>Waiter activity</strong><span class="muted">${closed} ended · Avg duration ${avgMinutes === null ? "—" : `${avgMinutes} min`}</span></div>
+      <div class="heading-row"><strong>Staff activity</strong><span class="muted">${closed} ended · Avg duration ${avgMinutes === null ? "—" : `${avgMinutes} min`}</span></div>
       ${waiterRows}
     </div>
   `;
@@ -126,7 +177,7 @@ function staffDisplayName(staff) {
   return String((staff && staff.name) || "Unnamed staff member").trim() || "Unnamed staff member";
 }
 
-function activeStaffEntries() {
+function sortedStaffEntries() {
   return Object.entries(latestManagerStaff || {})
     .filter(([, staff]) => staff)
     .sort((a, b) => staffDisplayName(a[1]).localeCompare(staffDisplayName(b[1])));
@@ -136,7 +187,7 @@ function renderManagerStaff() {
   const panel = document.getElementById("managerStaff");
   if (!panel) return;
 
-  const rows = activeStaffEntries();
+  const rows = sortedStaffEntries();
   const roster = rows.length
     ? rows.map(([id, staff]) => {
         const active = staff.active !== false;
@@ -144,12 +195,11 @@ function renderManagerStaff() {
           .find(([, waiter]) => waiter && String(waiter.assignedStaffId || "") === String(id));
         const assignment = slot ? `Waiter ${escapeHtml(slot[0])}` : "Not assigned";
         const mobile = String(staff.mobile || "").trim();
-        const uid = String(staff.firebaseUid || "").trim();
         return `
           <div class="manager-staff-row">
             <div>
               <div class="manager-staff-name">${escapeHtml(staffDisplayName(staff))}</div>
-              <div class="muted">${escapeHtml(assignment)}${mobile ? ` · ${escapeHtml(mobile)}` : ""}${uid ? ` · Auth linked` : ""}</div>
+              <div class="muted">${escapeHtml(assignment)}${mobile ? ` · ${escapeHtml(mobile)}` : ""}</div>
             </div>
             <div class="manager-menu-actions">
               <span class="badge ${active ? "active" : ""}">${active ? "Active" : "Inactive"}</span>
@@ -158,13 +208,13 @@ function renderManagerStaff() {
             </div>
           </div>`;
       }).join("")
-    : `<p class="muted">No staff profiles yet. Add the first waiter below.</p>`;
+    : `<p class="muted">No team members yet. Add the first staff member below.</p>`;
 
   panel.innerHTML = `
     <div class="heading-row">
       <div>
-        <h3 style="margin-bottom:3px">Staff Roster</h3>
-        <p class="muted" style="margin:0">Staff are persistent EasyBev identities. Permanent QR slots are assigned to these profiles.</p>
+        <h3 style="margin-bottom:3px">Team</h3>
+        <p class="muted" style="margin:0">Add staff once, then assign them to permanent waiter slots as shifts change.</p>
       </div>
       <button class="secondary" onclick="toggleManagerStaff()">Close</button>
     </div>
@@ -172,19 +222,16 @@ function renderManagerStaff() {
     <div class="manager-staff-add">
       <input id="managerStaffName" type="text" maxlength="80" placeholder="Full name e.g. Thabo Mokoena" />
       <input id="managerStaffMobile" type="tel" maxlength="30" placeholder="Mobile (optional)" />
-      <input id="managerStaffUid" type="text" maxlength="160" placeholder="Firebase UID (optional for now)" />
       <button class="warning" onclick="addManagerStaff()">+ Add Staff</button>
     </div>
 
     <div class="manager-staff-list">${roster}</div>
-    <p class="muted" style="margin-top:14px">A Firebase UID links this business profile to the authenticated login. It can be added later without changing historical service records.</p>
   `;
 }
 
 async function addManagerStaff() {
   const name = String(document.getElementById("managerStaffName")?.value || "").trim();
   const mobile = String(document.getElementById("managerStaffMobile")?.value || "").trim();
-  const firebaseUid = String(document.getElementById("managerStaffUid")?.value || "").trim();
 
   if (!name) {
     alert("Enter the staff member's name.");
@@ -195,32 +242,23 @@ async function addManagerStaff() {
     staff && staff.active !== false && String(staff.name || "").trim().toLowerCase() === name.toLowerCase()
   );
   if (duplicate) {
-    alert("An active staff profile with that name already exists.");
+    alert("An active team member with that name already exists.");
     return;
   }
 
-  if (firebaseUid) {
-    const duplicateUid = Object.values(latestManagerStaff || {}).some(staff =>
-      staff && String(staff.firebaseUid || "").trim() === firebaseUid
-    );
-    if (duplicateUid) {
-      alert("That Firebase UID is already linked to another staff profile.");
-      return;
-    }
-  }
 
   const ref = db.ref("staff").push();
   await ref.set({
     staffId: ref.key,
     name,
     mobile,
-    firebaseUid,
+    firebaseUid: "",
     active: true,
     createdAt: firebase.database.ServerValue.TIMESTAMP,
     updatedAt: firebase.database.ServerValue.TIMESTAMP
   });
 
-  showEasyBevToast("Staff profile created", `${name} is ready for waiter-slot assignment.`);
+  showEasyBevToast("Team member added", `${name} is ready for waiter assignment.`);
 }
 
 async function editManagerStaff(id) {
@@ -236,24 +274,10 @@ async function editManagerStaff(id) {
   if (mobilePrompt === null) return;
   const mobile = mobilePrompt.trim();
 
-  const uidPrompt = prompt("Firebase UID (optional)", String(staff.firebaseUid || ""));
-  if (uidPrompt === null) return;
-  const firebaseUid = uidPrompt.trim();
-
-  if (firebaseUid) {
-    const duplicateUid = Object.entries(latestManagerStaff || {}).some(([otherId, other]) =>
-      otherId !== id && other && String(other.firebaseUid || "").trim() === firebaseUid
-    );
-    if (duplicateUid) {
-      alert("That Firebase UID is already linked to another staff profile.");
-      return;
-    }
-  }
 
   await db.ref(`staff/${id}`).update({
     name,
     mobile,
-    firebaseUid,
     updatedAt: firebase.database.ServerValue.TIMESTAMP
   });
 
@@ -268,7 +292,7 @@ async function editManagerStaff(id) {
   });
   if (Object.keys(updates).length) await db.ref().update(updates);
 
-  showEasyBevToast("Staff profile updated", name);
+  showEasyBevToast("Team member updated", name);
 }
 
 async function toggleManagerStaffMember(id, currentlyActive) {
@@ -279,7 +303,7 @@ async function toggleManagerStaffMember(id, currentlyActive) {
     const assignedSlots = Object.entries(latestManagerWaiters || {})
       .filter(([, waiter]) => waiter && String(waiter.assignedStaffId || "") === String(id));
     if (assignedSlots.length) {
-      alert(`Unassign ${staffDisplayName(staff)} from Waiter ${assignedSlots.map(([slot]) => slot).join(", ")} before deactivating this staff profile.`);
+      alert(`Unassign ${staffDisplayName(staff)} from Waiter ${assignedSlots.map(([slot]) => slot).join(", ")} before deactivating this team member.`);
       return;
     }
   }
@@ -288,11 +312,11 @@ async function toggleManagerStaffMember(id, currentlyActive) {
     active: !currentlyActive,
     updatedAt: firebase.database.ServerValue.TIMESTAMP
   });
-  showEasyBevToast(!currentlyActive ? "Staff reactivated" : "Staff deactivated", staffDisplayName(staff));
+  showEasyBevToast(!currentlyActive ? "Team member reactivated" : "Team member deactivated", staffDisplayName(staff));
 }
 
 function staffAssignmentOptions(selectedId = "") {
-  const rows = activeStaffEntries().filter(([, staff]) => staff.active !== false);
+  const rows = sortedStaffEntries().filter(([, staff]) => staff.active !== false);
   const options = [`<option value="">Unassigned</option>`];
   rows.forEach(([id, staff]) => {
     const assignedElsewhere = Object.entries(latestManagerWaiters || {})
@@ -309,12 +333,22 @@ async function saveWaiterStaffAssignment(slot) {
 
   const staffId = String(select.value || "").trim();
   const current = latestManagerWaiters[slot] || {};
+  const currentStaffId = String(current.assignedStaffId || "").trim();
+  const currentLegacyName = String(current.name || "").trim();
+  const assignmentChanged = staffId !== currentStaffId || (!staffId && !currentStaffId && Boolean(currentLegacyName));
+
+  if (assignmentChanged && managerSessionsForSlot(slot, latestManagerSessions).length) {
+    alert(`Waiter ${slot} still has active guest sessions. End those sessions before changing the staff assignment.`);
+    if (select) select.value = currentStaffId;
+    return;
+  }
 
   if (!staffId) {
     await db.ref(`waiters/${slot}`).update({
       assignedStaffId: null,
       assignedStaffName: null,
       name: "",
+      assignedAt: null,
       assignmentUpdatedAt: firebase.database.ServerValue.TIMESTAMP,
       updatedAt: firebase.database.ServerValue.TIMESTAMP
     });
@@ -335,7 +369,11 @@ async function saveWaiterStaffAssignment(slot) {
     return;
   }
 
-  const assignedAt = firebase.database.ServerValue.TIMESTAMP;
+  const timestamp = firebase.database.ServerValue.TIMESTAMP;
+  const assignedAt = staffId === currentStaffId && current.assignedAt
+    ? current.assignedAt
+    : timestamp;
+
   await db.ref(`waiters/${slot}`).update({
     slot: String(slot),
     assignedStaffId: staffId,
@@ -343,8 +381,8 @@ async function saveWaiterStaffAssignment(slot) {
     /* name remains as a compatibility snapshot for older EasyBev logic. */
     name: staffDisplayName(staff),
     assignedAt,
-    assignmentUpdatedAt: assignedAt,
-    updatedAt: assignedAt
+    assignmentUpdatedAt: timestamp,
+    updatedAt: timestamp
   });
 
   showEasyBevToast("Staff assigned", `${staffDisplayName(staff)} → Waiter ${slot}`);
@@ -482,7 +520,7 @@ function renderManagerWaiterSlots(
 ) {
 
   const container = document.getElementById("managerWaiterSlots");
-  const slots = activeWaiterEntries(waiters);
+  const slots = sortedWaiterEntries(waiters);
 
   if (!slots.length) {
     container.innerHTML = `
@@ -513,7 +551,6 @@ function renderManagerWaiterSlots(
     const loadClass = !active ? "inactive" : guestCount === 0 ? "available" : "";
 
     const guestLink = `${window.location.origin}${window.location.pathname}?guest=${slot}`;
-    const waiterLink = `${window.location.origin}${window.location.pathname}?waiter=${slot}`;
 
     return `
       <div class="waiter-slot-card summary ${selected ? "selected" : ""}" onclick="toggleManagerWaiterDetails('${slot}')">
@@ -530,7 +567,7 @@ function renderManagerWaiterSlots(
           ${guestCount ? `<span class="badge">${guestCount}</span>` : ""}
         </div>
 
-        ${selected ? managerWaiterDetailHtml(slot, waiter, activeSessions, guestLink, waiterLink) : ""}
+        ${selected ? managerWaiterDetailHtml(slot, waiter, activeSessions, guestLink) : ""}
       </div>
     `;
   }).join("");
@@ -546,7 +583,7 @@ function managerSessionsForSlot(slot, sessions) {
     .sort((a, b) => Number(b[1].lastActivityAt || b[1].createdAt || 0) - Number(a[1].lastActivityAt || a[1].createdAt || 0));
 }
 
-function managerWaiterDetailHtml(slot, waiter, activeSessions, guestLink, waiterLink) {
+function managerWaiterDetailHtml(slot, waiter, activeSessions, guestLink) {
   const name = String(waiter.assignedStaffName || waiter.name || "").trim();
   const assignedStaffId = String(waiter.assignedStaffId || "").trim();
   const active = waiter.active !== false;
@@ -573,12 +610,12 @@ function managerWaiterDetailHtml(slot, waiter, activeSessions, guestLink, waiter
               ${staffAssignmentOptions(assignedStaffId)}
             </select>
           </label>
-          ${!activeStaffEntries().filter(([, staff]) => staff.active !== false).length ? `<p class="muted">Create a staff profile under <strong>Staff</strong> before assigning this slot.</p>` : ""}
-          ${!assignedStaffId && name ? `<div class="status warning">Legacy assignment: ${escapeHtml(name)}. Create/select a Staff Profile to make this a persistent identity.</div>` : ""}
+          ${!sortedStaffEntries().filter(([, staff]) => staff.active !== false).length ? `<p class="muted">Add a team member under <strong>Team</strong> before assigning this slot.</p>` : ""}
+          ${!assignedStaffId && name ? `<div class="status warning">Choose a team profile to complete this assignment.</div>` : ""}
           <div class="slot-detail-actions">
             <button class="success" onclick="saveWaiterStaffAssignment('${slot}')">Save Assignment</button>
             <button class="${active ? "danger" : "blue"}" onclick="toggleWaiterSlot('${slot}', ${active})">${active ? "Deactivate Slot" : "Reactivate Slot"}</button>
-            <button class="blue" onclick="location.href='?waiter=${slot}'">Open Waiter Dashboard</button>
+            <button class="blue" onclick="location.href='?waiter=${slot}'">Open Waiter View</button>
           </div>
         </div>
 
@@ -591,20 +628,15 @@ function managerWaiterDetailHtml(slot, waiter, activeSessions, guestLink, waiter
       <div class="qr-lanyard">
         <div id="managerQr${slot}" class="qr-box" aria-label="QR code for Waiter ${escapeHtml(slot)}"></div>
         <div>
-          <div class="eyebrow" style="color:#a8750e">Permanent lanyard QR</div>
+          <div class="eyebrow" style="color:#a8750e">Service QR</div>
           <h3 style="margin:5px 0">Waiter ${escapeHtml(slot)}</h3>
-          <p class="muted">Print once and keep the lanyard with this service slot. Staff names can change without replacing the QR.</p>
+          <p class="muted">Print once for this waiter slot. Staff can change without replacing the QR.</p>
           <div class="code">${escapeHtml(guestLink)}</div>
           <div class="slot-detail-actions">
             <button class="warning" onclick="printWaiterLanyard('${slot}')">Print Lanyard</button>
             <button class="secondary" onclick="downloadWaiterQr('${slot}')">Download QR</button>
             <button class="secondary" onclick="copyText('${escapeHtml(guestLink)}')">Copy Guest Link</button>
           </div>
-          <details style="margin-top:12px">
-            <summary class="muted" style="cursor:pointer;font-weight:800">Technical links</summary>
-            <p class="muted">Waiter dashboard</p>
-            <div class="code">${escapeHtml(waiterLink)}</div>
-          </details>
         </div>
       </div>
     </div>
@@ -680,8 +712,6 @@ function printWaiterLanyard(slot) {
       return;
     }
 
-    const waiter = latestManagerWaiters[slot] || {};
-    const assignedName = String(waiter.assignedStaffName || waiter.name || "").trim();
     const guestLink = `${window.location.origin}${window.location.pathname}?guest=${slot}`;
     const popup = window.open("", "_blank", "width=520,height=760");
     if (!popup) {
@@ -699,7 +729,7 @@ function printWaiterLanyard(slot) {
       <div class="brand">Easy<span>Bev</span></div>
       <div class="eyebrow">Your waiter</div>
       <h1>Waiter ${escapeHtml(slot)}</h1>
-      <div class="name">${assignedName ? escapeHtml(assignedName) : "Service slot"}</div>
+      <div class="name">Permanent service slot</div>
       <img class="qr" src="${dataUrl}" alt="Waiter ${escapeHtml(slot)} QR code">
       <div class="scan">Scan for service</div>
       <div class="tag">Good Drinks. Better Times.</div>
@@ -711,56 +741,6 @@ function printWaiterLanyard(slot) {
 
 
 /* =========================================================
-   SAVE WAITER NAME
-   ========================================================= */
-
-async function saveWaiterName(
-  slot
-) {
-
-  const input =
-    document.getElementById(
-      `managerWaiterName${slot}`
-    );
-
-
-  const name =
-    input.value.trim();
-
-
-  await db
-    .ref(
-      `waiters/${slot}`
-    )
-    .update({
-
-      slot:
-        String(slot),
-
-      name,
-
-      updatedAt:
-        firebase.database
-          .ServerValue
-          .TIMESTAMP
-
-    });
-
-
-  alert(
-
-    name
-
-      ? `Waiter ${slot} is now assigned to ${name}.`
-
-      : `Waiter ${slot} returned to its placeholder name.`
-
-  );
-
-}
-
-
-/* =========================================================
    ENABLE / DISABLE WAITER SLOT
    ========================================================= */
 
@@ -768,6 +748,11 @@ async function toggleWaiterSlot(
   slot,
   currentlyActive
 ) {
+
+  if (currentlyActive && managerSessionsForSlot(slot, latestManagerSessions).length) {
+    alert(`Waiter ${slot} still has active guest sessions. End those sessions before deactivating the slot.`);
+    return;
+  }
 
   await db
     .ref(

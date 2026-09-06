@@ -6,29 +6,61 @@ function goEasyBevHome() {
   window.location.href = "./";
 }
 
-function goBackOrHome() {
-  if (window.history.length > 1) {
-    window.history.back();
+
+function currentServiceSlotForActorSwitch() {
+  const current = String(waiterSlot || guestSlot || "").trim();
+  if (current) {
+    localStorage.setItem("easybev_last_actor_slot", current);
+    return current;
+  }
+
+  return String(localStorage.getItem("easybev_last_actor_slot") || "1");
+}
+
+function switchEasyBevActor(actor) {
+  const selected = String(actor || "").toLowerCase();
+  const slot = currentServiceSlotForActorSwitch();
+
+  if (selected === "guest") {
+    window.location.href = `?guest=${encodeURIComponent(slot)}`;
+    return;
+  }
+
+  if (selected === "waiter") {
+    window.location.href = `?waiter=${encodeURIComponent(slot)}`;
+    return;
+  }
+
+  if (selected === "manager") {
+    window.location.href = "?manager=1";
     return;
   }
 
   goEasyBevHome();
 }
 
-function showActorNavigation(label) {
+function showActorNavigation(label, actor) {
   const nav = document.getElementById("actorNav");
   const role = document.getElementById("actorNavRole");
+  const switcher = document.getElementById("actorSwitcher");
 
   if (!nav || !role) {
     return;
   }
 
+  document.body.dataset.actor = String(actor || "app");
   role.innerHTML = `<strong>${escapeHtml(String(label || "EasyBev"))}</strong>`;
+
+  if (switcher && actor) {
+    switcher.value = String(actor);
+  }
+
   nav.classList.remove("hidden");
 }
 
 function hideActorNavigation() {
   const nav = document.getElementById("actorNav");
+  document.body.dataset.actor = "home";
 
   if (nav) {
     nav.classList.add("hidden");
@@ -63,7 +95,7 @@ function routeApplication() {
         .textContent =
           "Management";
 
-      showActorNavigation("Management Dashboard");
+      showActorNavigation("Management", "manager");
 
       startManagerDashboard();
 
@@ -75,6 +107,8 @@ function routeApplication() {
     if (
       waiterSlot
     ) {
+
+      localStorage.setItem("easybev_last_actor_slot", String(waiterSlot));
 
       document
         .getElementById(
@@ -92,7 +126,7 @@ function routeApplication() {
         .textContent =
           "Waiter";
 
-      showActorNavigation(`Waiter Slot ${waiterSlot}`);
+      showActorNavigation(`Waiter ${waiterSlot}`, "waiter");
 
       startWaiterDashboard(
         waiterSlot
@@ -106,6 +140,8 @@ function routeApplication() {
     if (
       guestSlot
     ) {
+
+      localStorage.setItem("easybev_last_actor_slot", String(guestSlot));
 
       document
         .getElementById(
@@ -123,7 +159,7 @@ function routeApplication() {
         .textContent =
           "Guest";
 
-      showActorNavigation(`Guest · Waiter ${guestSlot}`);
+      showActorNavigation(`Guest · Waiter ${guestSlot}`, "guest");
 
       startGuestFlow();
 
@@ -192,7 +228,7 @@ async function loadRememberedGuestSessions() {
 
     const waiters = await getAllWaiters();
 
-    for (const [slot] of activeWaiterEntries(waiters)) {
+    for (const [slot] of sortedWaiterEntries(waiters)) {
 
       const sessionId =
         localStorage.getItem(
@@ -222,14 +258,17 @@ async function loadRememberedGuestSessions() {
         continue;
       }
 
-      const waiter =
-        await getWaiter(slot);
+      let waiterName = sessionWaiterSnapshotName(session);
+      if (!waiterName) {
+        const waiter = await getWaiter(slot);
+        waiterName = getWaiterDisplayName(waiter);
+      }
 
       activeSessions.push({
         slot,
         sessionId,
         session,
-        waiterName: getWaiterDisplayName(waiter)
+        waiterName
       });
 
     }
@@ -255,7 +294,7 @@ async function loadRememberedGuestSessions() {
               <small>
                 ${escapeHtml(guestLabel(item.sessionId, item.session))}
                 · ${escapeHtml(item.waiterName)}
-                · ${escapeHtml(money(item.session.total || 0))}
+                · ${escapeHtml(money(sessionBillTotal(item.session)))}
               </small>
             </span>
             <span class="resume-session-arrow" aria-hidden="true">→</span>

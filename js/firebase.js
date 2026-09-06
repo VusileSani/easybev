@@ -92,9 +92,9 @@ function showStartupError(
       "headerMode"
     )
     .textContent =
-      "Connection Error";
+      "Service unavailable";
 
-  showActorNavigation("Connection Error");
+  showActorNavigation("Service unavailable", waiterSlot ? "waiter" : guestSlot ? "guest" : managerMode ? "manager" : "guest");
 
   document
     .getElementById(
@@ -177,12 +177,7 @@ async function initialiseEasyBev() {
 
     console.error(error);
 
-    showStartupError(
-      error &&
-      error.message
-        ? error.message
-        : "EasyBev could not connect to Firebase."
-    );
+    showStartupError("EasyBev could not start. Refresh the page and try again.");
 
   }
 
@@ -201,8 +196,8 @@ async function ensureWaiterSlots() {
     return;
   }
 
-  /* Fresh prototype only: begin with one permanent service slot.
-     Existing venues retain every slot already stored in Firebase. */
+  /* Begin a fresh venue with one permanent service slot.
+     Existing venues retain every slot already stored in the database. */
   await db.ref("waiters/1").set({
     slot: "1",
     name: "",
@@ -232,5 +227,8 @@ async function getWaiter(
   };
 }
 
-
+async function getAllWaiters() {
+  const snap = await db.ref("waiters").once("value");
+  return snap.val() || {};
+}
 

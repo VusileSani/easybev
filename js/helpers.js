@@ -181,15 +181,87 @@ function phoneIndexKey(phone) {
   return digits;
 }
 
-function activeWaiterEntries(waiters) {
+function sortedWaiterEntries(waiters) {
   return Object.entries(waiters || {})
     .filter(([, waiter]) => waiter)
     .sort((a, b) => Number(a[0]) - Number(b[0]));
 }
 
-async function getAllWaiters() {
-  const snap = await db.ref("waiters").once("value");
-  return snap.val() || {};
+
+function escapeJsString(value) {
+  return String(value || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "\\'")
+    .replace(/\r/g, "")
+    .replace(/\n/g, " ");
+}
+
+
+function sessionWaiterSnapshotName(session) {
+  if (!session) return "";
+
+  return String(
+    session.waiterStaffNameAtStart ||
+    session.waiterNameAtStart ||
+    ""
+  ).trim();
+}
+
+
+function sessionWaiterSnapshotId(session) {
+  return String(
+    (session && session.waiterStaffIdAtStart) ||
+    ""
+  ).trim();
+}
+
+
+function sessionWaiterDisplayName(session, fallbackWaiter = null) {
+  const snapshotName = sessionWaiterSnapshotName(session);
+  if (snapshotName) return snapshotName;
+
+  if (fallbackWaiter) {
+    return getWaiterDisplayName(fallbackWaiter);
+  }
+
+  return waiterFallbackName(
+    session && session.waiterSlot
+      ? session.waiterSlot
+      : ""
+  );
+}
+
+
+function sessionBillStatus(session) {
+  return String(
+    (session && session.bill && session.bill.status) ||
+    "open"
+  );
+}
+
+
+function sessionOrderIsLocked(session) {
+  const status = sessionBillStatus(session);
+  return status === "finalized" || status === "paid";
+}
+
+
+function sessionBillTotal(session) {
+  if (!session) return 0;
+
+  const rawFinalizedTotal = session.bill && session.bill.finalizedTotal;
+  const finalizedTotal = rawFinalizedTotal === null || rawFinalizedTotal === undefined
+    ? NaN
+    : Number(rawFinalizedTotal);
+
+  if (
+    sessionOrderIsLocked(session) &&
+    Number.isFinite(finalizedTotal)
+  ) {
+    return finalizedTotal;
+  }
+
+  return calculateTotal(session.items || {});
 }
 
 

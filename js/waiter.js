@@ -49,18 +49,10 @@ async function startWaiterDashboard(
             snap.val() || {};
 
 
-          const name =
-
-            String(
-              latest.name || ""
-            )
-              .trim()
-
-            ||
-
-            waiterFallbackName(
-              slot
-            );
+          const name = getWaiterDisplayName({
+            ...latest,
+            slot: String(slot)
+          });
 
 
           document
@@ -216,291 +208,125 @@ function renderWaiterDashboard(
    WAITER SESSION CARD
    ========================================================= */
 
-function waiterSessionHtml(
-  sessionId,
-  session
-) {
+function waiterRequestHtml(sessionId, request) {
+  if (!request || request.status === "completed") return "";
 
-  const items =
-    session.items || {};
+  const acceptButton = request.status === "new"
+    ? `<button class="blue" onclick="acknowledgeRequest('${sessionId}')">Accept</button>`
+    : "";
 
+  const completeButton = request.status === "acknowledged" && request.type !== "bill"
+    ? `<button class="success" onclick="completeRequest('${sessionId}')">Delivered / Done</button>`
+    : "";
 
-  const total =
-    calculateTotal(
-      items
-    );
-
-
-  const request =
-    session.latestRequest;
-
-
-  const billStatus =
-
-    session.bill &&
-    session.bill.status
-
-      ? session.bill.status
-
-      : "open";
-
-
-  const label =
-    guestLabel(
-      sessionId,
-      session
-    );
-
-
-  const unreadCount =
-    waiterUnreadCount(
-      waiterSlot,
-      sessionId,
-      session
-    );
-
-
-  let requestHtml =
-    "";
-
-
-  if (
-
-    request &&
-
-    request.status !==
-      "completed"
-
-  ) {
-
-    requestHtml = `
-
-      <div class="status ${
-        request.status === "new"
-          ? "danger"
-          : ""
-      }">
-
-        <strong>
-          ${escapeHtml(
-            request.label || ""
-          )}
-        </strong>
-
-        <br>
-
-        Status:
-        ${escapeHtml(
-          request.status
-        )}
-
-        <br><br>
-
-
-        ${
-          request.status === "new"
-
-            ? `
-
-              <button
-                class="blue"
-                onclick="acknowledgeRequest('${sessionId}')"
-              >
-                Accept
-              </button>
-
-            `
-
-            : ""
-        }
-
-
-        ${
-          request.status === "acknowledged" &&
-          request.type !== "bill"
-
-            ? `
-
-              <button
-                class="success"
-                onclick="completeRequest('${sessionId}')"
-              >
-                Delivered / Done
-              </button>
-
-            `
-
-            : ""
-        }
-
-      </div>
-
-    `;
-
-  }
-
-
-  let billAction =
-    "";
-
-
-  if (
-    billStatus ===
-      "requested"
-  ) {
-
-    billAction = `
-
-      <button
-        class="success"
-        onclick="finalizeBill('${sessionId}')"
-      >
-        Done – Finalise Bill
-      </button>
-
-    `;
-
-  }
-  else if (
-    billStatus ===
-      "finalized"
-  ) {
-
-    billAction = `
-
-      <span class="badge active">
-        Bill Finalised – Awaiting Payment
-      </span>
-
-    `;
-
-  }
-  else if (
-    billStatus ===
-      "paid"
-  ) {
-
-    billAction = `
-
-      <button
-        class="success"
-        onclick="closePaidSession('${sessionId}')"
-      >
-        Close Session
-      </button>
-
-    `;
-
-  }
-
+  const statusLabel = request.status === "new"
+    ? "Needs attention"
+    : request.status === "acknowledged"
+      ? "Accepted"
+      : "In progress";
 
   return `
+    <div class="status ${request.status === "new" ? "danger" : ""}">
+      <div class="request-status-line">
+        <strong>${escapeHtml(request.label || "")}</strong>
+        <span>${escapeHtml(statusLabel)}</span>
+      </div>
+      <div class="request-actions">
+        ${acceptButton}
+        ${completeButton}
+      </div>
+    </div>`;
+}
 
+
+function waiterBillActionHtml(sessionId, session) {
+  const billStatus = sessionBillStatus(session);
+
+  if (billStatus === "requested") {
+    const reconciliationStatus = String(
+      (session.reconciliation && session.reconciliation.status) || ""
+    );
+
+    if (reconciliationStatus === "stale") {
+      return `<span class="badge">Reconcile POS list again before finalising</span>`;
+    }
+
+    if (reconciliationStatus !== "reconciled") {
+      return `<span class="badge">Reconcile POS list before finalising</span>`;
+    }
+
+    return `<button class="success" onclick="finalizeBill('${sessionId}')">Done – Finalise Bill</button>`;
+  }
+
+  if (billStatus === "finalized") {
+    return `<span class="badge active">Bill Finalised – Awaiting Payment</span>`;
+  }
+
+  if (billStatus === "paid") {
+    return `<button class="success" onclick="closePaidSession('${sessionId}')">Close Session</button>`;
+  }
+
+  return "";
+}
+
+
+function waiterOrderActionsHtml(sessionId, label, session) {
+  const addItems = sessionOrderIsLocked(session)
+    ? `<span class="badge">Order locked</span>`
+    : `<button class="blue" onclick="openItemModal('${sessionId}', '${escapeJsString(label)}')">Add Items</button>`;
+
+  return `
+    ${addItems}
+    <button class="secondary" onclick="openReconcileModal('${sessionId}')">POS List</button>`;
+}
+
+
+function waiterSessionHtml(sessionId, session) {
+  const total = sessionBillTotal(session);
+  const label = guestLabel(sessionId, session);
+  const unreadCount = waiterUnreadCount(waiterSlot, sessionId, session);
+
+  return `
     <div class="session-card active ${unreadCount ? "has-unread" : ""}">
-
       <div class="heading-row">
-
         <div>
           <div class="guest-name-line">${escapeHtml(guestName(session))}</div>
           <div class="guest-code-line">${escapeHtml(label)}</div>
         </div>
-
         <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
           ${unreadCount ? `<span class="unread-badge">${unreadCount} new</span>` : ""}
-          <span class="badge active">
-            Active
-          </span>
+          <span class="badge active">Active</span>
         </div>
-
       </div>
 
       ${unreadCount ? `
         <div class="attention-row">
           <strong>New guest activity</strong>
           <button class="secondary" onclick="markWaiterSessionSeen('${sessionId}')">Mark seen</button>
-        </div>
-      ` : ""}
+        </div>` : ""}
 
-
-      ${requestHtml}
-
-
-      ${waiterChatHtml(
-        sessionId,
-        session.messages || {}
-      )}
-
+      ${waiterRequestHtml(sessionId, session.latestRequest)}
+      ${waiterChatHtml(sessionId, session.messages || {})}
 
       <div>
-
-        <strong>
-          Current total
-        </strong>
-
-        <div class="big-number">
-          ${money(
-            total
-          )}
-        </div>
-
+        <strong>Current total</strong>
+        <div class="big-number">${money(total)}</div>
       </div>
 
-
       <br>
+      ${waiterOrderActionsHtml(sessionId, label, session)}
+      ${waiterBillActionHtml(sessionId, session)}
 
-
-      <button
-        class="blue"
-        onclick="openItemModal(
-          '${sessionId}',
-          '${escapeHtml(label)}'
-        )"
-      >
-        Add Items
-      </button>
-
-      <button
-        class="secondary"
-        onclick="openReconcileModal('${sessionId}')"
-      >
-        View POS List
-      </button>
-
-
-      ${billAction}
-
-
-      <hr
-        style="
-          border:0;
-          border-top:1px solid rgba(7,19,28,.10);
-          margin:18px 0;
-        "
-      >
-
-
-      <button
-        class="danger"
-        onclick="endSessionOverride(
-          '${sessionId}',
-          'waiter_override'
-        )"
-      >
-        End Session
-      </button>
-
-
-      <p class="muted">
-
-        Use End Session for abandoned,
-        broken or stuck guest sessions.
-
-      </p>
-
-    </div>
-
-  `;
-
+      ${sessionBillStatus(session) !== "paid" ? `
+        <details class="session-more">
+          <summary>More</summary>
+          <div class="session-more-body">
+            <button class="danger" onclick="endSessionOverride('${sessionId}', 'waiter_override')">End Session</button>
+            <p class="muted">For abandoned or stuck service sessions.</p>
+          </div>
+        </details>
+      ` : ""}
+    </div>`;
 }
 
 
@@ -547,7 +373,7 @@ async function openReconcileModal(sessionId) {
   }
 
   document.getElementById("reconcileTotal").textContent =
-    money(calculateTotal(session.items || {}));
+    money(sessionBillTotal(session));
 
   renderReconcileStatus(session.reconciliation || {});
   document.getElementById("reconcileModal").classList.remove("hidden");
@@ -565,11 +391,19 @@ function renderReconcileStatus(reconciliation) {
     status.innerHTML = `<span class="badge active">Reconciled</span> <span>Marked ${escapeHtml(when)}</span>`;
     button.textContent = "Reconciled";
     button.disabled = true;
-  } else {
-    status.textContent = "Not yet marked as reconciled with the venue POS.";
-    button.textContent = "Mark Reconciled";
-    button.disabled = false;
+    return;
   }
+
+  if (reconciliation.status === "stale") {
+    status.innerHTML = `<div class="status warning">The order changed after reconciliation. Reconcile this POS list again before finalising the bill.</div>`;
+    button.textContent = "Reconcile Again";
+    button.disabled = false;
+    return;
+  }
+
+  status.textContent = "Not yet marked as reconciled with the venue POS.";
+  button.textContent = "Mark Reconciled";
+  button.disabled = false;
 }
 
 function closeReconcileModal() {
@@ -581,248 +415,21 @@ async function markSessionReconciled() {
   if (!reconcileModalSessionId) return;
 
   const sessionId = reconcileModalSessionId;
+  const sessionSnap = await db.ref(`sessions/${sessionId}`).once("value");
+  const session = sessionSnap.val();
+  if (!session || session.status !== "active") return;
+
   await db.ref(`sessions/${sessionId}`).update({
     "reconciliation/status": "reconciled",
     "reconciliation/reconciledAt": firebase.database.ServerValue.TIMESTAMP,
+    "reconciliation/reconciledTotal": calculateTotal(session.items || {}),
+    "reconciliation/reconciledItemCount": Object.values(session.items || {}).reduce((sum, item) => sum + Number(item.qty || 1), 0),
+    "reconciliation/staleAt": null,
     lastActivityAt: firebase.database.ServerValue.TIMESTAMP
   });
 
   const snap = await db.ref(`sessions/${sessionId}/reconciliation`).once("value");
   renderReconcileStatus(snap.val() || { status: "reconciled" });
-}
-
-
-/* =========================================================
-   TWO-WAY SESSION MESSAGING
-   ========================================================= */
-
-function orderedMessages(messages) {
-
-  return Object.values(messages || {})
-    .filter(message => message && message.text)
-    .sort(
-      (a, b) =>
-        Number(a.createdAt || 0) -
-        Number(b.createdAt || 0)
-    );
-
-}
-
-
-function messageTime(timestamp) {
-
-  const value = Number(timestamp || 0);
-
-  if (!value) {
-    return "";
-  }
-
-  try {
-    return new Date(value).toLocaleTimeString(
-      [],
-      {
-        hour: "2-digit",
-        minute: "2-digit"
-      }
-    );
-  }
-  catch {
-    return "";
-  }
-
-}
-
-
-function chatMessageHtml(message) {
-
-  const sender =
-    message.sender === "waiter"
-      ? "waiter"
-      : "guest";
-
-  const senderLabel =
-    sender === "waiter"
-      ? "Waiter"
-      : "Guest";
-
-  const time =
-    messageTime(message.createdAt);
-
-  return `
-    <div class="chat-message ${sender}">
-      ${escapeHtml(message.text || "")}
-      <span class="chat-meta">
-        ${senderLabel}${time ? ` · ${escapeHtml(time)}` : ""}
-      </span>
-    </div>
-  `;
-
-}
-
-
-function renderGuestChat(messages) {
-
-  const thread =
-    document.getElementById(
-      "guestChatThread"
-    );
-
-  if (!thread) {
-    return;
-  }
-
-  const ordered =
-    orderedMessages(messages);
-
-  thread.innerHTML =
-    ordered.length
-      ? ordered.map(chatMessageHtml).join("")
-      : `<div class="chat-empty">No messages yet. Send your waiter a message if you need anything specific.</div>`;
-
-  thread.scrollTop =
-    thread.scrollHeight;
-
-}
-
-
-function waiterChatHtml(
-  sessionId,
-  messages
-) {
-
-  const ordered =
-    orderedMessages(messages);
-
-  const thread =
-    ordered.length
-      ? ordered.map(chatMessageHtml).join("")
-      : `<div class="chat-empty">No messages yet.</div>`;
-
-  return `
-    <div class="chat-panel">
-      <h4>Guest conversation</h4>
-      <div class="chat-thread">
-        ${thread}
-      </div>
-      <div class="chat-compose">
-        <input
-          id="waiterMessage-${sessionId}"
-          type="text"
-          maxlength="300"
-          placeholder="Reply to guest…"
-        />
-        <button
-          class="blue"
-          onclick="sendWaiterMessage('${sessionId}')"
-        >
-          Send
-        </button>
-      </div>
-    </div>
-  `;
-
-}
-
-
-async function sendGuestMessage() {
-
-  if (!currentSessionId || !currentSession || currentSession.status !== "active") {
-    return;
-  }
-
-  const input =
-    document.getElementById(
-      "guestMessageInput"
-    );
-
-  if (!input) {
-    return;
-  }
-
-  const text =
-    String(input.value || "")
-      .trim()
-      .slice(0, 300);
-
-  if (!text) {
-    return;
-  }
-
-  input.value = "";
-
-  const updates = {};
-  const messageRef =
-    db.ref(
-      `sessions/${currentSessionId}/messages`
-    ).push();
-
-  updates[
-    `sessions/${currentSessionId}/messages/${messageRef.key}`
-  ] = {
-    sender: "guest",
-    text,
-    createdAt:
-      firebase.database.ServerValue.TIMESTAMP
-  };
-
-  updates[
-    `sessions/${currentSessionId}/lastActivityAt`
-  ] = firebase.database.ServerValue.TIMESTAMP;
-
-  await db.ref().update(updates);
-
-}
-
-
-async function sendWaiterMessage(
-  sessionId
-) {
-
-  const input =
-    document.getElementById(
-      `waiterMessage-${sessionId}`
-    );
-
-  if (!input) {
-    return;
-  }
-
-  const text =
-    String(input.value || "")
-      .trim()
-      .slice(0, 300);
-
-  if (!text) {
-    return;
-  }
-
-  input.value = "";
-
-  const updates = {};
-  const messageRef =
-    db.ref(
-      `sessions/${sessionId}/messages`
-    ).push();
-
-  updates[
-    `sessions/${sessionId}/messages/${messageRef.key}`
-  ] = {
-    sender: "waiter",
-    text,
-    createdAt:
-      firebase.database.ServerValue.TIMESTAMP
-  };
-
-  updates[
-    `sessions/${sessionId}/lastActivityAt`
-  ] = firebase.database.ServerValue.TIMESTAMP;
-
-  await db.ref().update(updates);
-
-  markWaiterSessionSeen(
-    sessionId
-  );
-
 }
 
 

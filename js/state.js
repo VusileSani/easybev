@@ -1,12 +1,5 @@
 /* =========================================================
    FIREBASE CONFIGURATION
-
-   IMPORTANT
-
-   PUT YOUR EXISTING REAL EASYBEV FIREBASE VALUES HERE.
-
-   DO NOT CREATE A NEW FIREBASE PROJECT.
-   DO NOT CHANGE ANYTHING IN THE FIREBASE CONSOLE.
    ========================================================= */
 
 const firebaseConfig = {
@@ -56,14 +49,7 @@ let guestSlot =
   params.get("guest");
 
 
-/*
-  OLD PROTOTYPE LINK COMPATIBILITY
-
-  ?table=7 -> waiter slot 1
-  ?table=8 -> waiter slot 2
-
-  This lets the old test links continue working temporarily.
-*/
+/* Legacy table links continue to resolve to permanent waiter slots. */
 
 const legacyTable =
   params.get("table");
@@ -95,8 +81,8 @@ let currentSession = null;
 let currentGuestWaiterName = null;
 
 let itemModalSessionId = null;
-let itemModalGuestLabel = null;
 let itemModalWaiterName = null;
+let itemModalWaiterStaffId = null;
 let itemModalCatalog = [];
 let itemModalLastRound = [];
 let itemModalBatchId = null;

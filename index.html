@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#07131c" />
   <title>EasyBev</title>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -32,13 +33,20 @@
   <small id="headerMode"></small>
 </header>
 
-<nav id="actorNav" class="actor-nav hidden" aria-label="EasyBev navigation">
+<nav id="actorNav" class="actor-nav hidden" aria-label="EasyBev actor navigation">
   <div class="actor-nav-inner">
-    <div class="actor-nav-actions">
-      <button type="button" onclick="goBackOrHome()">← Back</button>
-      <button type="button" class="home-btn" onclick="goEasyBevHome()">⌂ EasyBev Home</button>
+    <div class="actor-switch">
+      <span class="actor-switch-label">View as</span>
+      <select id="actorSwitcher" aria-label="Switch EasyBev actor" onchange="switchEasyBevActor(this.value)">
+        <option value="guest">Guest</option>
+        <option value="waiter">Waiter</option>
+        <option value="manager">Management</option>
+      </select>
     </div>
-    <div id="actorNavRole" class="actor-nav-role"></div>
+    <div class="actor-nav-context">
+      <div id="actorNavRole" class="actor-nav-role"></div>
+      <button type="button" class="actor-home-btn" onclick="goEasyBevHome()" aria-label="EasyBev home">Home</button>
+    </div>
   </div>
 </nav>
 
@@ -66,9 +74,7 @@
         </div>
 
         <div class="quick-links">
-          <a class="quick-link" href="#about">About EasyBev</a>
-          <a class="quick-link" href="#contact">Contact</a>
-          <a class="quick-link" href="#support">Support</a>
+          <a class="quick-link" href="website.html">About EasyBev</a>
         </div>
       </div>
 
@@ -81,17 +87,17 @@
         <div class="access-grid">
           <button class="access-btn primary" onclick="location.href='?guest=1'">
             <span class="access-icon">⌁</span>
-            <span class="access-copy"><strong>Guest Demo</strong><small>Open the Waiter 1 guest experience</small></span>
+            <span class="access-copy"><strong>Guest</strong><small>Open the guest service experience</small></span>
           </button>
 
           <button class="access-btn" onclick="location.href='?waiter=1'">
             <span class="access-icon">◉</span>
-            <span class="access-copy"><strong>Waiter Dashboard</strong><small>Manage active guest sessions</small></span>
+            <span class="access-copy"><strong>Waiter</strong><small>Serve active guest sessions</small></span>
           </button>
 
           <button class="access-btn" onclick="location.href='?manager=1'">
             <span class="access-icon">⚙</span>
-            <span class="access-copy"><strong>Management</strong><small>Assign waiters and oversee activity</small></span>
+            <span class="access-copy"><strong>Management</strong><small>Run service, team and venue setup</small></span>
           </button>
         </div>
       </div>
@@ -103,16 +109,6 @@
       <div class="feature"><div class="feature-icon">♡</div><strong>Happier times</strong><span>Less waiting, cleaner hand-offs and a smoother guest experience.</span></div>
     </div>
 
-    <div id="about" class="card company-section" style="margin-top:20px">
-      <div class="eyebrow" style="color:#a8750e">The company</div>
-      <h2>EasyBev</h2>
-      <p class="muted">EasyBev is being built as a lightweight service layer for restaurants, bars and venues: permanent waiter QR codes, flexible staff assignment and live guest sessions.</p>
-      <div class="company-grid">
-        <div id="contact" class="company-mini"><h3>Contact</h3><p class="muted">Company contact details will live here as the public site and domain are finalised.</p></div>
-        <div id="support" class="company-mini"><h3>Support</h3><p class="muted">Support access will be linked here for venues, staff and guests.</p></div>
-        <div class="company-mini"><h3>Company links</h3><p class="muted">About, Contact, Support, Privacy and Terms remain part of the EasyBev public-facing experience.</p></div>
-      </div>
-    </div>
 
   </section>
 
@@ -126,15 +122,11 @@
     <h2>EasyBev</h2>
 
     <div class="status danger">
-      EasyBev could not connect to Firebase.
+      EasyBev is unavailable right now.
     </div>
 
     <p id="startupErrorMessage">
-      Check the Firebase configuration in index.html.
-    </p>
-
-    <p class="muted">
-      No Firebase Console changes are required.
+      EasyBev is temporarily unavailable. Refresh the page and try again.
     </p>
 
   </section>
@@ -190,9 +182,8 @@
             placeholder="Enter OTP"
           />
 
-          <p class="muted">
-            Demo OTP:
-            <strong>123456</strong>
+          <p class="verification-code-note">
+            Verification code: <strong>123456</strong>
           </p>
 
           <button
@@ -244,7 +235,7 @@
 
         <div class="guest-primary-actions">
           <button onclick="sendRequest('assistance')">Call Waiter</button>
-          <button class="warning" onclick="sendMyUsual()">My Usual</button>
+          <button class="secondary" onclick="sendMyUsual()">My Usual</button>
         </div>
 
         <div id="guestRequestStatus"></div>
@@ -284,9 +275,9 @@
       </div>
 
 
-      <div class="card">
+      <div class="card guest-bill-card">
 
-        <h3>Your Bill</h3>
+        <div class="bill-heading"><div><span class="section-kicker">Live tab</span><h3>Your Bill</h3></div><span class="bill-live-dot">Live</span></div>
 
         <div id="guestBillItems"></div>
 
@@ -354,8 +345,7 @@
       </h2>
 
       <p class="muted">
-        All active guest sessions assigned to this waiter
-        appear here.
+        Live guests, requests, messages and order capture in one place.
       </p>
 
       <div class="notification-toolbar">
@@ -389,22 +379,23 @@
 
     <div class="card section-intro">
 
-      <h2>Management Dashboard</h2>
+      <div class="section-kicker">Venue service</div>
+      <h2>Management</h2>
 
       <p class="muted">
-        See service load at a glance. Select a waiter for assignment, QR/lanyard and session controls.
+        See the floor, assign the team and keep service moving.
       </p>
 
       <div class="manager-toolbar">
-        <button class="warning" onclick="addWaiterSlot()">+ Add Waiter Slot</button>
-        <button class="secondary" onclick="toggleManagerStaff()">Staff</button>
-        <button class="secondary" onclick="toggleManagerMenuItems()">Menu Items</button>
-        <button class="secondary" onclick="toggleManagerReports()">Reports</button>
-        <span class="muted">Slots are permanent. Deactivate rather than delete.</span>
+        <button class="warning" onclick="addWaiterSlot()">+ Waiter Slot</button>
+        <button class="secondary" onclick="toggleManagerStaff()">Team</button>
+        <button class="secondary" onclick="toggleManagerMenuItems()">Items</button>
+        <button class="secondary" onclick="toggleManagerReports()">Service</button>
       </div>
 
     </div>
 
+    <div id="managerServicePulse" class="service-pulse-grid"></div>
     <div id="managerStaff" class="card manager-staff-panel hidden"></div>
     <div id="managerMenuItems" class="card manager-menu-panel hidden"></div>
     <div id="managerReports" class="card manager-report-panel hidden"></div>
@@ -419,24 +410,10 @@
   <div class="footer-inner">
     <div class="footer-brand">
       <strong>Easy<span>Bev</span></strong>
-      <p>Good Drinks. Better Times. A smarter service connection between guests, waiters and venue management.</p>
+      <p>Good Drinks. Better Times.</p>
     </div>
-    <nav class="footer-links" aria-label="Company links">
-      <a href="./#about">About Us</a>
-      <a href="./#contact">Contact</a>
-      <a href="./#support">Support</a>
-      <a href="javascript:void(0)" title="Coming with the public company site">Privacy</a>
-      <a href="javascript:void(0)" title="Coming with the public company site">Terms</a>
-    </nav>
-    <div class="footer-note">EasyBev prototype · Permanent waiter QR architecture · Management-assigned staff slots</div>
+    <a class="footer-site-link" href="website.html">EasyBev website →</a>
   </div>
-
-    <div style="margin-top:10px;">
-      <a href="website.html" style="color:inherit;text-decoration:underline;text-underline-offset:3px;">
-        EasyBev Website
-      </a>
-    </div>
-
 </footer>
 
 
@@ -578,8 +555,9 @@
 
 
 <script src="js/state.js"></script>
-<script src="js/notifications.js"></script>
 <script src="js/helpers.js"></script>
+<script src="js/messages.js"></script>
+<script src="js/notifications.js"></script>
 <script src="js/firebase.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/navigation.js"></script>
