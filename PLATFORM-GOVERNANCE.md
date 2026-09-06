@@ -1,76 +1,76 @@
-# GoodKota Platform Governance
+# EasyBev Platform Governance
 
 ## Authority model
 
-GoodKota separates company ownership from day-to-day platform operations.
+### Owner
+Owns the authority model itself. Owner can add/deactivate EasyBev platform users, promote/demote platform roles, change owner-only controls, place the platform into maintenance, review privileged audit history, and perform every Admin function.
 
-```text
-GoodKota Owner
-  -> GoodKota Admin
-      -> Delivery Ops
-      -> Merchant
-      -> Driver
-      -> Customer
+EasyBev must always retain at least one active Owner.
+
+### EasyBev Admin
+Runs the platform day to day. Admin can onboard/pause/resume venues, maintain commercial/subscription status, reissue permanent waiter QR assets for the current venue, operate the support queue, publish/withdraw announcements, perform reason-coded recovery of stuck service sessions, and manage routine feature/service controls. Admin cannot manage Owner authority or owner-only controls. Admin can see the operational activity history needed for support handover, but ownership/authority changes remain visible only in the Owner audit view.
+
+### Venue Management
+Runs one venue. It must not receive cross-venue or EasyBev company authority. Venue Management can raise support cases into the EasyBev operations queue.
+
+## Integrity invariants
+
+1. Role authority is enforced server-side, never by hiding buttons.
+2. Owner authority cannot be granted by an ordinary Admin.
+3. At least one active Owner must always exist.
+4. Sensitive actions require a reason and create an audit event.
+5. Audit history and financial/service history are append-oriented; corrections create new events rather than silently rewriting history.
+6. Support intervention should be read-only by default. Acting on behalf of a venue must be explicit and auditable.
+7. Critical platform controls should support temporary/elevated access rather than permanently broad privileges as the product matures.
+8. Venue operational data must be tenant-scoped before EasyBev runs multiple live venues in the same production database.
+9. Owner grants, owner-role changes, maintenance-mode activation and comparable high-risk actions should require recent re-authentication and MFA in production.
+10. Temporary elevated support privileges should expire automatically rather than becoming permanent broad access.
+
+## Production Firebase direction
+
+Use Firebase Authentication for EasyBev staff and Venue Management. Assign access-control-only custom claims from a trusted Firebase Admin SDK / Cloud Function environment, for example:
+
+```json
+{
+  "easybevRole": "owner"
+}
 ```
 
-### GoodKota Owner
+or
 
-Owner authority governs GoodKota itself. It is not a larger version of Admin.
+```json
+{
+  "easybevRole": "admin"
+}
+```
 
-Owner controls:
-- who can hold Owner or Admin authority
-- maintenance mode
-- customer ordering availability
-- payment availability
-- delivery availability
-- merchant onboarding availability
-- full privileged audit and integrity overview
+Do not allow the browser to set or edit these claims.
 
-Invariants:
-- GoodKota must always retain at least one active Owner.
-- Admin cannot grant, revoke or change Owner authority.
-- Owner-level control changes require a reason and are written to the privileged audit.
-- financial history, order history and audit history are append-oriented; operational corrections should be represented as new events rather than silent historical rewrites.
+Realtime Database Security Rules should enforce role and tenant boundaries. Privileged owner/admin mutations should increasingly move behind callable/HTTP Cloud Functions so authorization, validation, reason capture, audit creation and high-risk checks happen atomically on trusted infrastructure.
 
-### GoodKota Admin
+Add Firebase App Check to reduce abuse of EasyBev backend resources from unauthorized clients.
 
-Admin is an internal GoodKota employee role responsible for continuity of day-to-day platform operations.
+## Multi-venue migration
 
-Admin can:
-- onboard and maintain merchants
-- manage merchant compliance
-- manage merchant commercial/subscription status
-- perform reason-coded merchant operating interventions
-- manage GoodKota Standard quality interventions
-- receive, assign and resolve support cases
-- publish and close platform announcements
-- see operational activity history for staff handover
+The current service model stores waiter/session/menu data at root-level paths. Before onboarding multiple fully live venues, migrate to venue-scoped operational paths such as:
 
-Admin cannot:
-- grant or remove Owner authority
-- change protected Owner-level company controls
-- erase privileged audit history
+```text
+venues/{venueId}/waiters
+venues/{venueId}/staff
+venues/{venueId}/menuItems
+venues/{venueId}/sessions
+```
 
-### Delivery Ops
+Client feature controls in this build affect the normal EasyBev interface, but production enforcement for privileged/financial controls must also exist server-side.
 
-Delivery Ops remains operationally narrow: assignment and monitoring of delivery tasks and drivers. It should not inherit merchant, financial or company-governance authority.
+Platform-level company data remains separate:
 
-## Production enforcement
-
-The actor selector in this browser build is for product testing only. Production must enforce authority with Firebase Authentication, server-issued custom claims, Firestore/Realtime Database Security Rules and Cloud Functions for privileged transitions.
-
-Recommended claims include:
-- `goodkotaOwner: true`
-- `goodkotaAdmin: true`
-- `deliveryOps: true`
-- merchant-scoped and driver-scoped identifiers/roles
-
-Owner/Admin claims must only be created or changed by a trusted server-side environment. High-risk changes should be server-authoritative and auditable.
-
-## Support continuity
-
-Support cases and operational audit history exist so stakeholder support does not depend on one founder, developer or employee being available. A case remains in the GoodKota queue until resolved and can be handed from one authorized employee to another with the previous context intact.
-
-## Merchant location
-
-Merchant creation accepts any real South African street address. The browser build can resolve the address to latitude/longitude using an address lookup and also permits manual coordinates when lookup is unavailable. Production should replace the public lookup with the selected geocoding provider, persist geohashes, and validate service radius server-side.
+```text
+platform/company
+platform/staff
+platform/venues
+platform/supportCases
+platform/announcements
+platform/featureFlags
+platform/auditLog
+```
