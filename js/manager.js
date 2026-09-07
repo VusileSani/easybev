@@ -3,6 +3,15 @@
    ========================================================= */
 
 let managerActiveSection = "home";
+let managerTeamQuery = "";
+let managerTeamVisible = 20;
+let managerSelectedStaffId = null;
+let managerStaffMode = "list";
+let managerItemQuery = "";
+let managerItemFilter = "all";
+let managerItemsVisible = 20;
+let managerSelectedItemId = null;
+let managerItemMode = "list";
 
 function showManagerSection(section = "home") {
   managerActiveSection = ["home", "team", "items", "service", "support"].includes(section) ? section : "home";
@@ -221,108 +230,126 @@ function sortedStaffEntries() {
     .sort((a, b) => staffDisplayName(a[1]).localeCompare(staffDisplayName(b[1])));
 }
 
+function managerTeamListRows() {
+  const query = managerTeamQuery.trim().toLowerCase();
+  return sortedStaffEntries().filter(([, staff]) => {
+    if (!query) return true;
+    return [staffDisplayName(staff), String(staff.mobile || "")]
+      .some(value => value.toLowerCase().includes(query));
+  });
+}
+
+function setManagerTeamQuery(value) {
+  managerTeamQuery = String(value || "");
+  managerTeamVisible = 20;
+  renderManagerStaff();
+  requestAnimationFrame(() => {
+    const input = document.getElementById("managerTeamSearch");
+    if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+  });
+}
+
+function openManagerStaff(id) {
+  managerSelectedStaffId = id;
+  managerStaffMode = "detail";
+  renderManagerStaff();
+}
+
+function startAddManagerStaff() {
+  managerSelectedStaffId = null;
+  managerStaffMode = "add";
+  renderManagerStaff();
+}
+
+function closeManagerStaffDetail() {
+  managerSelectedStaffId = null;
+  managerStaffMode = "list";
+  renderManagerStaff();
+}
+
+function loadMoreManagerTeam() {
+  managerTeamVisible += 20;
+  renderManagerStaff();
+}
+
+function managerStaffDetailHtml() {
+  const adding = managerStaffMode === "add";
+  const staff = adding ? {name:"", mobile:"", active:true} : latestManagerStaff[managerSelectedStaffId];
+  if (!staff) { managerStaffMode = "list"; return ""; }
+  const active = staff.active !== false;
+  const slot = adding ? null : Object.entries(latestManagerWaiters || {})
+    .find(([, waiter]) => waiter && String(waiter.assignedStaffId || "") === String(managerSelectedStaffId));
+  return `
+    <div class="manager-detail-surface">
+      <div class="heading-row">
+        <div><div class="eyebrow">${adding ? "New team member" : "Team member"}</div><h3>${adding ? "Add Team Member" : escapeHtml(staffDisplayName(staff))}</h3></div>
+        <button class="secondary" onclick="closeManagerStaffDetail()">← Back to Team</button>
+      </div>
+      ${!adding ? `<div class="detail-summary-line"><span class="badge ${active ? "active" : ""}">${active ? "Active" : "Inactive"}</span><span class="muted">${slot ? `Assigned to Waiter ${escapeHtml(slot[0])}` : "Not assigned to a waiter slot"}</span></div>` : ""}
+      <div class="manager-detail-form">
+        <label>Full name<input id="managerStaffDetailName" type="text" maxlength="80" value="${escapeHtml(String(staff.name || ""))}" placeholder="Full name" /></label>
+        <label>Mobile<input id="managerStaffDetailMobile" type="tel" maxlength="30" value="${escapeHtml(String(staff.mobile || ""))}" placeholder="Mobile (optional)" /></label>
+      </div>
+      <div class="manager-detail-actions">
+        <button class="success" onclick="${adding ? "saveNewManagerStaff()" : `saveManagerStaff('${escapeJsString(managerSelectedStaffId)}')`}">${adding ? "Add Team Member" : "Save Changes"}</button>
+        ${!adding ? `<button class="${active ? "danger" : "blue"}" onclick="toggleManagerStaffMember('${escapeJsString(managerSelectedStaffId)}', ${active})">${active ? "Deactivate" : "Reactivate"}</button>` : ""}
+      </div>
+    </div>`;
+}
+
 function renderManagerStaff() {
   const panel = document.getElementById("managerStaff");
   if (!panel) return;
 
-  const rows = sortedStaffEntries();
-  const roster = rows.length
-    ? rows.map(([id, staff]) => {
-        const active = staff.active !== false;
-        const slot = Object.entries(latestManagerWaiters || {})
-          .find(([, waiter]) => waiter && String(waiter.assignedStaffId || "") === String(id));
-        const assignment = slot ? `Waiter ${escapeHtml(slot[0])}` : "Not assigned";
-        const mobile = String(staff.mobile || "").trim();
-        return `
-          <div class="manager-staff-row">
-            <div>
-              <div class="manager-staff-name">${escapeHtml(staffDisplayName(staff))}</div>
-              <div class="muted">${escapeHtml(assignment)}${mobile ? ` · ${escapeHtml(mobile)}` : ""}</div>
-            </div>
-            <div class="manager-menu-actions">
-              <span class="badge ${active ? "active" : ""}">${active ? "Active" : "Inactive"}</span>
-              <button class="secondary" onclick="editManagerStaff('${escapeJsString(id)}')">Edit</button>
-              <button class="${active ? "danger" : "blue"}" onclick="toggleManagerStaffMember('${escapeJsString(id)}', ${active})">${active ? "Deactivate" : "Reactivate"}</button>
-            </div>
-          </div>`;
-      }).join("")
-    : `<p class="muted">No team members yet. Add the first staff member below.</p>`;
+  if (managerStaffMode !== "list") {
+    panel.innerHTML = managerStaffDetailHtml();
+    return;
+  }
+
+  const rows = managerTeamListRows();
+  const shown = rows.slice(0, managerTeamVisible);
+  const roster = shown.length ? shown.map(([id, staff]) => {
+    const active = staff.active !== false;
+    const slot = Object.entries(latestManagerWaiters || {}).find(([, waiter]) => waiter && String(waiter.assignedStaffId || "") === String(id));
+    const assignment = slot ? `Waiter ${slot[0]}` : "Not assigned";
+    const mobile = String(staff.mobile || "").trim();
+    return `<button type="button" class="manager-compact-row" onclick="openManagerStaff('${escapeJsString(id)}')">
+      <span class="compact-row-main"><strong>${escapeHtml(staffDisplayName(staff))}</strong><small>${escapeHtml(assignment)}${mobile ? ` · ${escapeHtml(mobile)}` : ""}</small></span>
+      <span class="compact-row-end"><span class="badge ${active ? "active" : ""}">${active ? "Active" : "Inactive"}</span><span aria-hidden="true">›</span></span>
+    </button>`;
+  }).join("") : `<p class="muted">${managerTeamQuery ? "No team members match your search." : "No team members yet."}</p>`;
 
   panel.innerHTML = `
     <div class="heading-row">
-      <div>
-        <h3 style="margin-bottom:3px">Team</h3>
-        <p class="muted" style="margin:0">Add staff once, then assign them to permanent waiter slots as shifts change.</p>
-      </div>
-      <div class="manager-menu-actions">
-        <button class="warning" onclick="addWaiterSlot()">+ Waiter Slot</button>
-        <button class="secondary" onclick="showManagerSection('home')">Close</button>
-      </div>
+      <div><h3 style="margin-bottom:3px">Team</h3><p class="muted" style="margin:0">${rows.length} team member${rows.length === 1 ? "" : "s"}. Select a person to review or edit.</p></div>
+      <div class="manager-menu-actions"><button class="warning" onclick="startAddManagerStaff()">+ Team Member</button><button class="secondary" onclick="addWaiterSlot()">+ Waiter Slot</button></div>
     </div>
-
-    <div class="manager-staff-add">
-      <input id="managerStaffName" type="text" maxlength="80" placeholder="Full name e.g. Thabo Mokoena" />
-      <input id="managerStaffMobile" type="tel" maxlength="30" placeholder="Mobile (optional)" />
-      <button class="warning" onclick="addManagerStaff()">+ Add Staff</button>
-    </div>
-
-    <div class="manager-staff-list">${roster}</div>
+    <div class="manager-list-toolbar"><input id="managerTeamSearch" type="search" value="${escapeHtml(managerTeamQuery)}" placeholder="Search team" oninput="setManagerTeamQuery(this.value)" /></div>
+    <div class="manager-compact-list">${roster}</div>
+    ${rows.length > shown.length ? `<button class="secondary manager-load-more" onclick="loadMoreManagerTeam()">Load more · ${rows.length - shown.length} remaining</button>` : ""}
   `;
 }
 
-async function addManagerStaff() {
-  const name = String(document.getElementById("managerStaffName")?.value || "").trim();
-  const mobile = String(document.getElementById("managerStaffMobile")?.value || "").trim();
-
-  if (!name) {
-    alert("Enter the staff member's name.");
-    return;
-  }
-
-  const duplicate = Object.values(latestManagerStaff || {}).some(staff =>
-    staff && staff.active !== false && String(staff.name || "").trim().toLowerCase() === name.toLowerCase()
-  );
-  if (duplicate) {
-    alert("An active team member with that name already exists.");
-    return;
-  }
-
-
+async function saveNewManagerStaff() {
+  const name = String(document.getElementById("managerStaffDetailName")?.value || "").trim();
+  const mobile = String(document.getElementById("managerStaffDetailMobile")?.value || "").trim();
+  if (!name) { alert("Enter the staff member's name."); return; }
+  const duplicate = Object.values(latestManagerStaff || {}).some(staff => staff && staff.active !== false && String(staff.name || "").trim().toLowerCase() === name.toLowerCase());
+  if (duplicate) { alert("An active team member with that name already exists."); return; }
   const ref = db.ref("staff").push();
-  await ref.set({
-    staffId: ref.key,
-    name,
-    mobile,
-    firebaseUid: "",
-    active: true,
-    createdAt: firebase.database.ServerValue.TIMESTAMP,
-    updatedAt: firebase.database.ServerValue.TIMESTAMP
-  });
-
+  await ref.set({staffId:ref.key,name,mobile,firebaseUid:"",active:true,createdAt:firebase.database.ServerValue.TIMESTAMP,updatedAt:firebase.database.ServerValue.TIMESTAMP});
+  managerStaffMode = "list";
+  renderManagerStaff();
   showEasyBevToast("Team member added", `${name} is ready for waiter assignment.`);
 }
 
-async function editManagerStaff(id) {
+async function saveManagerStaff(id) {
   const staff = latestManagerStaff[id];
   if (!staff) return;
-
-  const namePrompt = prompt("Staff name", String(staff.name || ""));
-  if (namePrompt === null) return;
-  const name = namePrompt.trim();
-  if (!name) return;
-
-  const mobilePrompt = prompt("Mobile number (optional)", String(staff.mobile || ""));
-  if (mobilePrompt === null) return;
-  const mobile = mobilePrompt.trim();
-
-
-  await db.ref(`staff/${id}`).update({
-    name,
-    mobile,
-    updatedAt: firebase.database.ServerValue.TIMESTAMP
-  });
-
-  /* Keep the live slot's display snapshot aligned with renamed staff. */
+  const name = String(document.getElementById("managerStaffDetailName")?.value || "").trim();
+  const mobile = String(document.getElementById("managerStaffDetailMobile")?.value || "").trim();
+  if (!name) { alert("Enter the staff member's name."); return; }
+  await db.ref(`staff/${id}`).update({name,mobile,updatedAt:firebase.database.ServerValue.TIMESTAMP});
   const updates = {};
   Object.entries(latestManagerWaiters || {}).forEach(([slot, waiter]) => {
     if (waiter && String(waiter.assignedStaffId || "") === String(id)) {
@@ -332,8 +359,8 @@ async function editManagerStaff(id) {
     }
   });
   if (Object.keys(updates).length) await db.ref().update(updates);
-
   showEasyBevToast("Team member updated", name);
+  renderManagerStaff();
 }
 
 async function toggleManagerStaffMember(id, currentlyActive) {
@@ -437,105 +464,92 @@ function toggleManagerMenuItems() {
   showManagerSection(managerActiveSection === "items" ? "home" : "items");
 }
 
+function managerFilteredItemRows() {
+  const query = managerItemQuery.trim().toLowerCase();
+  return Object.entries(latestManagerMenuItems || {})
+    .filter(([, item]) => item)
+    .filter(([, item]) => {
+      const active = item.active !== false;
+      if (managerItemFilter === "active" && !active) return false;
+      if (managerItemFilter === "inactive" && active) return false;
+      return !query || String(item.name || "").toLowerCase().includes(query);
+    })
+    .sort((a,b) => String(a[1]?.name || "").localeCompare(String(b[1]?.name || "")));
+}
+
+function setManagerItemQuery(value) {
+  managerItemQuery = String(value || "");
+  managerItemsVisible = 20;
+  renderManagerMenuItems();
+  requestAnimationFrame(() => {
+    const input = document.getElementById("managerItemSearch");
+    if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+  });
+}
+
+function setManagerItemFilter(value) {
+  managerItemFilter = ["all","active","inactive"].includes(value) ? value : "all";
+  managerItemsVisible = 20;
+  renderManagerMenuItems();
+}
+
+function openManagerMenuItem(id) { managerSelectedItemId = id; managerItemMode = "detail"; renderManagerMenuItems(); }
+function startAddManagerMenuItem() { managerSelectedItemId = null; managerItemMode = "add"; renderManagerMenuItems(); }
+function closeManagerItemDetail() { managerSelectedItemId = null; managerItemMode = "list"; renderManagerMenuItems(); }
+function loadMoreManagerItems() { managerItemsVisible += 20; renderManagerMenuItems(); }
+
+function managerItemDetailHtml() {
+  const adding = managerItemMode === "add";
+  const item = adding ? {name:"",price:"",active:true} : latestManagerMenuItems[managerSelectedItemId];
+  if (!item) { managerItemMode = "list"; return ""; }
+  const active = item.active !== false;
+  return `<div class="manager-detail-surface">
+    <div class="heading-row"><div><div class="eyebrow">${adding ? "New venue item" : "Venue item"}</div><h3>${adding ? "Add Item" : escapeHtml(String(item.name || "Unnamed item"))}</h3></div><button class="secondary" onclick="closeManagerItemDetail()">← Back to Items</button></div>
+    ${!adding ? `<div class="detail-summary-line"><span class="badge ${active ? "active" : ""}">${active ? "Active" : "Inactive"}</span><strong>${money(Number(item.price || 0))}</strong></div>` : ""}
+    <div class="manager-detail-form"><label>Item name<input id="managerItemDetailName" type="text" value="${escapeHtml(String(item.name || ""))}" placeholder="Item name" /></label><label>Price<input id="managerItemDetailPrice" type="number" min="0" step="0.01" value="${adding ? "" : Number(item.price || 0).toFixed(2)}" placeholder="Price" /></label></div>
+    <div class="manager-detail-actions"><button class="success" onclick="${adding ? "saveNewManagerMenuItem()" : `saveManagerMenuItem('${escapeJsString(managerSelectedItemId)}')`}">${adding ? "Add Item" : "Save Changes"}</button>${!adding ? `<button class="${active ? "danger" : "blue"}" onclick="toggleManagerMenuItem('${escapeJsString(managerSelectedItemId)}', ${active})">${active ? "Disable" : "Enable"}</button>` : ""}</div>
+  </div>`;
+}
+
 function renderManagerMenuItems() {
   const panel = document.getElementById("managerMenuItems");
   if (!panel) return;
+  if (managerItemMode !== "list") { panel.innerHTML = managerItemDetailHtml(); return; }
 
-  const rows = Object.entries(latestManagerMenuItems || {})
-    .sort((a, b) => String(a[1]?.name || "").localeCompare(String(b[1]?.name || "")));
+  const rows = managerFilteredItemRows();
+  const shown = rows.slice(0, managerItemsVisible);
+  const itemRows = shown.length ? shown.map(([id,item]) => {
+    const active = item.active !== false;
+    return `<button type="button" class="manager-compact-row" onclick="openManagerMenuItem('${escapeJsString(id)}')"><span class="compact-row-main"><strong>${escapeHtml(String(item.name || "Unnamed item"))}</strong><small>${money(Number(item.price || 0))}</small></span><span class="compact-row-end"><span class="badge ${active ? "active" : ""}">${active ? "Active" : "Inactive"}</span><span aria-hidden="true">›</span></span></button>`;
+  }).join("") : `<p class="muted">No items match this view.</p>`;
 
-  const itemRows = rows.length
-    ? rows.map(([id, item]) => {
-        const active = item && item.active !== false;
-        return `
-          <div class="manager-menu-row">
-            <div class="manager-menu-main">
-              <strong>${escapeHtml(String(item?.name || "Unnamed item"))}</strong>
-              <span class="muted">${money(Number(item?.price || 0))}</span>
-            </div>
-            <div class="manager-menu-actions">
-              <button class="secondary" onclick="editManagerMenuItem('${escapeJsString(id)}')">Edit</button>
-              <button class="${active ? "danger" : "blue"}" onclick="toggleManagerMenuItem('${escapeJsString(id)}', ${active})">${active ? "Disable" : "Enable"}</button>
-            </div>
-          </div>`;
-      }).join("")
-    : `<p class="muted">No venue items yet. Add the first item below.</p>`;
-
-  panel.innerHTML = `
-    <div class="heading-row">
-      <div>
-        <h3 style="margin-bottom:3px">Menu Items</h3>
-        <p class="muted" style="margin:0">Management maintains the item catalogue. Waiters use it for fast suggestions and automatic pricing.</p>
-      </div>
-      <button class="secondary" onclick="toggleManagerMenuItems()">Close</button>
-    </div>
-
-    <div class="manager-menu-add">
-      <input id="managerMenuItemName" type="text" placeholder="Item name e.g. Corona" />
-      <input id="managerMenuItemPrice" type="number" min="0" step="0.01" placeholder="Price" />
-      <button class="warning" onclick="addManagerMenuItem()">+ Add Item</button>
-    </div>
-
-    <div class="manager-menu-list">${itemRows}</div>
-  `;
+  panel.innerHTML = `<div class="heading-row"><div><h3 style="margin-bottom:3px">Items</h3><p class="muted" style="margin:0">${rows.length} item${rows.length === 1 ? "" : "s"}. Select an item to review or edit.</p></div><button class="warning" onclick="startAddManagerMenuItem()">+ Add Item</button></div>
+    <div class="manager-list-toolbar"><input id="managerItemSearch" type="search" value="${escapeHtml(managerItemQuery)}" placeholder="Search items" oninput="setManagerItemQuery(this.value)" /><div class="compact-filters"><button class="${managerItemFilter === "all" ? "warning" : "secondary"}" onclick="setManagerItemFilter('all')">All</button><button class="${managerItemFilter === "active" ? "warning" : "secondary"}" onclick="setManagerItemFilter('active')">Active</button><button class="${managerItemFilter === "inactive" ? "warning" : "secondary"}" onclick="setManagerItemFilter('inactive')">Inactive</button></div></div>
+    <div class="manager-compact-list">${itemRows}</div>${rows.length > shown.length ? `<button class="secondary manager-load-more" onclick="loadMoreManagerItems()">Load more · ${rows.length - shown.length} remaining</button>` : ""}`;
 }
 
-async function addManagerMenuItem() {
-  const nameInput = document.getElementById("managerMenuItemName");
-  const priceInput = document.getElementById("managerMenuItemPrice");
-  const name = String(nameInput?.value || "").trim();
-  const price = Number(priceInput?.value);
-
-  if (!name || !Number.isFinite(price) || price < 0) {
-    alert("Enter an item name and valid price.");
-    return;
-  }
-
-  const duplicate = Object.values(latestManagerMenuItems || {}).some(item =>
-    String(item?.name || "").trim().toLowerCase() === name.toLowerCase()
-  );
-  if (duplicate) {
-    alert("That item already exists. Edit the existing item instead.");
-    return;
-  }
-
+async function saveNewManagerMenuItem() {
+  const name = String(document.getElementById("managerItemDetailName")?.value || "").trim();
+  const price = Number(document.getElementById("managerItemDetailPrice")?.value);
+  if (!name || !Number.isFinite(price) || price < 0) { alert("Enter an item name and valid price."); return; }
+  const duplicate = Object.values(latestManagerMenuItems || {}).some(item => String(item?.name || "").trim().toLowerCase() === name.toLowerCase());
+  if (duplicate) { alert("That item already exists. Open the existing item instead."); return; }
   const ref = db.ref("menuItems").push();
-  await ref.set({
-    name,
-    price,
-    active: true,
-    createdAt: firebase.database.ServerValue.TIMESTAMP,
-    updatedAt: firebase.database.ServerValue.TIMESTAMP
-  });
-
-  if (nameInput) nameInput.value = "";
-  if (priceInput) priceInput.value = "";
+  await ref.set({name,price,active:true,createdAt:firebase.database.ServerValue.TIMESTAMP,updatedAt:firebase.database.ServerValue.TIMESTAMP});
+  managerItemMode = "list";
+  renderManagerMenuItems();
   showEasyBevToast("Menu item added", `${name} · ${money(price)}`);
 }
 
-async function editManagerMenuItem(id) {
+async function saveManagerMenuItem(id) {
   const item = latestManagerMenuItems[id];
   if (!item) return;
-
-  const name = prompt("Item name", String(item.name || ""));
-  if (name === null) return;
-  const cleanName = name.trim();
-  if (!cleanName) return;
-
-  const priceText = prompt("Price", Number(item.price || 0).toFixed(2));
-  if (priceText === null) return;
-  const price = Number(priceText);
-  if (!Number.isFinite(price) || price < 0) {
-    alert("Enter a valid price.");
-    return;
-  }
-
-  await db.ref(`menuItems/${id}`).update({
-    name: cleanName,
-    price,
-    updatedAt: firebase.database.ServerValue.TIMESTAMP
-  });
-  showEasyBevToast("Menu item updated", `${cleanName} · ${money(price)}`);
+  const name = String(document.getElementById("managerItemDetailName")?.value || "").trim();
+  const price = Number(document.getElementById("managerItemDetailPrice")?.value);
+  if (!name || !Number.isFinite(price) || price < 0) { alert("Enter an item name and valid price."); return; }
+  await db.ref(`menuItems/${id}`).update({name,price,updatedAt:firebase.database.ServerValue.TIMESTAMP});
+  showEasyBevToast("Menu item updated", `${name} · ${money(price)}`);
+  renderManagerMenuItems();
 }
 
 async function toggleManagerMenuItem(id, currentlyActive) {

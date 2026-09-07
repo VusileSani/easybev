@@ -918,9 +918,15 @@ function showGuestSessionEnded(session = currentSession) {
 
 async function loadGuestHistory() {
   const panel = document.getElementById("guestHistory");
-  if (!panel || !db) return;
+  const toggle = document.getElementById("guestHistoryToggle");
+  if (!panel || !toggle || !db) return;
+
+  panel.classList.add("hidden");
+  toggle.classList.add("hidden");
+  toggle.setAttribute("aria-expanded", "false");
+
   const rememberedUserId = localStorage.getItem(guestUserStorageKey());
-  if (!rememberedUserId) { panel.classList.add("hidden"); return; }
+  if (!rememberedUserId) return;
 
   const snap = await db.ref("sessions").once("value");
   const rows = Object.entries(snap.val() || {})
@@ -928,9 +934,22 @@ async function loadGuestHistory() {
     .sort((a, b) => Number(b[1].closedAt || b[1].endedAt || 0) - Number(a[1].closedAt || a[1].endedAt || 0))
     .slice(0, 5);
 
-  if (!rows.length) { panel.classList.add("hidden"); return; }
-  panel.innerHTML = `<div class="guest-history-head"><strong>Recent nights</strong><span class="muted">Completed EasyBev sessions</span></div>${rows.map(([id, session]) => guestSessionHistoryHtml(id, session, true)).join("")}`;
-  panel.classList.remove("hidden");
+  if (!rows.length) return;
+
+  panel.innerHTML = `<div class="guest-history-head"><strong>Previous Sessions</strong><span class="muted">Completed EasyBev sessions</span></div>${rows.map(([id, session]) => guestSessionHistoryHtml(id, session, true)).join("")}`;
+  toggle.textContent = `Previous Sessions (${rows.length}) ›`;
+  toggle.classList.remove("hidden");
+}
+
+function toggleGuestHistory() {
+  const panel = document.getElementById("guestHistory");
+  const toggle = document.getElementById("guestHistoryToggle");
+  if (!panel || !toggle) return;
+  const opening = panel.classList.contains("hidden");
+  panel.classList.toggle("hidden", !opening);
+  toggle.setAttribute("aria-expanded", opening ? "true" : "false");
+  const count = (toggle.textContent.match(/\((\d+)\)/) || [])[1];
+  toggle.textContent = `Previous Sessions${count ? ` (${count})` : ""} ${opening ? "⌃" : "›"}`;
 }
 
 
