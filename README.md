@@ -1,4 +1,5 @@
-# EasyBev
+# EasyBev v2.2 — Operational Reality
+
 
 EasyBev is a lightweight guest-service and digital waiter-pad layer for hospitality venues.
 
@@ -31,3 +32,6 @@ The application now separates venue operations from EasyBev company operations:
 The browser role switch exists for product testing. In production, Owner/Admin access must not be granted by query-string routing or UI visibility. Use Firebase Authentication and server-issued custom claims, enforce them in Realtime Database Security Rules, and place high-risk privileged changes behind trusted server-side functions. The platform audit data in this build demonstrates the product behavior; production audit integrity should be protected so ordinary clients cannot alter or delete historical audit records.
 
 The existing restaurant service data remains the current single-venue operational model. `platform/venues` is the company venue registry and onboarding/support layer; a later multi-venue backend migration should namespace operational data by venue before more than one venue is considered fully live in the same database.
+
+
+See `RELEASE-NOTES-v2.2.md` for the approved September 7 refinements.

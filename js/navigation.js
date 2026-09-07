@@ -219,6 +219,7 @@ function routeApplication() {
       );
 
     loadRememberedGuestSessions();
+    loadGuestHistory();
 
   }
   catch (error) {

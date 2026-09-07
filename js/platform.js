@@ -341,10 +341,17 @@ function applyPlatformFeatureControls(actor) {
    ========================================================= */
 
 async function toggleVenueSupportPanel() {
+  if (managerActiveSection === "support") {
+    showManagerSection("home");
+    return;
+  }
+  showManagerSection("support");
+}
+
+async function renderVenueSupportPanel() {
   const panel = document.getElementById("managerSupport");
   if (!panel) return;
-  panel.classList.toggle("hidden");
-  if (panel.classList.contains("hidden")) return;
+  panel.classList.remove("hidden");
 
   const venueId = PLATFORM_DEFAULT_VENUE_ID;
   const snap = await db.ref("platform/supportCases").once("value");
@@ -359,7 +366,7 @@ async function toggleVenueSupportPanel() {
         <h3 style="margin-bottom:3px">EasyBev Support</h3>
         <p class="muted" style="margin:0">Raise a venue issue for the EasyBev operations team.</p>
       </div>
-      <button class="secondary" onclick="toggleVenueSupportPanel()">Close</button>
+      <button class="secondary" onclick="showManagerSection('home')">Close</button>
     </div>
     <div class="platform-form-grid platform-form-grid-3">
       <input id="venueSupportSubject" maxlength="100" placeholder="What do you need help with?" />
@@ -403,8 +410,7 @@ async function submitVenueSupportRequest() {
     updatedAt: platformTimestamp()
   });
   showEasyBevToast("Support request sent", "EasyBev operations can now see this issue.");
-  await toggleVenueSupportPanel();
-  await toggleVenueSupportPanel();
+  await renderVenueSupportPanel();
 }
 
 /* =========================================================
@@ -440,6 +446,9 @@ function startPlatformDashboard(role) {
   const bindings = [
     ["platform/company", value => latestPlatformCompany = value],
     ["platform/venues", value => latestPlatformVenues = value],
+    ["platform/partnerApplications", value => latestPlatformPartnerApplications = value],
+    ["platform/venuePeople", value => latestPlatformVenuePeople = value],
+    ["platform/venueInvites", value => latestPlatformVenueInvites = value],
     ["platform/staff", value => latestPlatformStaff = value],
     ["platform/announcements", value => latestPlatformAnnouncements = value],
     ["platform/supportCases", value => latestPlatformSupportCases = value],
@@ -571,39 +580,62 @@ function renderPlatformPanel(name) {
    VENUES
    ========================================================= */
 
-function renderPlatformVenues(panel) {
-  const rows = Object.entries(latestPlatformVenues || {})
-    .filter(([,v]) => v)
-    .sort((a,b) => String(a[1].name || "").localeCompare(String(b[1].name || "")));
+function venuePeopleFor(venueId) {
+  return Object.entries((latestPlatformVenuePeople || {})[venueId] || {}).filter(([, person]) => person);
+}
 
-  panel.innerHTML = `${platformPanelHead("Venues", "Onboard, support and control venue access without touching restaurant service settings.")}
-    <div class="platform-form-grid platform-form-grid-4">
-      <input id="platformVenueName" maxlength="100" placeholder="Venue name" />
-      <input id="platformVenueManager" maxlength="80" placeholder="Manager (optional)" />
-      <input id="platformVenueContact" maxlength="80" placeholder="Contact (optional)" />
-      <button class="warning" onclick="addPlatformVenue()">+ Venue</button>
+function renderVenuePeopleHtml(venueId) {
+  const people = venuePeopleFor(venueId);
+  const rows = people.map(([id, person]) => `
+    <div class="platform-row">
+      <div><strong>${escapeHtml(person.name || "Unnamed")}</strong><small>${escapeHtml(person.role === "venue_owner" ? "Venue Owner" : "Management")}${person.contact ? ` · ${escapeHtml(person.contact)}` : ""}</small></div>
+      <div class="platform-row-actions"><span class="badge ${person.active !== false ? "active" : ""}">${person.active !== false ? "Active" : "Suspended"}</span>
+        <button class="secondary" onclick="resendVenueInvite('${escapeJsString(venueId)}','${escapeJsString(id)}')">Resend Invite</button>
+        <button class="${person.active !== false ? "danger" : "blue"}" onclick="toggleVenuePerson('${escapeJsString(venueId)}','${escapeJsString(id)}')">${person.active !== false ? "Suspend" : "Reactivate"}</button>
+      </div>
+    </div>`).join("") || '<p class="muted">No venue users yet.</p>';
+
+  return `<details class="platform-subsection venue-people"><summary><strong>People &amp; Access</strong><span class="muted">Venue-scoped only</span></summary>
+    <div class="platform-list">${rows}</div>
+    <button class="secondary" onclick="addVenueManagement('${escapeJsString(venueId)}')">+ Management User</button>
+  </details>`;
+}
+
+function renderPlatformVenues(panel) {
+  const rows = Object.entries(latestPlatformVenues || {}).filter(([,v]) => v).sort((a,b) => String(a[1].name || "").localeCompare(String(b[1].name || "")));
+  const applications = Object.entries(latestPlatformPartnerApplications || {}).filter(([,a]) => a && (a.status || "pending") === "pending");
+
+  panel.innerHTML = `${platformPanelHead("Venues", "Partner request → Review → Approve → Create Venue → Assign Venue Owner.")}
+    <div class="platform-subsection">
+      <div class="heading-row"><div><h4 style="margin-bottom:3px">Partner Merchant requests</h4><p class="muted" style="margin:0">Approval creates the venue and its first venue-scoped owner in one step.</p></div></div>
+      <div class="platform-form-grid platform-form-grid-4">
+        <input id="partnerVenueName" maxlength="100" placeholder="Venue / establishment" />
+        <input id="partnerOwnerName" maxlength="80" placeholder="Owner name" />
+        <input id="partnerOwnerContact" maxlength="100" placeholder="Owner mobile or email" />
+        <button class="secondary" onclick="recordPartnerApplication()">Record Request</button>
+      </div>
+      <div class="platform-list">${applications.map(([id,a]) => `<div class="platform-row platform-row-wide"><div><strong>${escapeHtml(a.venueName || "Unnamed venue")}</strong><small>${escapeHtml(a.ownerName || "Owner not supplied")}${a.ownerContact ? ` · ${escapeHtml(a.ownerContact)}` : ""}</small></div><div class="platform-row-actions"><span class="badge">Pending</span><button class="success" onclick="approvePartnerApplication('${escapeJsString(id)}')">Approve &amp; Create</button></div></div>`).join("") || '<p class="muted">No pending partner requests.</p>'}</div>
     </div>
+
+    <div class="platform-subsection">
+      <h4 style="margin-bottom:8px">Add Store / Venue directly</h4>
+      <p class="muted" style="margin-top:0">Available to EasyBev Owner and EasyBev Admin Staff. Platform authority cannot be changed here.</p>
+      <div class="platform-form-grid platform-form-grid-4">
+        <input id="platformVenueName" maxlength="100" placeholder="Venue name" />
+        <input id="platformVenueOwner" maxlength="80" placeholder="Venue Owner name" />
+        <input id="platformVenueContact" maxlength="100" placeholder="Owner mobile or email" />
+        <button class="warning" onclick="addPlatformVenue()">+ Venue</button>
+      </div>
+    </div>
+
     <div class="platform-list">
-      ${rows.map(([id,venue]) => `
-        <div class="platform-row platform-row-wide">
-          <div>
-            <strong>${escapeHtml(venue.name || "Unnamed venue")}</strong>
-            <small>${escapeHtml(String(venue.managerName || "No manager named"))}${venue.contact ? ` · ${escapeHtml(venue.contact)}` : ""}</small>
-            <small>${escapeHtml(String(venue.plan || "Standard"))} · Subscription: ${escapeHtml(String(venue.subscriptionStatus || "trial"))} · Billing: ${escapeHtml(String(venue.billingStatus || "not_configured"))}</small>
-          </div>
-          <div class="platform-row-actions">
-            <span class="badge ${platformStatusClass(venue.status)}">${escapeHtml(platformStatusLabel(venue.status))}</span>
-            <button class="secondary" onclick="editPlatformVenue('${escapeJsString(id)}')">Edit</button>
-            <button class="${venue.status === "paused" ? "blue" : "danger"}" onclick="togglePlatformVenue('${escapeJsString(id)}')">${venue.status === "paused" ? "Resume" : "Pause"}</button>
-          </div>
-        </div>`).join("") || '<p class="muted">No venues registered.</p>'}
+      ${rows.map(([id,venue]) => `<div class="platform-venue-block"><div class="platform-row platform-row-wide"><div><strong>${escapeHtml(venue.name || "Unnamed venue")}</strong><small>${escapeHtml(String(venue.ownerName || venue.managerName || "No venue owner named"))}${venue.contact ? ` · ${escapeHtml(venue.contact)}` : ""}</small><small>${escapeHtml(String(venue.plan || "Standard"))} · Subscription: ${escapeHtml(String(venue.subscriptionStatus || "trial"))} · Billing: ${escapeHtml(String(venue.billingStatus || "not_configured"))}</small></div><div class="platform-row-actions"><span class="badge ${platformStatusClass(venue.status)}">${escapeHtml(platformStatusLabel(venue.status))}</span><button class="secondary" onclick="editPlatformVenue('${escapeJsString(id)}')">Edit</button><button class="${venue.status === "paused" ? "blue" : "danger"}" onclick="togglePlatformVenue('${escapeJsString(id)}')">${venue.status === "paused" ? "Resume" : "Pause"}</button></div></div>${renderVenuePeopleHtml(id)}</div>`).join("") || '<p class="muted">No venues registered.</p>'}
     </div>
     ${renderPlatformQrOperationsHtml()}`;
 
-  requestAnimationFrame(() => {
-    Object.keys(latestPlatformWaiters || {}).forEach(slot => generateManagerQr(String(slot)));
-  });
+  requestAnimationFrame(() => { Object.keys(latestPlatformWaiters || {}).forEach(slot => generateManagerQr(String(slot))); });
 }
+
 
 function renderPlatformQrOperationsHtml() {
   const rows = sortedWaiterEntries(latestPlatformWaiters || {});
@@ -630,30 +662,83 @@ function renderPlatformQrOperationsHtml() {
     </div>`;
 }
 
+async function createVenueOwner(venueId, name, contact, source = "direct") {
+  const cleanName = String(name || "").trim();
+  if (!cleanName) return null;
+  const personRef = db.ref(`platform/venuePeople/${venueId}`).push();
+  const inviteRef = db.ref(`platform/venueInvites/${venueId}`).push();
+  const person = {personId:personRef.key, venueId, name:cleanName, contact:String(contact || "").trim(), role:"venue_owner", active:true, inviteStatus:"invited", source, createdAt:platformTimestamp(), updatedAt:platformTimestamp()};
+  await personRef.set(person);
+  await inviteRef.set({inviteId:inviteRef.key, venueId, personId:personRef.key, role:"venue_owner", contact:person.contact, status:"pending", sentAt:platformTimestamp(), createdBy:platformRoleLabel()});
+  return person;
+}
+
 async function addPlatformVenue() {
   const name = String(document.getElementById("platformVenueName")?.value || "").trim();
-  const managerName = String(document.getElementById("platformVenueManager")?.value || "").trim();
+  const ownerName = String(document.getElementById("platformVenueOwner")?.value || "").trim();
   const contact = String(document.getElementById("platformVenueContact")?.value || "").trim();
   if (!name) { alert("Enter the venue name."); return; }
+  if (!ownerName) { alert("Enter the Venue Owner name so access can be assigned during onboarding."); return; }
 
   const ref = db.ref("platform/venues").push();
-  const item = {
-    venueId: ref.key,
-    name,
-    managerName,
-    contact,
-    status: "onboarding",
-    plan: "Standard",
-    subscriptionStatus: "trial",
-    billingStatus: "not_configured",
-    notes: "",
-    createdAt: platformTimestamp(),
-    updatedAt: platformTimestamp()
-  };
+  const item = {venueId:ref.key,name,ownerName,contact,status:"onboarding",plan:"Standard",subscriptionStatus:"trial",billingStatus:"not_configured",notes:"",createdAt:platformTimestamp(),updatedAt:platformTimestamp()};
   await ref.set(item);
-  await writePlatformAudit("Venue created", "venue", ref.key, "New venue onboarding", null, item);
-  showEasyBevToast("Venue added", `${name} is ready for onboarding.`);
+  await createVenueOwner(ref.key, ownerName, contact, "direct_venue_creation");
+  await writePlatformAudit("Venue created", "venue", ref.key, "New venue onboarding with Venue Owner", null, item);
+  showEasyBevToast("Venue added", `${name} created and ${ownerName} invited as Venue Owner.`);
 }
+
+async function recordPartnerApplication() {
+  const venueName = String(document.getElementById("partnerVenueName")?.value || "").trim();
+  const ownerName = String(document.getElementById("partnerOwnerName")?.value || "").trim();
+  const ownerContact = String(document.getElementById("partnerOwnerContact")?.value || "").trim();
+  if (!venueName || !ownerName) { alert("Enter the establishment and owner name."); return; }
+  const ref = db.ref("platform/partnerApplications").push();
+  await ref.set({applicationId:ref.key, venueName, ownerName, ownerContact, status:"pending", receivedAt:platformTimestamp(), updatedAt:platformTimestamp()});
+  showEasyBevToast("Partner request recorded", venueName);
+}
+
+async function approvePartnerApplication(applicationId) {
+  const application = latestPlatformPartnerApplications[applicationId];
+  if (!application || application.status === "approved") return;
+  const ref = db.ref("platform/venues").push();
+  const venue = {venueId:ref.key,name:String(application.venueName || "").trim(),ownerName:String(application.ownerName || "").trim(),contact:String(application.ownerContact || "").trim(),status:"onboarding",plan:"Standard",subscriptionStatus:"trial",billingStatus:"not_configured",applicationId,createdAt:platformTimestamp(),updatedAt:platformTimestamp()};
+  const owner = await createVenueOwner(ref.key, venue.ownerName, venue.contact, "partner_approval");
+  const updates = {};
+  updates[`platform/venues/${ref.key}`] = venue;
+  updates[`platform/partnerApplications/${applicationId}/status`] = "approved";
+  updates[`platform/partnerApplications/${applicationId}/approvedAt`] = platformTimestamp();
+  updates[`platform/partnerApplications/${applicationId}/venueId`] = ref.key;
+  await db.ref().update(updates);
+  await writePlatformAudit("Partner approved", "venue", ref.key, "Partner request approved; venue and Venue Owner created", application, {venue, owner});
+  showEasyBevToast("Partner approved", `${venue.name} created and ${venue.ownerName} invited as Venue Owner.`);
+}
+
+async function addVenueManagement(venueId) {
+  const name = prompt("Management user name"); if (name === null || !String(name).trim()) return;
+  const contact = prompt("Mobile or email (optional)", ""); if (contact === null) return;
+  const ref = db.ref(`platform/venuePeople/${venueId}`).push();
+  await ref.set({personId:ref.key,venueId,name:String(name).trim(),contact:String(contact).trim(),role:"management",active:true,inviteStatus:"invited",createdAt:platformTimestamp(),updatedAt:platformTimestamp()});
+  const invite = db.ref(`platform/venueInvites/${venueId}`).push();
+  await invite.set({inviteId:invite.key,venueId,personId:ref.key,role:"management",contact:String(contact).trim(),status:"pending",sentAt:platformTimestamp(),createdBy:platformRoleLabel()});
+  await writePlatformAudit("Venue management invited", "venuePerson", ref.key, `Venue ${venueId} management access`, null, {name:String(name).trim(),role:"management",venueId});
+}
+
+async function resendVenueInvite(venueId, personId) {
+  const person = ((latestPlatformVenuePeople || {})[venueId] || {})[personId]; if (!person) return;
+  const invite = db.ref(`platform/venueInvites/${venueId}`).push();
+  await invite.set({inviteId:invite.key,venueId,personId,role:person.role,contact:person.contact || "",status:"pending",sentAt:platformTimestamp(),createdBy:platformRoleLabel()});
+  await db.ref(`platform/venuePeople/${venueId}/${personId}`).update({inviteStatus:"invited",updatedAt:platformTimestamp()});
+  showEasyBevToast("Invitation resent", person.name || "Venue user");
+}
+
+async function toggleVenuePerson(venueId, personId) {
+  const person = ((latestPlatformVenuePeople || {})[venueId] || {})[personId]; if (!person) return;
+  const next = person.active === false;
+  await db.ref(`platform/venuePeople/${venueId}/${personId}`).update({active:next,updatedAt:platformTimestamp()});
+  await writePlatformAudit(next ? "Venue access reactivated" : "Venue access suspended", "venuePerson", personId, `Venue ${venueId} scoped access`, person, {...person,active:next});
+}
+
 
 async function editPlatformVenue(id) {
   const venue = latestPlatformVenues[id];
@@ -662,7 +747,7 @@ async function editPlatformVenue(id) {
   if (nameValue === null) return;
   const name = String(nameValue).trim();
   if (!name) return;
-  const managerValue = prompt("Manager name (optional)", String(venue.managerName || ""));
+  const managerValue = prompt("Venue Owner name", String(venue.ownerName || venue.managerName || ""));
   if (managerValue === null) return;
   const contactValue = prompt("Venue contact (optional)", String(venue.contact || ""));
   if (contactValue === null) return;
@@ -683,10 +768,10 @@ async function editPlatformVenue(id) {
     return;
   }
   const before = platformClone(venue);
-  const after = {...venue, name, managerName: String(managerValue).trim(), contact: String(contactValue).trim(), plan:String(planValue).trim() || "Standard", subscriptionStatus, billingStatus};
+  const after = {...venue, name, ownerName: String(managerValue).trim(), contact: String(contactValue).trim(), plan:String(planValue).trim() || "Standard", subscriptionStatus, billingStatus};
   await db.ref(`platform/venues/${id}`).update({
     name: after.name,
-    managerName: after.managerName,
+    ownerName: after.ownerName,
     contact: after.contact,
     plan: after.plan,
     subscriptionStatus,

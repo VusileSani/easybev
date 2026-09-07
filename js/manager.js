@@ -2,22 +2,62 @@
    MANAGEMENT DASHBOARD
    ========================================================= */
 
+let managerActiveSection = "home";
+
+function showManagerSection(section = "home") {
+  managerActiveSection = ["home", "team", "items", "service", "support"].includes(section) ? section : "home";
+
+  const visibility = {
+    managerLanding: managerActiveSection === "home",
+    managerStaff: managerActiveSection === "team",
+    managerWaiterSlots: managerActiveSection === "team",
+    managerMenuItems: managerActiveSection === "items",
+    managerReports: managerActiveSection === "service",
+    managerSupport: managerActiveSection === "support"
+  };
+
+  Object.entries(visibility).forEach(([id, visible]) => {
+    document.getElementById(id)?.classList.toggle("hidden", !visible);
+  });
+
+  ["Home", "Team", "Items", "Service", "Support"].forEach(name => {
+    const key = name.toLowerCase();
+    const button = document.getElementById(`managerNav${name}`);
+    if (!button) return;
+    button.className = key === managerActiveSection ? "warning" : "secondary";
+  });
+
+  if (managerActiveSection === "team") {
+    renderManagerStaff();
+    renderManagerWaiterSlots(latestManagerWaiters, latestManagerSessions);
+  } else if (managerActiveSection === "items") {
+    renderManagerMenuItems();
+  } else if (managerActiveSection === "service") {
+    renderManagerReports();
+  } else if (managerActiveSection === "support") {
+    renderVenueSupportPanel();
+  } else {
+    renderManagerServicePulse();
+  }
+}
+
+
 function startManagerDashboard() {
 
   try {
 
     db.ref("waiters").on("value", snap => {
       latestManagerWaiters = snap.val() || {};
-      renderManagerServicePulse();
-      renderManagerWaiterSlots(latestManagerWaiters, latestManagerSessions);
-      if (!document.getElementById("managerReports")?.classList.contains("hidden")) renderManagerReports();
+      if (managerActiveSection === "home") renderManagerServicePulse();
+      if (managerActiveSection === "team") renderManagerWaiterSlots(latestManagerWaiters, latestManagerSessions);
+      if (managerActiveSection === "service") renderManagerReports();
     });
 
     db.ref("sessions").on("value", snap => {
       latestManagerSessions = snap.val() || {};
-      renderManagerServicePulse();
-      renderManagerWaiterSlots(latestManagerWaiters, latestManagerSessions);
-      if (!document.getElementById("managerReports")?.classList.contains("hidden")) renderManagerReports();
+      if (managerActiveSection === "home") renderManagerServicePulse();
+      if (managerActiveSection === "team") renderManagerWaiterSlots(latestManagerWaiters, latestManagerSessions);
+      if (managerActiveSection === "service") renderManagerReports();
     });
 
     db.ref("menuItems").on("value", snap => {
@@ -27,10 +67,14 @@ function startManagerDashboard() {
 
     db.ref("staff").on("value", snap => {
       latestManagerStaff = snap.val() || {};
-      renderManagerWaiterSlots(latestManagerWaiters, latestManagerSessions);
-      if (!document.getElementById("managerStaff")?.classList.contains("hidden")) renderManagerStaff();
-      if (!document.getElementById("managerReports")?.classList.contains("hidden")) renderManagerReports();
+      if (managerActiveSection === "team") {
+        renderManagerWaiterSlots(latestManagerWaiters, latestManagerSessions);
+        renderManagerStaff();
+      }
+      if (managerActiveSection === "service") renderManagerReports();
     });
+
+    showManagerSection("home");
 
   }
   catch (error) {
@@ -72,10 +116,7 @@ function renderManagerServicePulse() {
 let managerReportRangeDays = 1;
 
 function toggleManagerReports() {
-  const panel = document.getElementById("managerReports");
-  if (!panel) return;
-  panel.classList.toggle("hidden");
-  if (!panel.classList.contains("hidden")) renderManagerReports();
+  showManagerSection(managerActiveSection === "service" ? "home" : "service");
 }
 
 function setManagerReportRange(days) {
@@ -141,7 +182,7 @@ function renderManagerReports() {
   panel.innerHTML = `
     <div class="heading-row">
       <div><h3 style="margin-bottom:3px">Service Summary</h3><p class="muted" style="margin:0">${rangeLabel} · Service activity</p></div>
-      <button class="secondary" onclick="toggleManagerReports()">Close</button>
+      <button class="secondary" onclick="showManagerSection('home')">Close</button>
     </div>
     <div class="report-controls">
       <button class="${managerReportRangeDays === 1 ? "warning" : "secondary"}" onclick="setManagerReportRange(1)">Today</button>
@@ -167,10 +208,7 @@ function renderManagerReports() {
    ========================================================= */
 
 function toggleManagerStaff() {
-  const panel = document.getElementById("managerStaff");
-  if (!panel) return;
-  panel.classList.toggle("hidden");
-  if (!panel.classList.contains("hidden")) renderManagerStaff();
+  showManagerSection(managerActiveSection === "team" ? "home" : "team");
 }
 
 function staffDisplayName(staff) {
@@ -216,7 +254,10 @@ function renderManagerStaff() {
         <h3 style="margin-bottom:3px">Team</h3>
         <p class="muted" style="margin:0">Add staff once, then assign them to permanent waiter slots as shifts change.</p>
       </div>
-      <button class="secondary" onclick="toggleManagerStaff()">Close</button>
+      <div class="manager-menu-actions">
+        <button class="warning" onclick="addWaiterSlot()">+ Waiter Slot</button>
+        <button class="secondary" onclick="showManagerSection('home')">Close</button>
+      </div>
     </div>
 
     <div class="manager-staff-add">
@@ -393,10 +434,7 @@ async function saveWaiterStaffAssignment(slot) {
    ========================================================= */
 
 function toggleManagerMenuItems() {
-  const panel = document.getElementById("managerMenuItems");
-  if (!panel) return;
-  panel.classList.toggle("hidden");
-  if (!panel.classList.contains("hidden")) renderManagerMenuItems();
+  showManagerSection(managerActiveSection === "items" ? "home" : "items");
 }
 
 function renderManagerMenuItems() {

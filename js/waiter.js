@@ -241,25 +241,20 @@ function waiterRequestHtml(sessionId, request) {
 
 function waiterBillActionHtml(sessionId, session) {
   const billStatus = sessionBillStatus(session);
+  const reconciliationStatus = String((session.reconciliation && session.reconciliation.status) || "");
 
-  if (billStatus === "requested") {
-    const reconciliationStatus = String(
-      (session.reconciliation && session.reconciliation.status) || ""
-    );
-
+  if (["open", "requested"].includes(billStatus)) {
     if (reconciliationStatus === "stale") {
-      return `<span class="badge">Reconcile POS list again before finalising</span>`;
+      return `<span class="badge">Reconcile POS list again before processing bill</span>`;
     }
-
     if (reconciliationStatus !== "reconciled") {
-      return `<span class="badge">Reconcile POS list before finalising</span>`;
+      return `<span class="badge">Reconcile POS list before processing bill</span>`;
     }
-
-    return `<button class="success" onclick="finalizeBill('${sessionId}')">Done – Finalise Bill</button>`;
+    return `<button class="success" onclick="processBill('${sessionId}')">Process Bill</button>`;
   }
 
   if (billStatus === "finalized") {
-    return `<span class="badge active">Bill Finalised – Awaiting Payment</span>`;
+    return `<div class="bill-close-actions"><span class="badge active">Bill Processed</span><button class="success" onclick="closePaidSession('${sessionId}')">Close Session</button></div>`;
   }
 
   if (billStatus === "paid") {
@@ -317,12 +312,12 @@ function waiterSessionHtml(sessionId, session) {
       ${waiterOrderActionsHtml(sessionId, label, session)}
       ${waiterBillActionHtml(sessionId, session)}
 
-      ${sessionBillStatus(session) !== "paid" ? `
+      ${!["finalized", "paid"].includes(sessionBillStatus(session)) ? `
         <details class="session-more">
           <summary>More</summary>
           <div class="session-more-body">
             <button class="danger" onclick="endSessionOverride('${sessionId}', 'waiter_override')">End Session</button>
-            <p class="muted">For abandoned or stuck service sessions.</p>
+            <p class="muted">Exception only: abandoned or stuck service sessions. Normal service uses Process Bill → Close Session.</p>
           </div>
         </details>
       ` : ""}
@@ -395,7 +390,7 @@ function renderReconcileStatus(reconciliation) {
   }
 
   if (reconciliation.status === "stale") {
-    status.innerHTML = `<div class="status warning">The order changed after reconciliation. Reconcile this POS list again before finalising the bill.</div>`;
+    status.innerHTML = `<div class="status warning">The order changed after reconciliation. Reconcile this POS list again before processing the bill.</div>`;
     button.textContent = "Reconcile Again";
     button.disabled = false;
     return;

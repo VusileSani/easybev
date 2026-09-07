@@ -833,7 +833,7 @@ function connectGuestToSession(
 
         ) {
 
-          showGuestSessionEnded();
+          showGuestSessionEnded(session);
 
           return;
 
@@ -883,50 +883,54 @@ function connectGuestToSession(
 }
 
 
-function showGuestSessionEnded() {
+function guestSessionHistoryHtml(sessionId, session, compact = false) {
+  const processedAt = Number((session.bill && (session.bill.processedAt || session.bill.finalizedAt)) || 0);
+  const closedAt = Number(session.closedAt || session.endedAt || 0);
+  const items = Object.values(session.items || {});
+  const itemRows = items.map(item => `<div class="history-item"><span>${Number(item.qty || 1)}× ${escapeHtml(item.name || "Item")}</span><strong>${money(Number(item.price || 0) * Number(item.qty || 1))}</strong></div>`).join("");
+  const time = value => value ? new Date(value).toLocaleString([], {dateStyle:"medium", timeStyle:"short"}) : "—";
+  return `<details class="guest-history-card" ${compact ? "" : "open"}>
+    <summary><span><strong>${escapeHtml(session.sessionCode || guestLabel(sessionId, session))}</strong><small>${time(closedAt)}</small></span><strong>${money(sessionBillTotal(session))}</strong></summary>
+    <div class="guest-history-body">
+      <div class="history-times"><span>Bill processed <strong>${time(processedAt)}</strong></span><span>Session closed <strong>${time(closedAt)}</strong></span></div>
+      <div class="history-items">${itemRows || '<span class="muted">No captured items.</span>'}</div>
+    </div>
+  </details>`;
+}
 
-  if (
-    guestSlot
-  ) {
+function showGuestSessionEnded(session = currentSession) {
+  if (guestSlot) localStorage.removeItem(sessionStorageKey(guestSlot));
 
-    localStorage.removeItem(
-      sessionStorageKey(
-        guestSlot
-      )
-    );
+  document.getElementById("guestControls").classList.add("hidden");
+  document.getElementById("guestSessionInfo").classList.add("hidden");
+  const view = document.getElementById("guestClosedView");
+  view.classList.remove("hidden");
 
+  if (session) {
+    view.innerHTML = `
+      <div class="section-kicker">Completed session</div>
+      <h2>Your night, recorded.</h2>
+      <p class="muted">The waiter closed the service session. You do not need to do anything.</p>
+      ${guestSessionHistoryHtml(currentSessionId || "", session)}
+      <button onclick="restartGuestSession()">Start New Session</button>`;
   }
+}
 
+async function loadGuestHistory() {
+  const panel = document.getElementById("guestHistory");
+  if (!panel || !db) return;
+  const rememberedUserId = localStorage.getItem(guestUserStorageKey());
+  if (!rememberedUserId) { panel.classList.add("hidden"); return; }
 
-  document
-    .getElementById(
-      "guestControls"
-    )
-    .classList
-    .add(
-      "hidden"
-    );
+  const snap = await db.ref("sessions").once("value");
+  const rows = Object.entries(snap.val() || {})
+    .filter(([, session]) => session && session.guestUserId === rememberedUserId && ["closed", "ended"].includes(session.status))
+    .sort((a, b) => Number(b[1].closedAt || b[1].endedAt || 0) - Number(a[1].closedAt || a[1].endedAt || 0))
+    .slice(0, 5);
 
-
-  document
-    .getElementById(
-      "guestSessionInfo"
-    )
-    .classList
-    .add(
-      "hidden"
-    );
-
-
-  document
-    .getElementById(
-      "guestClosedView"
-    )
-    .classList
-    .remove(
-      "hidden"
-    );
-
+  if (!rows.length) { panel.classList.add("hidden"); return; }
+  panel.innerHTML = `<div class="guest-history-head"><strong>Recent nights</strong><span class="muted">Completed EasyBev sessions</span></div>${rows.map(([id, session]) => guestSessionHistoryHtml(id, session, true)).join("")}`;
+  panel.classList.remove("hidden");
 }
 
 
@@ -1300,7 +1304,7 @@ function renderGuestBillStatus(session) {
   if (billStatus === "requested") {
     billStatusDiv.innerHTML = `
       <div class="status warning">
-        Bill requested. Waiting for ${escapeHtml(currentGuestWaiterName || "your waiter")} to finalise it.
+        Bill requested. Waiting for ${escapeHtml(currentGuestWaiterName || "your waiter")} to process it.
       </div>`;
     return;
   }
@@ -1308,7 +1312,7 @@ function renderGuestBillStatus(session) {
   if (billStatus === "finalized") {
     billStatusDiv.innerHTML = `
       <div class="status success">
-        Bill finalised at ${money(sessionBillTotal(session))}. Order items are now locked.
+        Bill processed at ${money(sessionBillTotal(session))}. Order items are now locked.
       </div>`;
     if (typeof platformFeatureEnabled !== "function" || platformFeatureEnabled("onlinePayment", true)) {
       payButton.classList.remove("hidden");

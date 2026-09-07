@@ -16,7 +16,7 @@ async function readEditableOrderSession(sessionId, showAlert = true) {
   }
 
   if (sessionOrderIsLocked(session)) {
-    if (showAlert) alert("This bill has been finalised. Order items are locked.");
+    if (showAlert) alert("This bill has been processed. Order items are locked.");
     return null;
   }
 
@@ -99,6 +99,7 @@ function closeItemModal() {
     null;
 
   itemModalCatalog = [];
+  hideItemSuggestions();
   itemModalLastRound = [];
   itemModalBatchId = null;
 
@@ -326,12 +327,7 @@ async function loadOrderPadContext() {
 
   itemModalLastRound = rounds.length ? rounds[0].items : [];
 
-  const datalist = document.getElementById("menuItemSuggestions");
-  if (datalist) {
-    datalist.innerHTML = itemModalCatalog
-      .map(item => `<option value="${escapeHtml(item.name)}">${money(item.price)}</option>`)
-      .join("");
-  }
+  renderItemSuggestions("");
 }
 
 function renderQuickItems() {
@@ -358,6 +354,45 @@ function selectQuickItem(name, price) {
   document.getElementById("itemName").value = name;
   document.getElementById("itemPrice").value = Number(price).toFixed(2);
   document.getElementById("itemQty").value = "1";
+  hideItemSuggestions();
+  addItemToBill();
+}
+
+function hideItemSuggestions() {
+  const panel = document.getElementById("menuItemSuggestions");
+  if (!panel) return;
+  panel.innerHTML = "";
+  panel.classList.add("hidden");
+}
+
+function renderItemSuggestions(query) {
+  const panel = document.getElementById("menuItemSuggestions");
+  if (!panel) return;
+  const q = String(query || "").trim().toLowerCase();
+  if (!q) { hideItemSuggestions(); return; }
+
+  const matches = itemModalCatalog
+    .filter(item => item.name.toLowerCase().includes(q))
+    .sort((a, b) => {
+      const aStarts = a.name.toLowerCase().startsWith(q) ? 0 : 1;
+      const bStarts = b.name.toLowerCase().startsWith(q) ? 0 : 1;
+      return aStarts - bStarts || (b.uses - a.uses) || a.name.localeCompare(b.name);
+    })
+    .slice(0, 5);
+
+  if (!matches.length) { hideItemSuggestions(); return; }
+
+  panel.innerHTML = matches.map(item => `
+    <button type="button" class="item-suggestion" role="option" onclick="selectSuggestedItem('${escapeJsString(item.name)}', ${Number(item.price)})">
+      <strong>${escapeHtml(item.name)}</strong><span>${money(item.price)}</span>
+    </button>`).join("");
+  panel.classList.remove("hidden");
+}
+
+function selectSuggestedItem(name, price) {
+  document.getElementById("itemName").value = name;
+  document.getElementById("itemPrice").value = Number(price).toFixed(2);
+  hideItemSuggestions();
   addItemToBill();
 }
 
@@ -383,11 +418,15 @@ function handleFastItemInput() {
     if (match) input.value = known.name;
     priceInput.value = Number(known.price).toFixed(2);
   }
+
+  renderItemSuggestions(lookupName);
 }
 
 function handleFastItemKey(event) {
+  if (event.key === "Escape") { hideItemSuggestions(); return; }
   if (event.key !== "Enter") return;
   event.preventDefault();
+  hideItemSuggestions();
   addItemToBill();
 }
 
@@ -578,7 +617,7 @@ function doneAddingItems() {
    BILL FINALISATION
    ========================================================= */
 
-async function finalizeBill(
+async function processBill(
   sessionId
 ) {
 
@@ -605,8 +644,8 @@ async function finalizeBill(
 
   }
 
-  if (sessionBillStatus(session) !== "requested") {
-    alert("This bill is not awaiting finalisation.");
+  if (!["open", "requested"].includes(sessionBillStatus(session))) {
+    alert("This bill has already been processed.");
     return;
   }
 
@@ -617,8 +656,8 @@ async function finalizeBill(
   if (reconciliationStatus !== "reconciled") {
     alert(
       reconciliationStatus === "stale"
-        ? "The order changed after POS reconciliation. Reconcile the POS list again before finalising the bill."
-        : "Reconcile the EasyBev order list with the venue POS before finalising the bill."
+        ? "The order changed after POS reconciliation. Reconcile the POS list again before processing the bill."
+        : "Reconcile the EasyBev order list with the venue POS before processing the bill."
     );
     return;
   }
@@ -659,6 +698,11 @@ async function finalizeBill(
           .ServerValue
           .TIMESTAMP,
 
+      "bill/processedAt":
+        firebase.database
+          .ServerValue
+          .TIMESTAMP,
+
       "bill/finalizedTotal":
         total,
 
@@ -671,7 +715,7 @@ async function finalizeBill(
           "bill",
 
         label:
-          "Bill finalised",
+          "Bill processed",
 
         status:
           "completed",
@@ -690,6 +734,12 @@ async function finalizeBill(
 
     });
 
+}
+
+
+// Backward-compatible alias for older links/build state.
+async function finalizeBill(sessionId) {
+  return processBill(sessionId);
 }
 
 
@@ -715,23 +765,9 @@ async function closePaidSession(
     snap.val();
 
 
-  if (
-
-    !session ||
-
-    !session.bill ||
-
-    session.bill.status !==
-      "paid"
-
-  ) {
-
-    alert(
-      "The session can only be closed normally after payment."
-    );
-
+  if (!session || !session.bill || !["finalized", "paid"].includes(session.bill.status)) {
+    alert("Process the bill before closing the session.");
     return;
-
   }
 
 
@@ -744,7 +780,7 @@ async function closePaidSession(
 
   const confirmed =
     confirm(
-      `Close ${label} and end this paid session?`
+      `Close ${label}? The bill has been processed and the session will move to guest history.`
     );
 
 
@@ -759,7 +795,7 @@ async function closePaidSession(
 
   await closeSessionAtomic(
     sessionId,
-    "paid"
+    session.bill.status === "paid" ? "paid" : "bill_processed"
   );
 
 }
@@ -889,7 +925,7 @@ async function closeSessionAtomic(
 
   const finalStatus =
 
-    reason === "paid"
+    ["paid", "bill_processed"].includes(reason)
 
       ? "closed"
 
@@ -905,12 +941,8 @@ async function closeSessionAtomic(
     finalStatus;
 
 
-  updates[
-    `sessions/${sessionId}/endedAt`
-  ] =
-    firebase.database
-      .ServerValue
-      .TIMESTAMP;
+  updates[`sessions/${sessionId}/endedAt`] = firebase.database.ServerValue.TIMESTAMP;
+  updates[`sessions/${sessionId}/closedAt`] = firebase.database.ServerValue.TIMESTAMP;
 
 
   updates[
@@ -942,7 +974,7 @@ async function closeSessionAtomic(
 
   alert(
 
-    reason === "paid"
+    ["paid", "bill_processed"].includes(reason)
 
       ? `${guestLabel(
           sessionId,

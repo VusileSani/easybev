@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#07131c" />
-  <title>EasyBev</title>
+  <title>EasyBev · v2.2</title>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -87,6 +87,7 @@
         <p class="muted">Choose how you'd like to continue.</p>
 
         <div id="resumeSessions" class="resume-sessions hidden"></div>
+        <div id="guestHistory" class="guest-history hidden"></div>
 
         <div class="access-grid">
           <button class="access-btn primary" onclick="location.href='?guest=1'">
@@ -402,22 +403,25 @@
         See the floor, assign the team and keep service moving.
       </p>
 
-      <div class="manager-toolbar">
-        <button class="warning" onclick="addWaiterSlot()">+ Waiter Slot</button>
-        <button class="secondary" onclick="toggleManagerStaff()">Team</button>
-        <button class="secondary" onclick="toggleManagerMenuItems()">Items</button>
-        <button class="secondary" onclick="toggleManagerReports()">Service</button>
-        <button class="secondary" onclick="toggleVenueSupportPanel()">Support</button>
+      <div class="manager-toolbar manager-section-nav" aria-label="Management sections">
+        <button id="managerNavHome" class="warning" onclick="showManagerSection('home')">Summary</button>
+        <button id="managerNavTeam" class="secondary" onclick="showManagerSection('team')">Team</button>
+        <button id="managerNavItems" class="secondary" onclick="showManagerSection('items')">Items</button>
+        <button id="managerNavService" class="secondary" onclick="showManagerSection('service')">Service</button>
+        <button id="managerNavSupport" class="secondary" onclick="showManagerSection('support')">Support</button>
       </div>
 
     </div>
 
-    <div id="managerServicePulse" class="service-pulse-grid"></div>
+    <div id="managerLanding">
+      <div class="section-kicker">Service Summary</div>
+      <div id="managerServicePulse" class="service-pulse-grid"></div>
+    </div>
     <div id="managerStaff" class="card manager-staff-panel hidden"></div>
     <div id="managerMenuItems" class="card manager-menu-panel hidden"></div>
     <div id="managerReports" class="card manager-report-panel hidden"></div>
     <div id="managerSupport" class="card platform-panel hidden"></div>
-    <div id="managerWaiterSlots"></div>
+    <div id="managerWaiterSlots" class="hidden"></div>
 
   </section>
 
@@ -487,12 +491,11 @@
         id="itemName"
         type="text"
         autocomplete="off"
-        list="menuItemSuggestions"
         placeholder="Item or quantity + item"
         oninput="handleFastItemInput()"
         onkeydown="handleFastItemKey(event)"
       />
-      <datalist id="menuItemSuggestions"></datalist>
+      <div id="menuItemSuggestions" class="item-suggestions hidden" role="listbox" aria-label="Item suggestions"></div>
 
       <input
         id="itemPrice"
