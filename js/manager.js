@@ -57,7 +57,7 @@ function startManagerDashboard() {
   try {
     removeLiveListenersByPrefix("actor:manager:");
 
-    replaceLiveListener("actor:manager:waiters", db.ref("waiters"), "value", snap => {
+    replaceLiveListener("actor:manager:waiters", venueRef("waiters"), "value", snap => {
       latestManagerWaiters = snap.val() || {};
       scheduleUiRender("manager:waiters", () => {
         if (managerActiveSection === "home") renderManagerServicePulse();
@@ -83,14 +83,14 @@ function startManagerDashboard() {
       }
     );
 
-    replaceLiveListener("actor:manager:menuItems", db.ref("menuItems"), "value", snap => {
+    replaceLiveListener("actor:manager:menuItems", venueRef("menuItems"), "value", snap => {
       latestManagerMenuItems = snap.val() || {};
       scheduleUiRender("manager:items", () => {
         if (!document.getElementById("managerMenuItems")?.classList.contains("hidden")) renderManagerMenuItems();
       });
     });
 
-    replaceLiveListener("actor:manager:menuCategories", db.ref("menuCategories"), "value", snap => {
+    replaceLiveListener("actor:manager:menuCategories", venueRef("menuCategories"), "value", snap => {
       latestManagerMenuCategories = snap.val() || {};
       scheduleUiRender("manager:categories", () => {
         if (!document.getElementById("managerMenuItems")?.classList.contains("hidden")) renderManagerMenuItems();
@@ -99,7 +99,7 @@ function startManagerDashboard() {
 
     ensureDefaultMenuCategories().catch(error => console.warn("Could not initialise menu categories", error));
 
-    replaceLiveListener("actor:manager:staff", db.ref("staff"), "value", snap => {
+    replaceLiveListener("actor:manager:staff", venueRef("staff"), "value", snap => {
       latestManagerStaff = snap.val() || {};
       scheduleUiRender("manager:staff", () => {
         if (managerActiveSection === "team") {
@@ -369,7 +369,7 @@ async function saveNewManagerStaff() {
   if (!name) { alert("Enter the staff member's name."); return; }
   const duplicate = Object.values(latestManagerStaff || {}).some(staff => staff && staff.active !== false && String(staff.name || "").trim().toLowerCase() === name.toLowerCase());
   if (duplicate) { alert("An active team member with that name already exists."); return; }
-  const ref = db.ref("staff").push();
+  const ref = venueRef("staff").push();
   await ref.set({staffId:ref.key,name,mobile,firebaseUid:"",active:true,createdAt:firebase.database.ServerValue.TIMESTAMP,updatedAt:firebase.database.ServerValue.TIMESTAMP});
   managerStaffMode = "list";
   renderManagerStaff();
@@ -382,7 +382,7 @@ async function saveManagerStaff(id) {
   const name = String(document.getElementById("managerStaffDetailName")?.value || "").trim();
   const mobile = String(document.getElementById("managerStaffDetailMobile")?.value || "").trim();
   if (!name) { alert("Enter the staff member's name."); return; }
-  await db.ref(`staff/${id}`).update({name,mobile,updatedAt:firebase.database.ServerValue.TIMESTAMP});
+  await venueRef(`staff/${id}`).update({name,mobile,updatedAt:firebase.database.ServerValue.TIMESTAMP});
   const updates = {};
   Object.entries(latestManagerWaiters || {}).forEach(([slot, waiter]) => {
     if (waiter && String(waiter.assignedStaffId || "") === String(id)) {
@@ -391,7 +391,7 @@ async function saveManagerStaff(id) {
       updates[`waiters/${slot}/updatedAt`] = firebase.database.ServerValue.TIMESTAMP;
     }
   });
-  if (Object.keys(updates).length) await db.ref().update(updates);
+  if (Object.keys(updates).length) await updateDatabaseRoot(updates);
   showEasyBevToast("Team member updated", name);
   renderManagerStaff();
 }
@@ -409,7 +409,7 @@ async function toggleManagerStaffMember(id, currentlyActive) {
     }
   }
 
-  await db.ref(`staff/${id}`).update({
+  await venueRef(`staff/${id}`).update({
     active: !currentlyActive,
     updatedAt: firebase.database.ServerValue.TIMESTAMP
   });
@@ -445,7 +445,7 @@ async function saveWaiterStaffAssignment(slot) {
   }
 
   if (!staffId) {
-    await db.ref(`waiters/${slot}`).update({
+    await venueRef(`waiters/${slot}`).update({
       assignedStaffId: null,
       assignedStaffName: null,
       name: "",
@@ -475,7 +475,7 @@ async function saveWaiterStaffAssignment(slot) {
     ? current.assignedAt
     : timestamp;
 
-  await db.ref(`waiters/${slot}`).update({
+  await venueRef(`waiters/${slot}`).update({
     slot: String(slot),
     assignedStaffId: staffId,
     assignedStaffName: staffDisplayName(staff),
@@ -525,7 +525,7 @@ function managerDefaultCategoryId() {
 }
 
 async function ensureDefaultMenuCategories() {
-  const snap = await db.ref("menuCategories").once("value");
+  const snap = await venueRef("menuCategories").once("value");
   const existing = snap.val() || {};
   if (Object.keys(existing).length) return;
 
@@ -539,7 +539,7 @@ async function ensureDefaultMenuCategories() {
       updatedAt: firebase.database.ServerValue.TIMESTAMP
     };
   });
-  await db.ref().update(updates);
+  await updateDatabaseRoot(updates);
 }
 
 function managerFilteredItemRows() {
@@ -677,7 +677,7 @@ async function saveNewManagerMenuItem() {
   if (!latestManagerMenuCategories[categoryId]) { alert("Choose a valid category."); return; }
   const duplicate = Object.values(latestManagerMenuItems || {}).some(item => String(item?.name || "").trim().toLowerCase() === name.toLowerCase());
   if (duplicate) { alert("That item already exists. Open the existing item instead."); return; }
-  const ref = db.ref("menuItems").push();
+  const ref = venueRef("menuItems").push();
   await ref.set({name,price,categoryId,active:true,createdAt:firebase.database.ServerValue.TIMESTAMP,updatedAt:firebase.database.ServerValue.TIMESTAMP});
   managerItemMode = "list";
   renderManagerMenuItems();
@@ -697,7 +697,7 @@ async function saveManagerMenuItem(id) {
     String(otherItem && otherItem.name || "").trim().toLowerCase() === name.toLowerCase()
   );
   if (duplicate) { alert("Another item already uses that name. Keep waiter-pad item names unique."); return; }
-  await db.ref(`menuItems/${id}`).update({name,price,categoryId,updatedAt:firebase.database.ServerValue.TIMESTAMP});
+  await venueRef(`menuItems/${id}`).update({name,price,categoryId,updatedAt:firebase.database.ServerValue.TIMESTAMP});
   showEasyBevToast("Menu item updated", `${name} · ${managerCategoryName(categoryId)} · ${money(price)}`);
   renderManagerMenuItems();
 }
@@ -705,7 +705,7 @@ async function saveManagerMenuItem(id) {
 async function toggleManagerMenuItem(id, currentlyActive) {
   const item = latestManagerMenuItems[id];
   if (!item) return;
-  await db.ref(`menuItems/${id}`).update({
+  await venueRef(`menuItems/${id}`).update({
     active: !currentlyActive,
     updatedAt: firebase.database.ServerValue.TIMESTAMP
   });
@@ -722,7 +722,7 @@ async function addManagerMenuCategory() {
   const nonOther = categories.filter(([id]) => id !== "other");
   const maxSort = nonOther.reduce((max, [, category]) => Math.max(max, Number(category.sortOrder || 0)), 0);
   const nextSort = maxSort + 10;
-  const ref = db.ref("menuCategories").push();
+  const ref = venueRef("menuCategories").push();
   const updates = {};
   updates[`menuCategories/${ref.key}`] = {name,sortOrder:nextSort,active:true,createdAt:firebase.database.ServerValue.TIMESTAMP,updatedAt:firebase.database.ServerValue.TIMESTAMP};
   const other = latestManagerMenuCategories.other;
@@ -730,7 +730,7 @@ async function addManagerMenuCategory() {
     updates["menuCategories/other/sortOrder"] = nextSort + 100;
     updates["menuCategories/other/updatedAt"] = firebase.database.ServerValue.TIMESTAMP;
   }
-  await db.ref().update(updates);
+  await updateDatabaseRoot(updates);
   if (input) input.value = "";
   showEasyBevToast("Category added", name);
 }
@@ -743,7 +743,7 @@ async function saveManagerMenuCategory(id) {
   if (!name) { alert("Category name cannot be empty."); return; }
   const duplicate = Object.entries(latestManagerMenuCategories || {}).some(([otherId, other]) => otherId !== id && String(other?.name || "").trim().toLowerCase() === name.toLowerCase());
   if (duplicate) { alert("That category name is already in use."); return; }
-  await db.ref(`menuCategories/${id}`).update({name,updatedAt:firebase.database.ServerValue.TIMESTAMP});
+  await venueRef(`menuCategories/${id}`).update({name,updatedAt:firebase.database.ServerValue.TIMESTAMP});
   showEasyBevToast("Category updated", name);
 }
 
@@ -754,7 +754,7 @@ async function toggleManagerMenuCategory(id, currentlyActive) {
     alert("Keep Other visible so uncategorised or legacy items always remain accessible.");
     return;
   }
-  await db.ref(`menuCategories/${id}`).update({active:!currentlyActive,updatedAt:firebase.database.ServerValue.TIMESTAMP});
+  await venueRef(`menuCategories/${id}`).update({active:!currentlyActive,updatedAt:firebase.database.ServerValue.TIMESTAMP});
   showEasyBevToast(!currentlyActive ? "Category shown" : "Category hidden", String(category.name || "Category"));
 }
 
@@ -771,7 +771,7 @@ async function moveManagerMenuCategory(id, direction) {
   updates[`menuCategories/${targetId}/sortOrder`] = Number(current.sortOrder || index * 10);
   updates[`menuCategories/${currentId}/updatedAt`] = firebase.database.ServerValue.TIMESTAMP;
   updates[`menuCategories/${targetId}/updatedAt`] = firebase.database.ServerValue.TIMESTAMP;
-  await db.ref().update(updates);
+  await updateDatabaseRoot(updates);
 }
 
 /* =========================================================
@@ -814,7 +814,7 @@ function renderManagerWaiterSlots(
 
     const loadClass = !active ? "inactive" : guestCount === 0 ? "available" : "";
 
-    const guestLink = `${window.location.origin}${window.location.pathname}?guest=${slot}`;
+    const guestLink = `${window.location.origin}${window.location.pathname}?guest=${slot}&venue=${encodeURIComponent(resolvedVenueId())}`;
 
     return `
       <div class="waiter-slot-card summary ${selected ? "selected" : ""}" onclick="toggleManagerWaiterDetails('${slot}')">
@@ -943,12 +943,12 @@ function toggleManagerWaiterDetails(slot) {
 }
 
 async function addWaiterSlot() {
-  const snap = await db.ref("waiters").once("value");
+  const snap = await venueRef("waiters").once("value");
   const waiters = snap.val() || {};
   const numericSlots = Object.keys(waiters).map(Number).filter(Number.isFinite);
   const nextSlot = String((numericSlots.length ? Math.max(...numericSlots) : 0) + 1);
 
-  await db.ref(`waiters/${nextSlot}`).set({
+  await venueRef(`waiters/${nextSlot}`).set({
     slot: nextSlot,
     name: "",
     active: true,
@@ -964,7 +964,7 @@ function generateManagerQr(slot) {
   if (!target || typeof QRCode === "undefined") return;
 
   target.innerHTML = "";
-  const url = `${window.location.origin}${window.location.pathname}?guest=${slot}`;
+  const url = `${window.location.origin}${window.location.pathname}?guest=${slot}&venue=${encodeURIComponent(resolvedVenueId())}`;
   new QRCode(target, {
     text: url,
     width: 144,
@@ -1006,7 +1006,7 @@ function printWaiterLanyard(slot) {
       return;
     }
 
-    const guestLink = `${window.location.origin}${window.location.pathname}?guest=${slot}`;
+    const guestLink = `${window.location.origin}${window.location.pathname}?guest=${slot}&venue=${encodeURIComponent(resolvedVenueId())}`;
     const popup = window.open("", "_blank", "width=520,height=760");
     if (!popup) {
       alert("Allow pop-ups to print the lanyard.");
@@ -1048,10 +1048,7 @@ async function toggleWaiterSlot(
     return;
   }
 
-  await db
-    .ref(
-      `waiters/${slot}`
-    )
+  await venueRef(`waiters/${slot}`)
     .update({
 
       active:

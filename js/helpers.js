@@ -142,25 +142,33 @@ function getWaiterDisplayName(
 }
 
 
-function sessionStorageKey(
-  slot
-) {
-
-  return (
-    `easybev_guest_session_${slot}`
-  );
-
+function guestStorageVenueId() {
+  try {
+    const venue = new URLSearchParams(window.location.search).get("venue");
+    return String(venue || "venue-main").trim() || "venue-main";
+  } catch (_) {
+    return "venue-main";
+  }
 }
 
+function sessionStorageKey(slot) {
+  const venue = guestStorageVenueId();
+  const key = `easybev_guest_session_${venue}_${slot}`;
+  const legacyKey = `easybev_guest_session_${slot}`;
+  if (localStorage.getItem(key) === null && localStorage.getItem(legacyKey) !== null) {
+    localStorage.setItem(key, localStorage.getItem(legacyKey));
+  }
+  return key;
+}
 
-function phoneStorageKey(
-  slot
-) {
-
-  return (
-    `easybev_guest_phone_${slot}`
-  );
-
+function phoneStorageKey(slot) {
+  const venue = guestStorageVenueId();
+  const key = `easybev_guest_phone_${venue}_${slot}`;
+  const legacyKey = `easybev_guest_phone_${slot}`;
+  if (localStorage.getItem(key) === null && localStorage.getItem(legacyKey) !== null) {
+    localStorage.setItem(key, localStorage.getItem(legacyKey));
+  }
+  return key;
 }
 
 

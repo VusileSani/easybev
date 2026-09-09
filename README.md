@@ -1,56 +1,47 @@
-# EasyBev v2.6.1 — Real Authentication Migration & Repair
+# EasyBev v2.7.0 — Security Enforcement & Venue Partitioning
 
+EasyBev is a lightweight guest-service and digital waiter-pad layer for hospitality venues. It sits upstream of the venue POS rather than replacing it.
 
-EasyBev is a lightweight guest-service and digital waiter-pad layer for hospitality venues.
+## Product rule
+EasyBev must remain easy under pressure. Guests and waiters get obvious actions and short flows; tenancy, identity, audit and scale complexity stay underneath the interface.
 
-## Core operating model
-- Guests connect to a permanent waiter service slot by QR.
-- Management assigns staff members to those permanent slots.
-- Waiters capture orders directly into EasyBev and respond to guest requests/messages.
-- Guests see a live running bill and request the official bill when ready.
-- Waiters reconcile the EasyBev order list in the venue POS before processing the bill.
-- Sessions move through Active → Bill requested → Awaiting settlement → Closed.
-- Active sessions can be handed to another assigned waiter without breaking the guest session or running bill.
-- Guests can maintain a compact reusable profile: required identity details plus optional service, language, dietary, bill, tip and notification preferences.
-- Management categorises venue items once; the waiter pad turns those categories into fast rush-hour tabs with Frequent items and quick quantities.
+## Authentication and authority
+- Guest identity: Firebase Phone Authentication.
+- Waiter/Manager identity: Firebase Authentication + venue-scoped `accessByUid` membership.
+- EasyBev Admin/Owner authority: trusted Firebase Authentication custom claims.
+- URL parameters select guest service context only; they never grant staff authority.
 
+## Data partition
+Operational data is venue-scoped:
 
-## v2.5.2 repair baseline
-- Waiter item removal is an audited void with explicit reason rather than silent deletion.
-- Rush-hour paths avoid broad session-history reads where practical.
-- Normal venue actors no longer block on company/platform bootstrap during startup.
-- Repeat Last Round, managed catalogue pricing, handover, lifecycle and reconciliation invariants are regression-tested.
+```text
+venues/<venueId>/
+  waiters/
+  sessions/
+  staff/
+  menuCategories/
+  menuItems/
+  menuUsage/
+```
+
+The current primary test venue is `venue-main`. The client centralises this partition key so operational venues can later be routed across multiple RTDB instances/shards without redesigning every screen.
+
+## Security Rules
+`database.rules.PRODUCTION-v2.7.0.json` is the first restrictive ruleset designed for the real-authenticated application. Follow `DEPLOYMENT-v2.7.0.md` exactly: migrate, deploy/test, then publish rules.
+
+## Migration / rollback
+- `MIGRATE-TO-VENUE-v2.7.0.js` — non-destructive copy and auth-identity normalisation.
+- `ROLLBACK-VENUE-v2.7.0.js` — copies current namespaced operational data back to legacy root paths if rollback is required.
+
+## Guest QR
+The home Guest action now opens an in-app camera scanner where the browser supports native QR detection. The rear camera is preferred. Unsupported/denied camera flows fall back to the phone's normal camera rather than adding complex UI.
 
 ## Project structure
 - `index.html` — application shell
 - `css/styles.css` — product styling
-- `js/` — separated application responsibilities
+- `js/` — modular client responsibilities
 - `website.html` — public-facing EasyBev website
+- security/migration/release documents — deployment controls and auditability
 
-Production role selection is now driven by Firebase Authentication. The old browser actor switcher is no longer an authority mechanism.
-
-
-## EasyBev company governance
-
-The application now separates venue operations from EasyBev company operations:
-
-- Guest: requests service and sees the running bill.
-- Waiter: serves guests and captures/reconciles orders.
-- Venue Management: manages the venue team, waiter slots, items and service reporting.
-- EasyBev Admin: operates venues, support, announcements and routine platform controls.
-- Owner: governs EasyBev staff authority, critical platform controls and the privileged audit trail.
-
-Owner/Admin access is now resolved from Firebase Authentication and server-issued custom claims rather than query-string routing or UI visibility. Final production enforcement still requires the restrictive Realtime Database Security Rules and trusted server-side handling for high-risk privileged changes. The platform audit data in this build demonstrates the product behavior; production audit integrity should be protected so ordinary clients cannot alter or delete historical audit records.
-
-The existing restaurant service data remains the current single-venue operational model. `platform/venues` is the company venue registry and onboarding/support layer; a later multi-venue backend migration should namespace operational data by venue before more than one venue is considered fully live in the same database.
-
-
-See `RELEASE-NOTES-v2.5.md` for guest profile and categorised waiter-pad changes. Previous release notes remain in the package.
-
-
-## Current repair pass
-See `RELEASE-NOTES-v2.5.1.md`, `VALIDATION-v2.5.1.md` and `CODE-AUDIT-v2.5.1.md` for the latest repair/performance review and remaining production blockers.
-
-
-## v2.6.1 auth repair
-See `RELEASE-NOTES-v2.6.1.md`, `AUTH-DEPLOYMENT-v2.6.1.md` and `VALIDATION-v2.6.1.md`.
+## Production work still outstanding
+A successful v2.7 security cutover does not by itself complete production hardening. Before a production claim, add MFA/step-up authentication for privileged roles, App Check, trusted server-side role provisioning/high-risk operations, authoritative server-side audit handling, monitoring/observability and RTDB shard routing when concurrency requires it.

@@ -85,10 +85,10 @@
         <div id="guestHistory" class="guest-history hidden"></div>
 
         <div class="access-grid auth-access-grid">
-          <div class="access-btn primary guest-scan-card" role="note">
+          <button class="access-btn primary guest-scan-card" type="button" onclick="openGuestQrScanner()">
             <span class="access-icon">⌁</span>
-            <span class="access-copy"><strong>Guest</strong><small>Scan the QR from your waiter. EasyBev opens the right service connection automatically.</small></span>
-          </div>
+            <span class="access-copy"><strong>Scan waiter QR</strong><small>Open your camera and connect to the waiter serving you.</small></span>
+          </button>
 
           <button class="access-btn" onclick="openStaffSignIn()">
             <span class="access-icon">◉</span>
@@ -777,6 +777,25 @@
 </div>
 
 
+
+<!-- =========================================================
+     GUEST QR SCANNER
+     ========================================================= -->
+<div id="guestQrScannerModal" class="modal hidden">
+  <div class="modal-content compact-modal guest-qr-scanner">
+    <div class="reconcile-head">
+      <div>
+        <div class="eyebrow" style="color:#a8750e">Guest connection</div>
+        <h2 style="margin:0">Scan Waiter QR</h2>
+      </div>
+      <button class="secondary" type="button" onclick="closeGuestQrScanner()">Close</button>
+    </div>
+    <p class="muted">Point the camera at your waiter's EasyBev QR.</p>
+    <video id="guestQrVideo" class="guest-qr-video" playsinline muted></video>
+    <div id="guestQrStatus" class="status">Opening camera…</div>
+  </div>
+</div>
+
 <script src="js/state.js"></script>
 <script src="js/helpers.js"></script>
 <script src="js/messages.js"></script>
@@ -785,6 +804,7 @@
 <script src="js/firebase.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/navigation.js"></script>
+<script src="js/qr.js"></script>
 <script src="js/guest.js"></script>
 <script src="js/waiter.js"></script>
 <script src="js/orders.js"></script>

@@ -111,7 +111,7 @@ async function resolveAuthenticatedAuthority(user) {
   const access = accessSnap.val();
   if (!access || access.active === false) return null;
 
-  currentVenueAccess = access;
+  currentVenueAccess = { ...access, venueId: String(access.venueId || EASYBEV_DEFAULT_VENUE_ID) };
   const role = String(access.role || "").toLowerCase();
 
   if (role === "manager") {
@@ -144,7 +144,7 @@ async function bootstrapResolvedActor() {
     return;
   }
 
-  if (managerMode || waiterSlot) await ensureWaiterSlots();
+  if (managerMode || ownerMode || adminMode) await ensureWaiterSlots();
   if (ownerMode || adminMode) await ensurePlatformFoundation();
   prepareActorRoute();
   routeApplication();
@@ -163,7 +163,6 @@ async function initialiseAuthRouting() {
   /* A guest service URL always enters the guest flow. The phone OTP inside
      that flow establishes guest identity. Staff URL flags are ignored. */
   if (guestSlot) {
-    await ensureWaiterSlots();
     routeApplication();
     updateNotificationControls();
     return;

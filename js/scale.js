@@ -63,7 +63,7 @@ function scheduleUiRender(key, render) {
 }
 
 function boundedRecentQuery(path, child, limit) {
-  return db.ref(path).orderByChild(child).limitToLast(Math.max(1, Number(limit || 100)));
+  return db.ref(scopeDatabasePath(path)).orderByChild(child).limitToLast(Math.max(1, Number(limit || 100)));
 }
 
 /* Stable partition key for the current transition period. Guest QR links may
@@ -75,4 +75,36 @@ function resolvedVenueId() {
   const accessVenue = currentVenueAccess && currentVenueAccess.venueId;
   const queryVenue = params.get("venue");
   return String(accessVenue || queryVenue || EASYBEV_DEFAULT_VENUE_ID).trim();
+}
+
+const EASYBEV_VENUE_SCOPED_ROOTS = new Set([
+  "waiters", "sessions", "menuItems", "menuCategories", "menuUsage", "staff"
+]);
+
+function venuePath(path = "") {
+  const clean = String(path || "").replace(/^\/+/, "");
+  const base = `venues/${resolvedVenueId()}`;
+  return clean ? `${base}/${clean}` : base;
+}
+
+function venueRef(path = "") {
+  return db.ref(venuePath(path));
+}
+
+function scopeDatabasePath(path = "") {
+  const clean = String(path || "").replace(/^\/+/, "");
+  if (!clean) return clean;
+  if (clean.startsWith("venues/")) return clean;
+  const first = clean.split("/")[0];
+  return EASYBEV_VENUE_SCOPED_ROOTS.has(first) ? venuePath(clean) : clean;
+}
+
+function scopeDatabaseUpdates(updates = {}) {
+  return Object.fromEntries(
+    Object.entries(updates || {}).map(([path, value]) => [scopeDatabasePath(path), value])
+  );
+}
+
+function updateDatabaseRoot(updates = {}) {
+  return db.ref().update(scopeDatabaseUpdates(updates));
 }

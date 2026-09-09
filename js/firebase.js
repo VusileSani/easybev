@@ -192,7 +192,7 @@ async function initialiseEasyBev() {
 
 async function ensureWaiterSlots() {
 
-  const snap = await db.ref("waiters").once("value");
+  const snap = await venueRef("waiters").once("value");
 
   if (snap.exists()) {
     return;
@@ -200,7 +200,7 @@ async function ensureWaiterSlots() {
 
   /* Begin a fresh venue with one permanent service slot.
      Existing venues retain every slot already stored in the database. */
-  await db.ref("waiters/1").set({
+  await venueRef("waiters/1").set({
     slot: "1",
     name: "",
     active: true,
@@ -213,8 +213,7 @@ async function getWaiter(
   slot
 ) {
 
-  const snap = await db
-    .ref(`waiters/${slot}`)
+  const snap = await venueRef(`waiters/${slot}`)
     .once("value");
 
   const waiter = snap.val() || {};
@@ -230,7 +229,7 @@ async function getWaiter(
 }
 
 async function getAllWaiters() {
-  const snap = await db.ref("waiters").once("value");
+  const snap = await venueRef("waiters").once("value");
   return snap.val() || {};
 }
 

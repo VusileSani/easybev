@@ -7,7 +7,7 @@
    ========================================================= */
 
 async function readEditableOrderSession(sessionId, showAlert = true) {
-  const snap = await db.ref(`sessions/${sessionId}`).once("value");
+  const snap = await venueRef(`sessions/${sessionId}`).once("value");
   const session = snap.val();
 
   if (!session || session.status !== "active") {
@@ -209,7 +209,7 @@ async function addItemToBill() {
   }
 
 
-  const itemRef = db.ref(`sessions/${itemModalSessionId}/items`).push();
+  const itemRef = venueRef(`sessions/${itemModalSessionId}/items`).push();
   const catalogMatch = itemModalCatalog.find(item => item.name.toLowerCase() === name.toLowerCase());
   const capturedName = catalogMatch ? catalogMatch.name : name;
   const capturedPrice = catalogMatch ? Number(catalogMatch.price) : price;
@@ -239,7 +239,7 @@ async function addItemToBill() {
   updates[`sessions/${itemModalSessionId}/items/${itemRef.key}`] = newItem;
 
   /* Item write, total update and reconciliation invalidation are one atomic Firebase update. */
-  await db.ref().update(updates);
+  await updateDatabaseRoot(updates);
 
   if (newItem.menuItemId) {
     bumpOrderPadUsage(newItem.menuItemId, qty);
@@ -356,7 +356,7 @@ async function recordMenuItemUsage(menuItemId, qtyDelta = 1) {
   const delta = Number(qtyDelta) || 0;
   if (!delta) return;
 
-  await db.ref(`menuUsage/${menuItemId}`).transaction(current => {
+  await venueRef(`menuUsage/${menuItemId}`).transaction(current => {
     const previous = current || {};
     const nextUses = Math.max(0, Number(previous.uses || 0) + delta);
     return {
@@ -368,10 +368,10 @@ async function recordMenuItemUsage(menuItemId, qtyDelta = 1) {
 
 async function loadOrderPadContext() {
   const [menuSnap, categoriesSnap, usageSnap, currentItemsSnap] = await Promise.all([
-    db.ref("menuItems").once("value"),
-    db.ref("menuCategories").once("value"),
-    db.ref("menuUsage").once("value"),
-    db.ref(`sessions/${itemModalSessionId}/items`).once("value")
+    venueRef("menuItems").once("value"),
+    venueRef("menuCategories").once("value"),
+    venueRef("menuUsage").once("value"),
+    venueRef(`sessions/${itemModalSessionId}/items`).once("value")
   ]);
 
   const menuItems = menuSnap.val() || {};
@@ -605,7 +605,7 @@ async function repeatLastRound() {
     return;
   }
 
-  const itemRoot = db.ref(`sessions/${itemModalSessionId}/items`);
+  const itemRoot = venueRef(`sessions/${itemModalSessionId}/items`);
   const updates = {};
   const nextItems = { ...(session.items || {}) };
   const nowBatch = itemModalBatchId || `round-${Date.now()}`;
@@ -681,7 +681,7 @@ async function repeatLastRound() {
     )
   );
 
-  await db.ref().update(updates);
+  await updateDatabaseRoot(updates);
 
   usageIncrements.forEach((units, menuItemId) => {
     bumpOrderPadUsage(menuItemId, units);
@@ -714,8 +714,7 @@ async function refreshModalBill() {
 
   if (!itemModalSessionId) return;
 
-  const snap = await db
-    .ref(`sessions/${itemModalSessionId}/items`)
+  const snap = await venueRef(`sessions/${itemModalSessionId}/items`)
     .once("value");
 
   const items = snap.val() || {};
@@ -759,8 +758,8 @@ async function openItemVoidModal(itemId) {
   if (!itemModalSessionId || itemModalWriteInFlight) return;
 
   const [sessionSnap, itemSnap] = await Promise.all([
-    db.ref(`sessions/${itemModalSessionId}`).once("value"),
-    db.ref(`sessions/${itemModalSessionId}/items/${itemId}`).once("value")
+    venueRef(`sessions/${itemModalSessionId}`).once("value"),
+    venueRef(`sessions/${itemModalSessionId}/items/${itemId}`).once("value")
   ]);
 
   const session = sessionSnap.val();
@@ -815,8 +814,8 @@ async function confirmItemVoid() {
     const sessionId = itemModalSessionId;
     const itemId = itemVoidItemId;
     const [sessionSnap, itemSnap] = await Promise.all([
-      db.ref(`sessions/${sessionId}`).once("value"),
-      db.ref(`sessions/${sessionId}/items/${itemId}`).once("value")
+      venueRef(`sessions/${sessionId}`).once("value"),
+      venueRef(`sessions/${sessionId}/items/${itemId}`).once("value")
     ]);
 
     const session = sessionSnap.val();
@@ -878,7 +877,7 @@ async function confirmItemVoid() {
       createdAt: timestamp
     };
 
-    await db.ref().update(updates);
+    await updateDatabaseRoot(updates);
 
     if (item.menuItemId) {
       bumpOrderPadUsage(item.menuItemId, -qty);
@@ -922,7 +921,7 @@ function canManageSessionLifecycle(session) {
 
 
 async function markBillRequestedByWaiter(sessionId) {
-  const snap = await db.ref(`sessions/${sessionId}`).once("value");
+  const snap = await venueRef(`sessions/${sessionId}`).once("value");
   const session = snap.val();
 
   if (!session || session.status !== "active") return;
@@ -962,12 +961,12 @@ async function markBillRequestedByWaiter(sessionId) {
     lifecycleActorContext()
   );
 
-  await db.ref().update(updates);
+  await updateDatabaseRoot(updates);
 }
 
 
 async function processBill(sessionId) {
-  const snap = await db.ref(`sessions/${sessionId}`).once("value");
+  const snap = await venueRef(`sessions/${sessionId}`).once("value");
   const session = snap.val();
 
   if (!session || session.status !== "active") return;
@@ -1030,7 +1029,7 @@ async function processBill(sessionId) {
     lifecycleActorContext()
   );
 
-  await db.ref().update(updates);
+  await updateDatabaseRoot(updates);
 }
 
 
@@ -1045,7 +1044,7 @@ async function finalizeBill(sessionId) {
    ========================================================= */
 
 async function closePaidSession(sessionId) {
-  const snap = await db.ref(`sessions/${sessionId}`).once("value");
+  const snap = await venueRef(`sessions/${sessionId}`).once("value");
   const session = snap.val();
 
   if (!session || session.status !== "active") return;
@@ -1079,7 +1078,7 @@ async function closePaidSession(sessionId) {
    ========================================================= */
 
 async function endSessionOverride(sessionId, reason = "waiter_override") {
-  const snap = await db.ref(`sessions/${sessionId}`).once("value");
+  const snap = await venueRef(`sessions/${sessionId}`).once("value");
   const session = snap.val();
 
   if (!session || session.status !== "active") return;
@@ -1116,7 +1115,7 @@ async function endSessionOverride(sessionId, reason = "waiter_override") {
    ========================================================= */
 
 async function closeSessionAtomic(sessionId, reason) {
-  const sessionSnap = await db.ref(`sessions/${sessionId}`).once("value");
+  const sessionSnap = await venueRef(`sessions/${sessionId}`).once("value");
   const session = sessionSnap.val();
 
   if (!session) return;
@@ -1144,7 +1143,7 @@ async function closeSessionAtomic(sessionId, reason) {
     { closeReason: reason }
   );
 
-  await db.ref().update(updates);
+  await updateDatabaseRoot(updates);
 
   alert(
     normalClose
@@ -1159,7 +1158,7 @@ async function closeSessionAtomic(sessionId, reason) {
    ========================================================= */
 
 async function reopenClosedSession(sessionId) {
-  const snap = await db.ref(`sessions/${sessionId}`).once("value");
+  const snap = await venueRef(`sessions/${sessionId}`).once("value");
   const session = snap.val();
 
   if (!session || session.status !== "closed") {
@@ -1206,6 +1205,6 @@ async function reopenClosedSession(sessionId) {
     { restoredBillStatus: billStatus }
   );
 
-  await db.ref().update(updates);
+  await updateDatabaseRoot(updates);
   showEasyBevToast("Session reopened", `${label} is active again.`);
 }

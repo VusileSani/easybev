@@ -1,0 +1,217 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "accessByUid": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')",
+        ".write": "auth != null && (auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')",
+        ".validate": "!newData.exists() || (newData.hasChildren(['role','active','venueId']) && (newData.child('role').val() === 'manager' || newData.child('role').val() === 'waiter') && newData.child('active').isBoolean() && newData.child('venueId').isString() && newData.child('venueId').val().length <= 80 && (newData.child('role').val() !== 'waiter' || (newData.child('waiterSlot').isString() && newData.child('waiterSlot').val().length <= 32)))"
+      }
+    },
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid && auth.token.phone_number != null",
+        ".validate": "!newData.exists() || (newData.child('phone').isString() && ((data.exists() && newData.child('phone').val() === data.child('phone').val()) || (!data.exists() && newData.child('phone').val() === auth.token.phone_number)))"
+      }
+    },
+    "userPhoneIndex": {
+      ".read": "auth != null && (auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')",
+      ".write": false
+    },
+    "platform": {
+      "company": {
+        ".write": "auth != null && (auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')",
+        ".read": "auth != null && (auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')"
+      },
+      "venues": {
+        ".write": "auth != null && (auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')",
+        ".indexOn": [
+          "updatedAt",
+          "status",
+          "name"
+        ],
+        ".read": "auth != null && (auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')"
+      },
+      "partnerApplications": {
+        ".write": "auth != null && (auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')",
+        ".indexOn": [
+          "updatedAt",
+          "status",
+          "receivedAt"
+        ],
+        ".read": "auth != null && (auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')"
+      },
+      "venuePeople": {
+        ".write": "auth != null && (auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')",
+        ".read": "auth != null && (auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')"
+      },
+      "venueInvites": {
+        ".write": "auth != null && (auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')",
+        ".read": "auth != null && (auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')"
+      },
+      "featureFlags": {
+        ".write": "auth != null && (auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')",
+        ".read": "auth != null && (auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')"
+      },
+      "supportCases": {
+        ".indexOn": [
+          "updatedAt",
+          "createdAt",
+          "status",
+          "severity",
+          "venueId"
+        ],
+        ".read": "auth != null && (((auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin') && query.orderByChild === 'updatedAt' && query.limitToLast != null && query.limitToLast <= 300) || (root.child('accessByUid').child(auth.uid).child('active').val() === true && root.child('accessByUid').child(auth.uid).child('role').val() === 'manager' && query.orderByChild === 'venueId' && query.equalTo === root.child('accessByUid').child(auth.uid).child('venueId').val() && query.limitToLast != null && query.limitToLast <= 20))",
+        "$caseId": {
+          ".write": "auth != null && ((auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin') || (!data.exists() && root.child('accessByUid').child(auth.uid).child('active').val() === true && root.child('accessByUid').child(auth.uid).child('role').val() === 'manager' && newData.child('venueId').val() === root.child('accessByUid').child(auth.uid).child('venueId').val() && newData.child('openedByUid').val() === auth.uid && newData.child('status').val() === 'open'))"
+        }
+      },
+      "announcements": {
+        ".write": "auth != null && (auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')",
+        ".indexOn": [
+          "audience",
+          "createdAt",
+          "publishedAt",
+          "status"
+        ],
+        ".read": "((auth != null && (auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin') && query.orderByChild === 'createdAt' && query.limitToLast != null && query.limitToLast <= 100) || (query.orderByChild === 'audience' && query.limitToLast != null && query.limitToLast <= 50 && (query.equalTo === 'all' || query.equalTo === 'venue' || (auth != null && root.child('accessByUid').child(auth.uid).child('active').val() === true && root.child('accessByUid').child(auth.uid).child('role').val() === 'manager' && query.equalTo === 'management') || (auth != null && root.child('accessByUid').child(auth.uid).child('active').val() === true && root.child('accessByUid').child(auth.uid).child('role').val() === 'waiter' && query.equalTo === 'waiters') || (auth != null && (auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin') && query.equalTo === 'internal'))))"
+      },
+      "announcementReceipts": {
+        "$uid": {
+          ".read": "auth != null && auth.uid === $uid",
+          ".write": "auth != null && auth.uid === $uid"
+        }
+      },
+      "staff": {
+        ".write": "auth != null && auth.token.easybevRole === 'owner'",
+        ".read": "auth != null && (auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')"
+      },
+      "auditLog": {
+        ".indexOn": [
+          "createdAt",
+          "actorUid",
+          "targetType"
+        ],
+        "$auditId": {
+          ".write": "auth != null && (auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin') && !data.exists() && newData.child('actorUid').val() === auth.uid"
+        },
+        ".read": "auth != null && (auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')"
+      },
+      "publicService": {
+        ".read": true,
+        ".write": "auth != null && (auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')"
+      },
+      "publicFeatureFlags": {
+        ".read": true,
+        ".write": "auth != null && (auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')"
+      }
+    },
+    "venues": {
+      "$venueId": {
+        "waiters": {
+          ".read": "auth != null && ((auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin') || (root.child('accessByUid').child(auth.uid).child('active').val() === true && root.child('accessByUid').child(auth.uid).child('venueId').val() === $venueId))",
+          ".write": "auth != null && ((auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin') || (root.child('accessByUid').child(auth.uid).child('active').val() === true && root.child('accessByUid').child(auth.uid).child('venueId').val() === $venueId && root.child('accessByUid').child(auth.uid).child('role').val() === 'manager'))",
+          ".indexOn": [
+            "assignedStaffId",
+            "active"
+          ],
+          "$slot": {
+            ".read": true
+          }
+        },
+        "staff": {
+          ".read": "auth != null && ((auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin') || (root.child('accessByUid').child(auth.uid).child('active').val() === true && root.child('accessByUid').child(auth.uid).child('venueId').val() === $venueId && root.child('accessByUid').child(auth.uid).child('role').val() === 'manager'))",
+          ".write": "auth != null && ((auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin') || (root.child('accessByUid').child(auth.uid).child('active').val() === true && root.child('accessByUid').child(auth.uid).child('venueId').val() === $venueId && root.child('accessByUid').child(auth.uid).child('role').val() === 'manager'))",
+          ".indexOn": [
+            "firebaseUid",
+            "active"
+          ]
+        },
+        "menuItems": {
+          ".read": "auth != null && ((auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin') || (root.child('accessByUid').child(auth.uid).child('active').val() === true && root.child('accessByUid').child(auth.uid).child('venueId').val() === $venueId))",
+          ".write": "auth != null && ((auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin') || (root.child('accessByUid').child(auth.uid).child('active').val() === true && root.child('accessByUid').child(auth.uid).child('venueId').val() === $venueId && root.child('accessByUid').child(auth.uid).child('role').val() === 'manager'))",
+          ".indexOn": [
+            "categoryId",
+            "active",
+            "name"
+          ]
+        },
+        "menuCategories": {
+          ".read": "auth != null && ((auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin') || (root.child('accessByUid').child(auth.uid).child('active').val() === true && root.child('accessByUid').child(auth.uid).child('venueId').val() === $venueId))",
+          ".write": "auth != null && ((auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin') || (root.child('accessByUid').child(auth.uid).child('active').val() === true && root.child('accessByUid').child(auth.uid).child('venueId').val() === $venueId && root.child('accessByUid').child(auth.uid).child('role').val() === 'manager'))",
+          ".indexOn": [
+            "sortOrder",
+            "active"
+          ]
+        },
+        "menuUsage": {
+          ".read": "auth != null && ((auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin') || (root.child('accessByUid').child(auth.uid).child('active').val() === true && root.child('accessByUid').child(auth.uid).child('venueId').val() === $venueId))",
+          ".write": "auth != null && ((auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin') || (root.child('accessByUid').child(auth.uid).child('active').val() === true && root.child('accessByUid').child(auth.uid).child('venueId').val() === $venueId))"
+        },
+        "sessions": {
+          ".indexOn": [
+            "waiterSlot",
+            "guestUserId",
+            "status",
+            "lastActivityAt"
+          ],
+          ".read": "auth != null && (((auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin') && query.limitToLast != null && query.limitToLast <= 250) || (root.child('accessByUid').child(auth.uid).child('active').val() === true && root.child('accessByUid').child(auth.uid).child('venueId').val() === $venueId && root.child('accessByUid').child(auth.uid).child('role').val() === 'manager' && query.orderByChild === 'lastActivityAt' && query.limitToLast != null && query.limitToLast <= 250) || (root.child('accessByUid').child(auth.uid).child('active').val() === true && root.child('accessByUid').child(auth.uid).child('venueId').val() === $venueId && root.child('accessByUid').child(auth.uid).child('role').val() === 'waiter' && query.orderByChild === 'waiterSlot' && query.equalTo === root.child('accessByUid').child(auth.uid).child('waiterSlot').val() && query.limitToLast != null && query.limitToLast <= 100) || (auth.token.phone_number != null && query.orderByChild === 'guestUserId' && query.equalTo === auth.uid && query.limitToLast != null && query.limitToLast <= 25))",
+          "$sessionId": {
+            ".read": "auth != null && ((auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin') || (root.child('accessByUid').child(auth.uid).child('active').val() === true && root.child('accessByUid').child(auth.uid).child('venueId').val() === $venueId && (root.child('accessByUid').child(auth.uid).child('role').val() === 'manager' || (root.child('accessByUid').child(auth.uid).child('role').val() === 'waiter' && data.child('waiterSlot').val() === root.child('accessByUid').child(auth.uid).child('waiterSlot').val()))) || (auth.token.phone_number != null && data.child('guestUserId').val() === auth.uid))",
+            ".write": "auth != null && ((auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin') || (root.child('accessByUid').child(auth.uid).child('active').val() === true && root.child('accessByUid').child(auth.uid).child('venueId').val() === $venueId && root.child('accessByUid').child(auth.uid).child('role').val() === 'manager') || (root.child('accessByUid').child(auth.uid).child('active').val() === true && root.child('accessByUid').child(auth.uid).child('venueId').val() === $venueId && root.child('accessByUid').child(auth.uid).child('role').val() === 'waiter' && data.exists() && data.child('waiterSlot').val() === root.child('accessByUid').child(auth.uid).child('waiterSlot').val()) || (!data.exists() && auth.token.phone_number != null && newData.child('guestUserId').val() === auth.uid && newData.child('guestPhone').val() === auth.token.phone_number && newData.child('status').val() === 'active' && newData.child('total').val() === 0 && newData.child('bill').child('status').val() === 'open' && !newData.child('items').exists() && root.child('venues').child($venueId).child('waiters').child(newData.child('waiterSlot').val()).child('active').val() === true))",
+            "guestNameCurrent": {
+              ".write": "auth != null && auth.token.phone_number != null && data.parent().child('guestUserId').val() === auth.uid && newData.isString() && newData.val().length <= 60"
+            },
+            "latestRequest": {
+              ".write": "auth != null && auth.token.phone_number != null && data.parent().child('guestUserId').val() === auth.uid && newData.hasChildren(['type','status','createdAt']) && (newData.child('type').val() === 'assistance' || newData.child('type').val() === 'bill') && newData.child('status').val() === 'new'"
+            },
+            "lastActivityAt": {
+              ".write": "auth != null && auth.token.phone_number != null && data.parent().child('guestUserId').val() === auth.uid && newData.isNumber() && newData.val() <= now + 10000 && newData.val() >= now - 60000"
+            },
+            "bill": {
+              "status": {
+                ".write": "auth != null && auth.token.phone_number != null && data.parent().parent().child('guestUserId').val() === auth.uid && data.val() === 'open' && newData.val() === 'requested'"
+              },
+              "requestedAt": {
+                ".write": "auth != null && auth.token.phone_number != null && data.parent().parent().child('guestUserId').val() === auth.uid && newData.isNumber() && newData.val() <= now + 10000 && newData.val() >= now - 60000"
+              }
+            },
+            "lifecycle": {
+              ".write": "auth != null && auth.token.phone_number != null && data.parent().child('guestUserId').val() === auth.uid && newData.child('state').val() === 'bill_requested' && newData.child('lastAction').val() === 'bill_requested'"
+            },
+            "lifecycleEvents": {
+              "$eventId": {
+                ".write": "auth != null && auth.token.phone_number != null && data.parent().parent().child('guestUserId').val() === auth.uid && !data.exists() && newData.child('action').val() === 'bill_requested' && newData.child('actorRole').val() === 'guest'"
+              }
+            },
+            "messages": {
+              "$messageId": {
+                ".write": "auth != null && auth.token.phone_number != null && data.parent().parent().child('guestUserId').val() === auth.uid && !data.exists() && newData.child('sender').val() === 'guest' && newData.child('senderUserId').val() === auth.uid && newData.child('text').isString() && newData.child('text').val().length <= 600"
+              }
+            },
+            "guestUserId": {
+              ".validate": "!data.exists() || newData.val() === data.val()"
+            },
+            "guestPhone": {
+              ".validate": "!data.exists() || newData.val() === data.val()"
+            },
+            "waiterSlotAtStart": {
+              ".validate": "!data.exists() || newData.val() === data.val()"
+            },
+            "createdAt": {
+              ".validate": "!data.exists() || newData.val() === data.val()"
+            },
+            "guestNameAtStart": {
+              ".validate": "!data.exists() || newData.val() === data.val()"
+            },
+            "total": {
+              ".validate": "!newData.exists() || (newData.isNumber() && newData.val() >= 0)"
+            }
+          }
+        }
+      }
+    }
+  }
+}

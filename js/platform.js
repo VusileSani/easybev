@@ -113,6 +113,7 @@ async function writePlatformAudit(action, targetType, targetId, reason, beforeVa
   const ref = db.ref("platform/auditLog").push();
   await ref.set({
     auditId: ref.key,
+    actorUid: String(currentAuthUser && currentAuthUser.uid || ""),
     actorRole: platformRoleLabel(),
     action: String(action || "change"),
     targetType: String(targetType || "platform"),
@@ -180,7 +181,7 @@ async function ensurePlatformFoundation() {
     if (!currentVenue.billingStatus) updates[`platform/venues/${PLATFORM_DEFAULT_VENUE_ID}/billingStatus`] = "not_configured";
   }
 
-  if (!platform.staff) {
+  if (!platform.staff && ownerMode) {
     updates["platform/staff/owner-primary"] = {
       staffId: "owner-primary",
       name: "Platform Owner",
@@ -212,8 +213,27 @@ async function ensurePlatformFoundation() {
     }
   });
 
+  const effectiveCompany = platform.company || updates["platform/company"] || {};
+  updates["platform/publicService"] = {
+    companyName: String(effectiveCompany.companyName || "EasyBev"),
+    serviceStatus: String(effectiveCompany.serviceStatus || "operational"),
+    serviceMessage: String(effectiveCompany.serviceMessage || "All systems operating normally."),
+    paymentIntegrationReady: effectiveCompany.paymentIntegrationReady === true,
+    updatedAt: ts
+  };
+
+  Object.entries(PLATFORM_FEATURE_DEFAULTS).forEach(([key, config]) => {
+    const existing = (platform.featureFlags && platform.featureFlags[key]) || updates[`platform/featureFlags/${key}`] || config;
+    updates[`platform/publicFeatureFlags/${key}`] = {
+      key,
+      label: String(existing.label || config.label || key),
+      enabled: existing.enabled === true,
+      updatedAt: ts
+    };
+  });
+
   if (Object.keys(updates).length) {
-    await db.ref().update(updates);
+    await updateDatabaseRoot(updates);
   }
 }
 
@@ -314,42 +334,74 @@ function renderPlatformNoticeBanner(actor, company, announcements, receipts = {}
   clearPlatformNoticeBanner();
 }
 
+function platformAnnouncementQueries(actor) {
+  const role = String(actor || "guest");
+  if (["owner", "admin"].includes(role)) {
+    return [boundedRecentQuery("platform/announcements", "createdAt", EASYBEV_SCALE_LIMITS.platformAnnouncements)];
+  }
+
+  const audiences = role === "manager"
+    ? ["all", "venue", "management"]
+    : role === "waiter"
+      ? ["all", "venue", "waiters"]
+      : ["all", "venue"];
+
+  return audiences.map(audience =>
+    db.ref("platform/announcements")
+      .orderByChild("audience")
+      .equalTo(audience)
+      .limitToLast(50)
+  );
+}
+
 function subscribeToPlatformAnnouncements(actor) {
   if (!db) return;
   if (typeof platformAnnouncementUnsubscribe === "function") {
     try { platformAnnouncementUnsubscribe(); } catch (_) {}
   }
 
-  const companyRef = db.ref("platform/company");
-  const announcementRef = boundedRecentQuery("platform/announcements", "createdAt", EASYBEV_SCALE_LIMITS.platformAnnouncements);
-  const featureRef = db.ref("platform/featureFlags");
+  const privileged = ["owner", "admin"].includes(String(actor || ""));
+  const companyRef = db.ref(privileged ? "platform/company" : "platform/publicService");
+  const featureRef = db.ref(privileged ? "platform/featureFlags" : "platform/publicFeatureFlags");
+  const announcementQueries = platformAnnouncementQueries(actor);
   const user = auth && auth.currentUser;
   const receiptRef = user && user.uid
     ? db.ref(`platform/announcementReceipts/${user.uid}`)
     : null;
+
   let company = {};
-  let announcements = {};
+  const announcementBuckets = new Map();
   let receipts = {};
 
+  const mergedAnnouncements = () => {
+    const merged = {};
+    announcementBuckets.forEach(bucket => Object.assign(merged, bucket || {}));
+    return merged;
+  };
+
   const render = () => {
-    renderPlatformNoticeBanner(String(actor || "guest"), company, announcements, receipts);
+    renderPlatformNoticeBanner(String(actor || "guest"), company, mergedAnnouncements(), receipts);
     applyPlatformFeatureControls(String(actor || "guest"));
   };
   const companyHandler = snap => { company = snap.val() || {}; render(); };
-  const announcementHandler = snap => { announcements = snap.val() || {}; render(); };
   const featureHandler = snap => { latestPlatformFeatureFlags = snap.val() || {}; render(); };
   const receiptHandler = snap => { receipts = snap.val() || {}; render(); };
 
   companyRef.on("value", companyHandler);
-  announcementRef.on("value", announcementHandler);
   featureRef.on("value", featureHandler);
   if (receiptRef) receiptRef.on("value", receiptHandler);
 
+  const announcementHandlers = announcementQueries.map((query, index) => {
+    const handler = snap => { announcementBuckets.set(index, snap.val() || {}); render(); };
+    query.on("value", handler);
+    return { query, handler };
+  });
+
   platformAnnouncementUnsubscribe = () => {
     companyRef.off("value", companyHandler);
-    announcementRef.off("value", announcementHandler);
     featureRef.off("value", featureHandler);
     if (receiptRef) receiptRef.off("value", receiptHandler);
+    announcementHandlers.forEach(({query, handler}) => query.off("value", handler));
   };
 }
 
@@ -423,8 +475,12 @@ async function renderVenueSupportPanel() {
   if (!panel) return;
   panel.classList.remove("hidden");
 
-  const venueId = PLATFORM_DEFAULT_VENUE_ID;
-  const snap = await db.ref("platform/supportCases").once("value");
+  const venueId = resolvedVenueId();
+  const snap = await db.ref("platform/supportCases")
+    .orderByChild("venueId")
+    .equalTo(venueId)
+    .limitToLast(20)
+    .once("value");
   const cases = Object.values(snap.val() || {})
     .filter(item => item && String(item.venueId || PLATFORM_DEFAULT_VENUE_ID) === venueId)
     .sort((a,b) => Number(b.createdAt || 0) - Number(a.createdAt || 0))
@@ -469,13 +525,14 @@ async function submitVenueSupportRequest() {
   const ref = db.ref("platform/supportCases").push();
   await ref.set({
     caseId: ref.key,
-    venueId: PLATFORM_DEFAULT_VENUE_ID,
+    venueId: resolvedVenueId(),
     subject,
     detail,
     severity,
     status: "open",
     ownerName: "",
     openedBy: "Venue Management",
+    openedByUid: String(currentAuthUser && currentAuthUser.uid || ""),
     createdAt: platformTimestamp(),
     updatedAt: platformTimestamp()
   });
@@ -527,7 +584,7 @@ function startPlatformDashboard(role) {
     ["featureFlags", db.ref("platform/featureFlags"), value => latestPlatformFeatureFlags = value],
     ["audit", boundedRecentQuery("platform/auditLog", "createdAt", EASYBEV_SCALE_LIMITS.platformAuditEvents), value => latestPlatformAudit = value],
     ["sessions", boundedRecentQuery("sessions", "lastActivityAt", EASYBEV_SCALE_LIMITS.platformRecentSessions), value => latestPlatformSessions = value],
-    ["waiters", db.ref("waiters"), value => latestPlatformWaiters = value]
+    ["waiters", venueRef("waiters"), value => latestPlatformWaiters = value]
   ];
 
   bindings.forEach(([key, query, assign]) => {
@@ -720,7 +777,7 @@ function renderPlatformQrOperationsHtml() {
       </div>
       <div class="platform-qr-grid">
         ${rows.map(([slot, waiter]) => {
-          const link = `${window.location.origin}${window.location.pathname}?guest=${slot}`;
+          const link = `${window.location.origin}${window.location.pathname}?guest=${slot}&venue=${encodeURIComponent(resolvedVenueId())}`;
           return `<div class="platform-qr-card">
             <div id="managerQr${escapeHtml(slot)}" class="qr-box" aria-label="QR code for Waiter ${escapeHtml(slot)}"></div>
             <div><strong>Waiter ${escapeHtml(slot)}</strong><small>${escapeHtml(getWaiterDisplayName({...waiter, slot}))}</small></div>
@@ -781,7 +838,7 @@ async function approvePartnerApplication(applicationId) {
   updates[`platform/partnerApplications/${applicationId}/status`] = "approved";
   updates[`platform/partnerApplications/${applicationId}/approvedAt`] = platformTimestamp();
   updates[`platform/partnerApplications/${applicationId}/venueId`] = ref.key;
-  await db.ref().update(updates);
+  await updateDatabaseRoot(updates);
   await writePlatformAudit("Partner approved", "venue", ref.key, "Partner request approved; venue and Venue Owner created", application, {venue, owner});
   showEasyBevToast("Partner approved", `${venue.name} created and ${venue.ownerName} invited as Venue Owner.`);
 }
@@ -937,7 +994,7 @@ async function forceClosePlatformSession(sessionId) {
     closureReason: reason,
     supportOverride: true
   };
-  await db.ref(`sessions/${sessionId}`).update(updates);
+  await venueRef(`sessions/${sessionId}`).update(updates);
   await writePlatformAudit("Service session force-ended", "session", sessionId, reason, before, {...session,...updates});
   showEasyBevToast("Session ended", `${guestName(session)} · intervention recorded.`);
 }
@@ -1085,7 +1142,16 @@ async function savePlatformServiceStatus() {
   const reason = requestPlatformReason("Change EasyBev service status");
   if (!reason) return;
   const before = platformClone(latestPlatformCompany);
-  await db.ref("platform/company").update({serviceStatus:status,serviceMessage:message || (status === "operational" ? "All systems operating normally." : "Some EasyBev services may be affected."),updatedAt:platformTimestamp()});
+  const serviceMessage = message || (status === "operational" ? "All systems operating normally." : "Some EasyBev services may be affected.");
+  const ts = platformTimestamp();
+  await updateDatabaseRoot({
+    "platform/company/serviceStatus": status,
+    "platform/company/serviceMessage": serviceMessage,
+    "platform/company/updatedAt": ts,
+    "platform/publicService/serviceStatus": status,
+    "platform/publicService/serviceMessage": serviceMessage,
+    "platform/publicService/updatedAt": ts
+  });
   await writePlatformAudit("Service status changed", "company", "easybev", reason, before, {...latestPlatformCompany,serviceStatus:status,serviceMessage:message});
   showEasyBevToast("Platform status updated", status);
 }
@@ -1096,7 +1162,17 @@ async function togglePlatformFeature(key) {
   if (item.ownerOnly && !platformIsOwner()) { alert("Owner access is required for this control."); return; }
   const reason = requestPlatformReason(`${item.enabled ? "Disable" : "Enable"} ${item.label || key}`);
   if (!reason) return;
-  await db.ref(`platform/featureFlags/${key}`).update({enabled:!item.enabled,updatedAt:platformTimestamp(),lastReason:reason});
+  const nextEnabled = !item.enabled;
+  const ts = platformTimestamp();
+  await updateDatabaseRoot({
+    [`platform/featureFlags/${key}/enabled`]: nextEnabled,
+    [`platform/featureFlags/${key}/updatedAt`]: ts,
+    [`platform/featureFlags/${key}/lastReason`]: reason,
+    [`platform/publicFeatureFlags/${key}/key`]: key,
+    [`platform/publicFeatureFlags/${key}/label`]: String(item.label || key),
+    [`platform/publicFeatureFlags/${key}/enabled`]: nextEnabled,
+    [`platform/publicFeatureFlags/${key}/updatedAt`]: ts
+  });
   await writePlatformAudit("Feature control changed", "featureFlag", key, reason, item, {...item,enabled:!item.enabled});
   showEasyBevToast("Platform control updated", `${item.label || key}: ${!item.enabled ? "enabled" : "disabled"}`);
 }
@@ -1107,7 +1183,16 @@ async function savePlatformCompanyIdentity() {
   const supportEmail = String(document.getElementById("platformSupportEmail")?.value || "").trim();
   const supportPhone = String(document.getElementById("platformSupportPhone")?.value || "").trim();
   const before = platformClone(latestPlatformCompany);
-  await db.ref("platform/company").update({companyName:name || "EasyBev",supportEmail,supportPhone,updatedAt:platformTimestamp()});
+  const companyName = name || "EasyBev";
+  const ts = platformTimestamp();
+  await updateDatabaseRoot({
+    "platform/company/companyName": companyName,
+    "platform/company/supportEmail": supportEmail,
+    "platform/company/supportPhone": supportPhone,
+    "platform/company/updatedAt": ts,
+    "platform/publicService/companyName": companyName,
+    "platform/publicService/updatedAt": ts
+  });
   await writePlatformAudit("Company settings updated", "company", "easybev", "Owner company settings maintenance", before, {...latestPlatformCompany,companyName:name,supportEmail,supportPhone});
   showEasyBevToast("Company settings saved", name || "EasyBev");
 }

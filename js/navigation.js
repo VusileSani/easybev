@@ -212,12 +212,19 @@ async function loadRememberedGuestSessions() {
     const activeSessions = [];
 
     const rememberedSlots = [];
-    const prefix = "easybev_guest_session_";
+    const venuePrefix = `easybev_guest_session_${guestStorageVenueId()}_`;
     for (let index = 0; index < localStorage.length; index += 1) {
       const key = localStorage.key(index);
-      if (!key || !key.startsWith(prefix)) continue;
-      const slot = key.slice(prefix.length);
-      if (slot && localStorage.getItem(key)) rememberedSlots.push(slot);
+      if (!key) continue;
+
+      if (key.startsWith(venuePrefix)) {
+        const slot = key.slice(venuePrefix.length);
+        if (slot && localStorage.getItem(key)) rememberedSlots.push(slot);
+        continue;
+      }
+
+      const legacy = key.match(/^easybev_guest_session_(\d+)$/);
+      if (legacy && localStorage.getItem(key)) rememberedSlots.push(legacy[1]);
     }
 
     if (!rememberedSlots.length) {
@@ -226,14 +233,13 @@ async function loadRememberedGuestSessions() {
       return;
     }
 
-    for (const slot of rememberedSlots) {
+    for (const slot of [...new Set(rememberedSlots)]) {
 
       const sessionId = localStorage.getItem(sessionStorageKey(slot));
       if (!sessionId) continue;
 
       const snap =
-        await db
-          .ref(`sessions/${sessionId}`)
+        await venueRef(`sessions/${sessionId}`)
           .once("value");
 
       const session = snap.val();
@@ -313,7 +319,7 @@ async function loadRememberedGuestSessions() {
 }
 
 function resumeGuestSession(slot) {
-  window.location.href = `?guest=${encodeURIComponent(slot)}`;
+  window.location.href = `?guest=${encodeURIComponent(slot)}&venue=${encodeURIComponent(resolvedVenueId())}`;
 }
 
 

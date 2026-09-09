@@ -39,7 +39,7 @@ async function startWaiterDashboard(
 
     replaceLiveListener(
       `actor:waiter:${slot}:identity`,
-      db.ref(`waiters/${slot}`),
+      venueRef(`waiters/${slot}`),
       "value",
       snap => {
 
@@ -70,7 +70,7 @@ async function startWaiterDashboard(
 
     replaceLiveListener(
       `actor:waiter:${slot}:sessions`,
-      db.ref("sessions").orderByChild("waiterSlot").equalTo(String(slot)),
+      venueRef("sessions").orderByChild("waiterSlot").equalTo(String(slot)).limitToLast(100),
       "value",
       snap => {
 
@@ -315,7 +315,7 @@ function waiterClosedSessionHtml(sessionId, session) {
    ========================================================= */
 
 async function openWaiterHandoverModal(sessionId) {
-  const sessionSnap = await db.ref(`sessions/${sessionId}`).once("value");
+  const sessionSnap = await venueRef(`sessions/${sessionId}`).once("value");
   const session = sessionSnap.val();
 
   if (!session || session.status !== "active") {
@@ -369,7 +369,7 @@ async function confirmWaiterHandover() {
   if (!targetSlot) return;
 
   const [sessionSnap, targetWaiter] = await Promise.all([
-    db.ref(`sessions/${sessionId}`).once("value"),
+    venueRef(`sessions/${sessionId}`).once("value"),
     getWaiter(targetSlot)
   ]);
 
@@ -425,7 +425,7 @@ async function confirmWaiterHandover() {
     }
   );
 
-  await db.ref().update(updates);
+  await updateDatabaseRoot(updates);
   closeWaiterHandoverModal();
   showEasyBevToast("Waiter handover complete", `${guestLabel(sessionId, session)} is now with ${targetName}.`);
 }
@@ -438,7 +438,7 @@ async function confirmWaiterHandover() {
 async function openReconcileModal(sessionId) {
   reconcileModalSessionId = sessionId;
 
-  const snap = await db.ref(`sessions/${sessionId}`).once("value");
+  const snap = await venueRef(`sessions/${sessionId}`).once("value");
   const session = snap.val() || {};
   const items = Object.values(session.items || {});
   const label = guestLabel(sessionId, session);
@@ -516,11 +516,11 @@ async function markSessionReconciled() {
   if (!reconcileModalSessionId) return;
 
   const sessionId = reconcileModalSessionId;
-  const sessionSnap = await db.ref(`sessions/${sessionId}`).once("value");
+  const sessionSnap = await venueRef(`sessions/${sessionId}`).once("value");
   const session = sessionSnap.val();
   if (!session || session.status !== "active") return;
 
-  await db.ref(`sessions/${sessionId}`).update({
+  await venueRef(`sessions/${sessionId}`).update({
     "reconciliation/status": "reconciled",
     "reconciliation/reconciledAt": firebase.database.ServerValue.TIMESTAMP,
     "reconciliation/reconciledTotal": calculateTotal(session.items || {}),
@@ -529,7 +529,7 @@ async function markSessionReconciled() {
     lastActivityAt: firebase.database.ServerValue.TIMESTAMP
   });
 
-  const snap = await db.ref(`sessions/${sessionId}/reconciliation`).once("value");
+  const snap = await venueRef(`sessions/${sessionId}/reconciliation`).once("value");
   renderReconcileStatus(snap.val() || { status: "reconciled" });
 }
 
@@ -542,10 +542,7 @@ async function acknowledgeRequest(
   sessionId
 ) {
 
-  await db
-    .ref(
-      `sessions/${sessionId}/latestRequest`
-    )
+  await venueRef(`sessions/${sessionId}/latestRequest`)
     .update({
 
       status:
@@ -569,10 +566,7 @@ async function completeRequest(
   sessionId
 ) {
 
-  await db
-    .ref(
-      `sessions/${sessionId}/latestRequest`
-    )
+  await venueRef(`sessions/${sessionId}/latestRequest`)
     .update({
 
       status:

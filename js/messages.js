@@ -167,9 +167,7 @@ async function sendGuestMessage() {
 
   const updates = {};
   const messageRef =
-    db.ref(
-      `sessions/${currentSessionId}/messages`
-    ).push();
+    venueRef(`sessions/${currentSessionId}/messages`).push();
 
   updates[
     `sessions/${currentSessionId}/messages/${messageRef.key}`
@@ -185,7 +183,7 @@ async function sendGuestMessage() {
     `sessions/${currentSessionId}/lastActivityAt`
   ] = firebase.database.ServerValue.TIMESTAMP;
 
-  await db.ref().update(updates);
+  await updateDatabaseRoot(updates);
 
 }
 
@@ -226,9 +224,7 @@ async function sendWaiterMessage(
 
   const updates = {};
   const messageRef =
-    db.ref(
-      `sessions/${sessionId}/messages`
-    ).push();
+    venueRef(`sessions/${sessionId}/messages`).push();
 
   updates[
     `sessions/${sessionId}/messages/${messageRef.key}`
@@ -245,7 +241,7 @@ async function sendWaiterMessage(
     `sessions/${sessionId}/lastActivityAt`
   ] = firebase.database.ServerValue.TIMESTAMP;
 
-  await db.ref().update(updates);
+  await updateDatabaseRoot(updates);
 
   markWaiterSessionSeen(
     sessionId
