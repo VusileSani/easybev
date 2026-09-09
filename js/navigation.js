@@ -285,7 +285,7 @@ async function loadRememberedGuestSessions() {
             onclick="resumeGuestSession('${escapeHtml(String(item.slot))}')"
           >
             <span>
-              <strong>Resume Active Session</strong>
+              <strong>Verify &amp; Resume Session</strong>
               <small>
                 ${escapeHtml(guestLabel(item.sessionId, item.session))}
                 · ${escapeHtml(item.waiterName)}

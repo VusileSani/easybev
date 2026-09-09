@@ -5,210 +5,140 @@
 async function startGuestFlow() {
 
   try {
+    const waiter = await getWaiter(guestSlot);
+    currentGuestWaiterName = getWaiterDisplayName(waiter);
 
-    const waiter =
-      await getWaiter(
-        guestSlot
-      );
+    document.getElementById("guestServiceHeading").textContent =
+      `Service by ${currentGuestWaiterName}`;
 
-    currentGuestWaiterName =
-      getWaiterDisplayName(
-        waiter
-      );
-
-
-    document
-      .getElementById(
-        "guestServiceHeading"
-      )
-      .textContent =
-        `Service by ${currentGuestWaiterName}`;
-
-
-    const rememberedPhone =
-      localStorage.getItem(
-        phoneStorageKey(
-          guestSlot
-        )
-      );
-
-
-    if (
-      rememberedPhone
-    ) {
-
-      document
-        .getElementById(
-          "guestPhone"
-        )
-        .value =
-          rememberedPhone;
-
-    }
-
+    const rememberedPhone = localStorage.getItem(phoneStorageKey(guestSlot));
     const rememberedName = localStorage.getItem(rememberedGuestNameKey());
-    if (rememberedName) {
-      document.getElementById("guestName").value = rememberedName;
-    }
+    const rememberedSessionId = localStorage.getItem(sessionStorageKey(guestSlot));
 
-    const rememberedUserId = localStorage.getItem(guestUserStorageKey());
-    if (rememberedUserId) {
-      try {
-        const userSnap = await db.ref(`users/${rememberedUserId}`).once("value");
-        if (userSnap.exists()) {
-          currentGuestUserId = rememberedUserId;
-          currentGuestProfile = userSnap.val() || {};
-          if (currentGuestProfile.firstName) {
-            document.getElementById("guestName").value = currentGuestProfile.firstName;
-          }
-        }
-      } catch (error) {
-        console.warn("Could not restore EasyBev guest profile", error);
-      }
-    }
+    if (rememberedPhone) document.getElementById("guestPhone").value = rememberedPhone;
+    if (rememberedName) document.getElementById("guestName").value = rememberedName;
 
+    /* v2.6.1 security boundary:
+       localStorage may suggest where the guest left off, but it never proves identity.
+       Do not restore currentGuestUserId/currentGuestProfile from prototype storage here. */
+    currentGuestUserId = null;
+    currentGuestProfile = null;
+    currentSessionId = null;
+    sessionStorage.removeItem("easybev_pending_reconnect_session");
 
-    const rememberedSessionId =
-      localStorage.getItem(
-        sessionStorageKey(
-          guestSlot
-        )
-      );
+    if (rememberedSessionId) {
+      const snap = await db.ref(`sessions/${rememberedSessionId}`).once("value");
+      const session = snap.val();
 
-
-    if (
-      rememberedSessionId
-    ) {
-
-      const snap =
-        await db
-          .ref(
-            `sessions/${rememberedSessionId}`
-          )
-          .once(
-            "value"
-          );
-
-      const session =
-        snap.val();
-
-
-      if (
-
+      const isMatchingActiveSession =
         session &&
-
-        session.status ===
-          "active" &&
-
+        session.status === "active" &&
         (
           String(session.waiterSlot) === String(guestSlot) ||
           String(sessionOriginalWaiterSlot(session)) === String(guestSlot)
-        )
+        );
 
-      ) {
-
-        currentSessionId =
-          rememberedSessionId;
-
-        if (session.guestUserId) {
-          currentGuestUserId = session.guestUserId;
-          localStorage.setItem(guestUserStorageKey(), session.guestUserId);
-          try {
-            const profileSnap = await db.ref(`users/${session.guestUserId}`).once("value");
-            if (profileSnap.exists()) currentGuestProfile = profileSnap.val() || {};
-          } catch (error) {
-            console.warn("Could not restore session guest profile", error);
-          }
-        }
-
+      if (isMatchingActiveSession) {
         const rememberedSessionWaiterName =
           sessionWaiterCurrentName(session) || currentGuestWaiterName;
+        const firebaseGuestUser = auth && auth.currentUser && auth.currentUser.phoneNumber
+          ? auth.currentUser
+          : null;
+        const hasVerifiedFirebaseIdentity =
+          firebaseGuestUser &&
+          phoneIndexKey(firebaseGuestUser.phoneNumber) === phoneIndexKey(session.guestPhone);
 
+        sessionStorage.setItem("easybev_pending_reconnect_session", rememberedSessionId);
 
-        document
-          .getElementById(
-            "verificationMessage"
-          )
-          .innerHTML = `
-
-            <strong>
-              Welcome back${currentGuestProfile && currentGuestProfile.firstName ? `, ${escapeHtml(currentGuestProfile.firstName)}` : ""}.
-            </strong>
-
-            <br><br>
-
-            An active EasyBev session was found on this device.
-            Verify with the same mobile number to reconnect.
-
-          `;
-
-
-        /* Identity may be remembered, but waiter-session routing is never automatic.
-           The guest must explicitly reconnect to this waiter/session. */
-        if (rememberedPhone && cleanPhone(session.guestPhone) === cleanPhone(rememberedPhone)) {
+        if (hasVerifiedFirebaseIdentity) {
+          const identityName = rememberedName || session.guestNameCurrent || session.guestNameAtStart || "Guest";
+          await findOrCreateGuestProfile(session.guestPhone, identityName, true, firebaseGuestUser.uid);
           document.getElementById("verificationMessage").innerHTML = `
             <strong>Welcome back${currentGuestProfile && currentGuestProfile.firstName ? `, ${escapeHtml(currentGuestProfile.firstName)}` : ""}.</strong><br><br>
-            You have an active session with ${escapeHtml(rememberedSessionWaiterName)}.
+            Firebase has verified this device for the mobile number on the active session with ${escapeHtml(rememberedSessionWaiterName)}.
             <br><br>
-            <button class="success" onclick="connectGuestToSession('${rememberedSessionId}')">Reconnect to ${escapeHtml(rememberedSessionWaiterName)}</button>
+            <button class="success" onclick="reconnectAuthenticatedGuest('${escapeJsString(rememberedSessionId)}')">Reconnect to ${escapeHtml(rememberedSessionWaiterName)}</button>
             <button class="secondary" style="margin-left:8px" onclick="showAlternativeWaiters()">Use Another Waiter</button>
           `;
+          return;
         }
 
+        document.getElementById("verificationMessage").innerHTML = `
+          <strong>Active session found.</strong><br><br>
+          Verify the mobile number used for this session before reconnecting to ${escapeHtml(rememberedSessionWaiterName)}.
+          <br><br>
+          <span class="muted">This device remembers the session, but EasyBev will not reconnect until Firebase verifies your identity.</span>
+          <br><br>
+          <button class="secondary" onclick="showAlternativeWaiters()">Use Another Waiter</button>
+        `;
         return;
-
       }
 
-
-      localStorage.removeItem(
-        sessionStorageKey(
-          guestSlot
-        )
-      );
-
+      localStorage.removeItem(sessionStorageKey(guestSlot));
     }
 
     const rememberMe = localStorage.getItem(rememberGuestStorageKey()) === "true";
-    if (rememberMe && rememberedPhone && currentGuestUserId && currentGuestProfile) {
+    if (rememberMe && rememberedPhone) {
+      const firebaseGuestUser = auth && auth.currentUser && auth.currentUser.phoneNumber
+        ? auth.currentUser
+        : null;
+      const hasVerifiedFirebaseIdentity =
+        firebaseGuestUser &&
+        phoneIndexKey(firebaseGuestUser.phoneNumber) === phoneIndexKey(rememberedPhone);
+
+      if (hasVerifiedFirebaseIdentity) {
+        await findOrCreateGuestProfile(
+          rememberedPhone,
+          rememberedName || "Guest",
+          true,
+          firebaseGuestUser.uid
+        );
+        document.getElementById("verificationMessage").innerHTML = `
+          <strong>Welcome back, ${escapeHtml(currentGuestProfile.firstName || "Guest")}.</strong><br><br>
+          Your mobile identity is already verified on this device.
+          <br><br>
+          <button class="success" onclick="connectAuthenticatedGuestToWaiter()">Connect to ${escapeHtml(currentGuestWaiterName)}</button>
+          <button class="secondary" style="margin-left:8px" onclick="showAlternativeWaiters()">Use Another Waiter</button>
+        `;
+        return;
+      }
+
       document.getElementById("verificationMessage").innerHTML = `
-        <strong>Welcome back, ${escapeHtml(currentGuestProfile.firstName || "Guest")}.</strong><br><br>
-        Ready to connect to ${escapeHtml(currentGuestWaiterName)}.
+        <strong>Welcome back.</strong><br><br>
+        Verify your mobile number to connect to ${escapeHtml(currentGuestWaiterName)}.
         <br><br>
-        <button class="success" onclick="connectRememberedGuest()">Connect to ${escapeHtml(currentGuestWaiterName)}</button>
-        <button class="secondary" style="margin-left:8px" onclick="showAlternativeWaiters()">Use Another Waiter</button>
+        <span class="muted">Remembered details speed up entry; they do not bypass Firebase identity verification.</span>
+        <br><br>
+        <button class="secondary" onclick="showAlternativeWaiters()">Use Another Waiter</button>
       `;
       return;
     }
 
-    document
-      .getElementById(
-        "verificationMessage"
-      )
-      .innerHTML =
-        `Verify your mobile number to connect to ${escapeHtml(currentGuestWaiterName)}.<br><br><button class="secondary" onclick="showAlternativeWaiters()">Use Another Waiter</button>`;
-
+    document.getElementById("verificationMessage").innerHTML =
+      `Verify your mobile number to connect to ${escapeHtml(currentGuestWaiterName)}.<br><br><button class="secondary" onclick="showAlternativeWaiters()">Use Another Waiter</button>`;
   }
   catch (error) {
-
     console.error(error);
-
-    showStartupError(
-      error.message ||
-      "Could not start the guest session."
-    );
-
+    showStartupError(error.message || "Could not start the guest session.");
   }
-
 }
 
 
-async function connectRememberedGuest() {
+
+async function reconnectAuthenticatedGuest(sessionId) {
+  const user = auth && auth.currentUser;
+  if (!user || !user.uid || !user.phoneNumber) return;
+  const snap = await db.ref(`sessions/${sessionId}`).once("value");
+  const session = snap.val();
+  if (!session) return;
+  await reconnectVerifiedGuestToRememberedSession(sessionId, session.guestPhone, user.uid);
+}
+
+async function connectAuthenticatedGuestToWaiter() {
+  const user = auth && auth.currentUser;
   const rememberedPhone = localStorage.getItem(phoneStorageKey(guestSlot));
-  if (!rememberedPhone || !currentGuestUserId) {
-    document.getElementById("verificationMessage").textContent =
-      `Verify your mobile number to connect to ${currentGuestWaiterName}.`;
-    return;
-  }
+  if (!user || !user.uid || !user.phoneNumber || !rememberedPhone) return;
+  if (phoneIndexKey(user.phoneNumber) !== phoneIndexKey(rememberedPhone)) return;
   await findOrCreateGuestSession(rememberedPhone);
 }
 
@@ -269,15 +199,71 @@ async function verifyOtp() {
 
     const firstName = String(sessionStorage.getItem("easybev_pending_name") || "").trim();
     await findOrCreateGuestProfile(phone, firstName, rememberMe, user.uid);
+
+    const pendingReconnectSessionId = sessionStorage.getItem("easybev_pending_reconnect_session");
+    if (pendingReconnectSessionId) {
+      const reconnected = await reconnectVerifiedGuestToRememberedSession(
+        pendingReconnectSessionId,
+        phone,
+        user.uid
+      );
+      sessionStorage.removeItem("easybev_pending_reconnect_session");
+      if (reconnected) return;
+    }
+
     await findOrCreateGuestSession(phone);
   } catch (error) {
     console.error("EasyBev OTP confirmation failed", error);
     const code = String(error && error.code || "");
     const message = code === "auth/invalid-verification-code"
       ? "That verification code is incorrect."
-      : "Verification failed. Request a new SMS code and try again.";
+      : (error && error.message) || "Verification failed. Request a new SMS code and try again.";
     document.getElementById("verificationStatus").innerHTML = `<div class="status danger">${escapeHtml(message)}</div>`;
   }
+}
+
+async function reconnectVerifiedGuestToRememberedSession(sessionId, phone, authenticatedUid) {
+  const user = auth && auth.currentUser;
+  const uid = String(authenticatedUid || (user && user.uid) || "").trim();
+  if (!user || !uid || user.uid !== uid || !user.phoneNumber) return false;
+
+  const snap = await db.ref(`sessions/${sessionId}`).once("value");
+  const session = snap.val();
+  if (!session || session.status !== "active") return false;
+
+  const sameWaiterContext =
+    String(session.waiterSlot) === String(guestSlot) ||
+    String(sessionOriginalWaiterSlot(session)) === String(guestSlot);
+  if (!sameWaiterContext) return false;
+
+  const verifiedPhoneKey = phoneIndexKey(user.phoneNumber);
+  const requestedPhoneKey = phoneIndexKey(phone);
+  const sessionPhoneKey = phoneIndexKey(session.guestPhone);
+
+  if (!verifiedPhoneKey || verifiedPhoneKey !== requestedPhoneKey || verifiedPhoneKey !== sessionPhoneKey) {
+    throw new Error("This verified mobile number does not own the remembered EasyBev session.");
+  }
+
+  const identityUpdates = {
+    guestUserId: uid,
+    guestPhone: cleanPhone(phone),
+    guestNameCurrent: String(
+      (currentGuestProfile && (currentGuestProfile.preferredName || currentGuestProfile.firstName)) ||
+      session.guestNameCurrent ||
+      session.guestNameAtStart ||
+      "Guest"
+    ).trim(),
+    identityMigratedAt: firebase.database.ServerValue.TIMESTAMP
+  };
+
+  if (session.guestUserId && session.guestUserId !== uid) {
+    identityUpdates.legacyGuestUserId = session.guestUserId;
+  }
+
+  await db.ref(`sessions/${sessionId}`).update(identityUpdates);
+  localStorage.setItem(sessionStorageKey(guestSlot), sessionId);
+  await connectGuestToSession(sessionId);
+  return true;
 }
 
 
@@ -295,75 +281,85 @@ async function findOrCreateGuestProfile(phone, firstName, rememberMe = true, aut
   const clean = phoneIndexKey(phone);
   if (!clean) return null;
 
-  const indexSnap = await db.ref(`userPhoneIndex/${clean}`).once("value");
-  const indexedUserId = indexSnap.val();
   const authUid = String(authenticatedUid || (auth && auth.currentUser && auth.currentUser.uid) || "").trim();
-  let userId = authUid || indexedUserId;
-
-  if (!userId) {
+  const authUser = auth && auth.currentUser;
+  if (!authUid || !authUser || authUser.uid !== authUid || !authUser.phoneNumber) {
     throw new Error("Verified Firebase guest identity is required.");
   }
 
-  const existingSnap = await db.ref(`users/${userId}`).once("value");
+  if (phoneIndexKey(authUser.phoneNumber) !== clean) {
+    throw new Error("Verified mobile number does not match the guest profile request.");
+  }
 
-  if (!existingSnap.exists()) {
+  const indexSnap = await db.ref(`userPhoneIndex/${clean}`).once("value");
+  const indexedUserId = String(indexSnap.val() || "").trim();
+  const existingSnap = await db.ref(`users/${authUid}`).once("value");
+  const existing = existingSnap.val() || null;
 
-    const profile = {
-      firstName: String(firstName || "Guest").trim() || "Guest",
-      preferredName: "",
-      phone: cleanPhone(phone),
-      defaultPartySize: null,
-      detailsCompletedAt: firebase.database.ServerValue.TIMESTAMP,
-      createdAt: firebase.database.ServerValue.TIMESTAMP,
-      updatedAt: firebase.database.ServerValue.TIMESTAMP,
-      preferences: {
-        serviceStyle: "normal",
-        language: "English",
-        billPreference: "none",
-        tipPreference: "none",
-        dietary: [],
-        dietaryNote: "",
-        allergyNote: "",
-        serviceNotifications: true,
-        usual: {
-          drink: "",
-          meal: "",
-          note: ""
-        }
+  let legacyProfile = null;
+  if (indexedUserId && indexedUserId !== authUid) {
+    const legacySnap = await db.ref(`users/${indexedUserId}`).once("value");
+    legacyProfile = legacySnap.val() || null;
+  }
+
+  const source = existing || legacyProfile || {};
+  const resolvedName = String(firstName || source.firstName || "Guest").trim() || "Guest";
+  const defaultPreferences = {
+    serviceStyle: "normal",
+    language: "English",
+    billPreference: "none",
+    tipPreference: "none",
+    dietary: [],
+    dietaryNote: "",
+    allergyNote: "",
+    serviceNotifications: true,
+    usual: { drink: "", meal: "", note: "" }
+  };
+
+  const profile = {
+    ...source,
+    firstName: resolvedName,
+    preferredName: String(source.preferredName || ""),
+    phone: cleanPhone(phone),
+    defaultPartySize: source.defaultPartySize == null ? null : source.defaultPartySize,
+    preferences: {
+      ...defaultPreferences,
+      ...(source.preferences || {}),
+      usual: {
+        ...defaultPreferences.usual,
+        ...((source.preferences && source.preferences.usual) || {})
       }
-    };
+    },
+    updatedAt: firebase.database.ServerValue.TIMESTAMP
+  };
 
-    const updates = {};
-    updates[`users/${userId}`] = profile;
-    updates[`userPhoneIndex/${clean}`] = userId;
-    await db.ref().update(updates);
-    currentGuestProfile = profile;
-  } else {
-    const existing = existingSnap.val() || {};
-    const resolvedName = String(firstName || existing.firstName || "Guest").trim() || "Guest";
-
-    const profileUpdates = {};
-    profileUpdates[`users/${userId}/firstName`] = resolvedName;
-    profileUpdates[`users/${userId}/phone`] = cleanPhone(phone);
-    profileUpdates[`users/${userId}/updatedAt`] = firebase.database.ServerValue.TIMESTAMP;
-    profileUpdates[`userPhoneIndex/${clean}`] = userId;
-    await db.ref().update(profileUpdates);
-
-    currentGuestProfile = {
-      ...existing,
-      firstName: resolvedName,
-      phone: cleanPhone(phone)
-    };
+  if (!source.createdAt) profile.createdAt = firebase.database.ServerValue.TIMESTAMP;
+  if (!source.detailsCompletedAt) profile.detailsCompletedAt = firebase.database.ServerValue.TIMESTAMP;
+  if (legacyProfile && indexedUserId !== authUid) {
+    profile.migratedFromLegacyUserId = indexedUserId;
+    profile.identityMigratedAt = firebase.database.ServerValue.TIMESTAMP;
   }
 
-  currentGuestUserId = userId;
+  const updates = {};
+  updates[`users/${authUid}`] = profile;
+  updates[`userPhoneIndex/${clean}`] = authUid;
+  await db.ref().update(updates);
+
+  currentGuestUserId = authUid;
+  currentGuestProfile = profile;
+
   if (rememberMe) {
-    localStorage.setItem(guestUserStorageKey(), userId);
-    localStorage.setItem(rememberedGuestNameKey(), currentGuestProfile.firstName || firstName || "Guest");
+    localStorage.setItem(guestUserStorageKey(), authUid);
+    localStorage.setItem(rememberedGuestNameKey(), profile.firstName || resolvedName);
     localStorage.setItem(rememberGuestStorageKey(), "true");
+  } else {
+    localStorage.removeItem(guestUserStorageKey());
+    localStorage.removeItem(rememberedGuestNameKey());
   }
-  return userId;
+
+  return authUid;
 }
+
 
 async function loadGuestProfileIntoControls() {
   if (!currentGuestUserId) return;
@@ -607,12 +603,26 @@ async function findOrCreateGuestSession(
   phone
 ) {
 
-  const sessionsQuery = currentGuestUserId
-    ? db.ref("sessions").orderByChild("guestUserId").equalTo(currentGuestUserId)
-    : db.ref("sessions").orderByChild("guestPhone").equalTo(cleanPhone(phone));
+  const authUser = auth && auth.currentUser;
+  if (!authUser || !authUser.uid || !authUser.phoneNumber || currentGuestUserId !== authUser.uid) {
+    throw new Error("Verify your mobile number before starting or reconnecting to a guest session.");
+  }
+  if (phoneIndexKey(authUser.phoneNumber) !== phoneIndexKey(phone)) {
+    throw new Error("Verified mobile number does not match this guest session request.");
+  }
 
-  const sessionsSnap = await sessionsQuery.once("value");
-  const sessions = sessionsSnap.val() || {};
+  const byUidSnap = await db.ref("sessions")
+    .orderByChild("guestUserId")
+    .equalTo(currentGuestUserId)
+    .once("value");
+  const byPhoneSnap = await db.ref("sessions")
+    .orderByChild("guestPhone")
+    .equalTo(cleanPhone(phone))
+    .once("value");
+  const sessions = {
+    ...(byPhoneSnap.val() || {}),
+    ...(byUidSnap.val() || {})
+  };
 
 
   const existing =
@@ -664,8 +674,10 @@ async function findOrCreateGuestSession(
     if (currentGuestUserId) {
       const identityUpdates = {};
 
-      if (!existingSession.guestUserId) {
+      if (existingSession.guestUserId !== currentGuestUserId) {
+        if (existingSession.guestUserId) identityUpdates.legacyGuestUserId = existingSession.guestUserId;
         identityUpdates.guestUserId = currentGuestUserId;
+        identityUpdates.identityMigratedAt = firebase.database.ServerValue.TIMESTAMP;
       }
 
       if (!existingSession.guestNameAtStart) {
@@ -682,7 +694,7 @@ async function findOrCreateGuestSession(
     }
 
 
-    connectGuestToSession(
+    await connectGuestToSession(
       existingSessionId
     );
 
@@ -828,7 +840,7 @@ async function findOrCreateGuestSession(
   );
 
 
-  connectGuestToSession(
+  await connectGuestToSession(
     newSessionId
   );
 
@@ -839,127 +851,77 @@ async function findOrCreateGuestSession(
    CONNECT GUEST
    ========================================================= */
 
-function connectGuestToSession(
-  sessionId
-) {
+async function connectGuestToSession(sessionId) {
+  const user = auth && auth.currentUser;
+  if (!user || !user.uid || !user.phoneNumber || !currentGuestUserId || currentGuestUserId !== user.uid) {
+    document.getElementById("verificationStatus").innerHTML =
+      `<div class="status danger">Verify your mobile number before reconnecting to an EasyBev session.</div>`;
+    return false;
+  }
 
-  currentSessionId =
-    sessionId;
+  const authCheckSnap = await db.ref(`sessions/${sessionId}`).once("value");
+  const authCheckSession = authCheckSnap.val();
+  if (!authCheckSession || authCheckSession.status !== "active") return false;
 
+  const ownsByUid = String(authCheckSession.guestUserId || "") === String(user.uid);
+  const ownsByVerifiedPhone =
+    phoneIndexKey(authCheckSession.guestPhone) &&
+    phoneIndexKey(authCheckSession.guestPhone) === phoneIndexKey(user.phoneNumber);
 
-  document
-    .getElementById(
-      "guestVerification"
-    )
-    .classList
-    .add(
-      "hidden"
-    );
+  if (!ownsByUid && !ownsByVerifiedPhone) {
+    document.getElementById("verificationStatus").innerHTML =
+      `<div class="status danger">This authenticated guest does not own that EasyBev session.</div>`;
+    return false;
+  }
 
+  if (!ownsByUid && ownsByVerifiedPhone) {
+    const migration = {
+      guestUserId: user.uid,
+      identityMigratedAt: firebase.database.ServerValue.TIMESTAMP
+    };
+    if (authCheckSession.guestUserId) migration.legacyGuestUserId = authCheckSession.guestUserId;
+    await db.ref(`sessions/${sessionId}`).update(migration);
+  }
 
-  document
-    .getElementById(
-      "guestSessionInfo"
-    )
-    .classList
-    .remove(
-      "hidden"
-    );
-
-
-  document
-    .getElementById(
-      "guestControls"
-    )
-    .classList
-    .remove(
-      "hidden"
-    );
-
-
-  document
-    .getElementById(
-      "guestClosedView"
-    )
-    .classList
-    .add(
-      "hidden"
-    );
+  currentSessionId = sessionId;
+  document.getElementById("guestVerification").classList.add("hidden");
+  document.getElementById("guestSessionInfo").classList.remove("hidden");
+  document.getElementById("guestControls").classList.remove("hidden");
+  document.getElementById("guestClosedView").classList.add("hidden");
 
   loadGuestProfileIntoControls();
 
+  db.ref(`sessions/${sessionId}`).on("value", async snap => {
+    const session = snap.val();
+    if (!session || session.status !== "active") {
+      showGuestSessionEnded(session);
+      return;
+    }
 
-  db
-    .ref(
-      `sessions/${sessionId}`
-    )
-    .on(
-      "value",
-      async snap => {
+    /* Re-check ownership on every live update so client state cannot silently drift. */
+    const currentUser = auth && auth.currentUser;
+    if (!currentUser || !currentUser.uid || String(session.guestUserId || "") !== String(currentUser.uid)) {
+      document.getElementById("guestControls").classList.add("hidden");
+      document.getElementById("guestSessionInfo").classList.add("hidden");
+      return;
+    }
 
-        const session =
-          snap.val();
+    currentSession = session;
+    let waiterName = sessionWaiterCurrentName(session);
+    if (!waiterName) {
+      const waiter = await getWaiter(session.waiterSlot);
+      waiterName = getWaiterDisplayName(waiter);
+    }
 
+    currentGuestWaiterName = waiterName;
+    document.getElementById("connectedWaiter").textContent = waiterName;
+    const serviceHeading = document.getElementById("guestServiceHeading");
+    if (serviceHeading) serviceHeading.textContent = `Service by ${waiterName}`;
+    document.getElementById("guestSessionCode").textContent = guestLabel(sessionId, session);
+    renderGuestSession(session);
+  });
 
-        if (
-
-          !session ||
-
-          session.status !==
-            "active"
-
-        ) {
-
-          showGuestSessionEnded(session);
-
-          return;
-
-        }
-
-
-        currentSession =
-          session;
-
-
-        let waiterName = sessionWaiterCurrentName(session);
-
-        if (!waiterName) {
-          const waiter = await getWaiter(session.waiterSlot);
-          waiterName = getWaiterDisplayName(waiter);
-        }
-
-        currentGuestWaiterName = waiterName;
-
-
-        document
-          .getElementById(
-            "connectedWaiter"
-          )
-          .textContent =
-            waiterName;
-
-        const serviceHeading = document.getElementById("guestServiceHeading");
-        if (serviceHeading) serviceHeading.textContent = `Service by ${waiterName}`;
-
-
-        document
-          .getElementById(
-            "guestSessionCode"
-          )
-          .textContent =
-            guestLabel(
-              sessionId,
-              session
-            );
-
-
-        renderGuestSession(
-          session
-        );
-
-      }
-    );
-
+  return true;
 }
 
 

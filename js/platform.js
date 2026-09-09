@@ -216,6 +216,7 @@ function clearPlatformNoticeBanner() {
   if (!banner) return;
   banner.innerHTML = "";
   banner.className = "platform-notice hidden";
+  delete banner.dataset.announcementId;
 }
 
 function announcementAppliesToActor(item, actor) {
@@ -232,29 +233,71 @@ function announcementAppliesToActor(item, actor) {
   return false;
 }
 
-function renderPlatformNoticeBanner(actor, company, announcements) {
+function platformAnnouncementLocalDismissKey(announcementId) {
+  return `easybev_announcement_dismissed_${String(announcementId || "")}`;
+}
+
+function platformAnnouncementIsDismissed(announcementId, receipts) {
+  if (!announcementId) return false;
+  if (receipts && receipts[announcementId] && receipts[announcementId].dismissedAt) return true;
+  return localStorage.getItem(platformAnnouncementLocalDismissKey(announcementId)) === "true";
+}
+
+async function dismissPlatformAnnouncement(announcementId) {
+  const id = String(announcementId || "").trim();
+  if (!id) return;
+
+  /* Immediate local hide prevents the live announcement subscription from
+     making the interface feel sticky while the receipt write completes. */
+  localStorage.setItem(platformAnnouncementLocalDismissKey(id), "true");
+  clearPlatformNoticeBanner();
+
+  const user = auth && auth.currentUser;
+  if (!user || !user.uid || !db) return;
+
+  try {
+    await db.ref(`platform/announcementReceipts/${user.uid}/${id}`).set({
+      dismissedAt: firebase.database.ServerValue.TIMESTAMP,
+      actorRole: String(currentAuthenticatedRole || "guest")
+    });
+  } catch (error) {
+    console.warn("Could not sync EasyBev announcement dismissal", error);
+  }
+}
+
+function renderPlatformNoticeBanner(actor, company, announcements, receipts = {}) {
   const banner = document.getElementById("platformNoticeBanner");
   if (!banner) return;
 
   const serviceStatus = String(company.serviceStatus || "operational");
-  const notices = Object.values(announcements || {})
+  const notices = Object.entries(announcements || {})
+    .map(([id, item]) => ({...(item || {}), _announcementId:id}))
     .filter(item => announcementAppliesToActor(item, actor))
+    .filter(item => !platformAnnouncementIsDismissed(item._announcementId, receipts))
     .sort((a, b) => Number(b.publishedAt || b.createdAt || 0) - Number(a.publishedAt || a.createdAt || 0));
   const important = notices.find(item => item.priority === "important") || notices[0];
 
+  /* Service degradation/maintenance is operational state, not a dismissible
+     announcement. It stays visible while the service status is active. */
   if (serviceStatus !== "operational") {
     banner.className = `platform-notice ${serviceStatus === "degraded" ? "warning" : "danger"}`;
     banner.innerHTML = `
-      <strong>${serviceStatus === "maintenance" ? "EasyBev maintenance" : "EasyBev service notice"}</strong>
-      <span>${escapeHtml(String(company.serviceMessage || "Some EasyBev services may be affected."))}</span>`;
+      <div class="platform-notice-copy">
+        <strong>${serviceStatus === "maintenance" ? "EasyBev maintenance" : "EasyBev service notice"}</strong>
+        <span>${escapeHtml(String(company.serviceMessage || "Some EasyBev services may be affected."))}</span>
+      </div>`;
     return;
   }
 
   if (important) {
     banner.className = `platform-notice ${important.priority === "important" ? "warning" : ""}`;
+    banner.dataset.announcementId = important._announcementId;
     banner.innerHTML = `
-      <strong>${escapeHtml(String(important.title || "EasyBev notice"))}</strong>
-      <span>${escapeHtml(String(important.message || ""))}</span>`;
+      <div class="platform-notice-copy">
+        <strong>${escapeHtml(String(important.title || "EasyBev notice"))}</strong>
+        <span>${escapeHtml(String(important.message || ""))}</span>
+      </div>
+      <button type="button" class="platform-notice-dismiss" aria-label="Dismiss notification" title="Dismiss" onclick="dismissPlatformAnnouncement('${escapeJsString(important._announcementId)}')">×</button>`;
     return;
   }
 
@@ -270,24 +313,33 @@ function subscribeToPlatformAnnouncements(actor) {
   const companyRef = db.ref("platform/company");
   const announcementRef = db.ref("platform/announcements");
   const featureRef = db.ref("platform/featureFlags");
+  const user = auth && auth.currentUser;
+  const receiptRef = user && user.uid
+    ? db.ref(`platform/announcementReceipts/${user.uid}`)
+    : null;
   let company = {};
   let announcements = {};
+  let receipts = {};
 
   const render = () => {
-    renderPlatformNoticeBanner(String(actor || "guest"), company, announcements);
+    renderPlatformNoticeBanner(String(actor || "guest"), company, announcements, receipts);
     applyPlatformFeatureControls(String(actor || "guest"));
   };
   const companyHandler = snap => { company = snap.val() || {}; render(); };
   const announcementHandler = snap => { announcements = snap.val() || {}; render(); };
   const featureHandler = snap => { latestPlatformFeatureFlags = snap.val() || {}; render(); };
+  const receiptHandler = snap => { receipts = snap.val() || {}; render(); };
 
   companyRef.on("value", companyHandler);
   announcementRef.on("value", announcementHandler);
   featureRef.on("value", featureHandler);
+  if (receiptRef) receiptRef.on("value", receiptHandler);
+
   platformAnnouncementUnsubscribe = () => {
     companyRef.off("value", companyHandler);
     announcementRef.off("value", announcementHandler);
     featureRef.off("value", featureHandler);
+    if (receiptRef) receiptRef.off("value", receiptHandler);
   };
 }
 

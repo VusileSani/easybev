@@ -1,4 +1,4 @@
-# EasyBev v2.5.2 — Guest Profile, Categorised Pad & Repair Pass
+# EasyBev v2.6.1 — Real Authentication Migration & Repair
 
 
 EasyBev is a lightweight guest-service and digital waiter-pad layer for hospitality venues.
@@ -27,7 +27,7 @@ EasyBev is a lightweight guest-service and digital waiter-pad layer for hospital
 - `js/` — separated application responsibilities
 - `website.html` — public-facing EasyBev website
 
-The actor switcher provides fast role navigation while each actor view remains isolated to the controls and information that role needs.
+Production role selection is now driven by Firebase Authentication. The old browser actor switcher is no longer an authority mechanism.
 
 
 ## EasyBev company governance
@@ -40,7 +40,7 @@ The application now separates venue operations from EasyBev company operations:
 - EasyBev Admin: operates venues, support, announcements and routine platform controls.
 - Owner: governs EasyBev staff authority, critical platform controls and the privileged audit trail.
 
-The browser role switch exists for product testing. In production, Owner/Admin access must not be granted by query-string routing or UI visibility. Use Firebase Authentication and server-issued custom claims, enforce them in Realtime Database Security Rules, and place high-risk privileged changes behind trusted server-side functions. The platform audit data in this build demonstrates the product behavior; production audit integrity should be protected so ordinary clients cannot alter or delete historical audit records.
+Owner/Admin access is now resolved from Firebase Authentication and server-issued custom claims rather than query-string routing or UI visibility. Final production enforcement still requires the restrictive Realtime Database Security Rules and trusted server-side handling for high-risk privileged changes. The platform audit data in this build demonstrates the product behavior; production audit integrity should be protected so ordinary clients cannot alter or delete historical audit records.
 
 The existing restaurant service data remains the current single-venue operational model. `platform/venues` is the company venue registry and onboarding/support layer; a later multi-venue backend migration should namespace operational data by venue before more than one venue is considered fully live in the same database.
 
@@ -50,3 +50,7 @@ See `RELEASE-NOTES-v2.5.md` for guest profile and categorised waiter-pad changes
 
 ## Current repair pass
 See `RELEASE-NOTES-v2.5.1.md`, `VALIDATION-v2.5.1.md` and `CODE-AUDIT-v2.5.1.md` for the latest repair/performance review and remaining production blockers.
+
+
+## v2.6.1 auth repair
+See `RELEASE-NOTES-v2.6.1.md`, `AUTH-DEPLOYMENT-v2.6.1.md` and `VALIDATION-v2.6.1.md`.
