@@ -1,1 +1,1 @@
-EasyBev v2.4 — Session Lifecycle & Waiter Handover
+EasyBev v2.5 — Guest Profile & Categorised Waiter Pad

@@ -382,10 +382,21 @@ async function findOrCreateGuestProfile(phone, firstName, rememberMe = true) {
 
     const profile = {
       firstName: String(firstName || "Guest").trim() || "Guest",
+      preferredName: "",
       phone: cleanPhone(phone),
+      defaultPartySize: null,
+      detailsCompletedAt: firebase.database.ServerValue.TIMESTAMP,
       createdAt: firebase.database.ServerValue.TIMESTAMP,
       updatedAt: firebase.database.ServerValue.TIMESTAMP,
       preferences: {
+        serviceStyle: "normal",
+        language: "English",
+        billPreference: "none",
+        tipPreference: "none",
+        dietary: [],
+        dietaryNote: "",
+        allergyNote: "",
+        serviceNotifications: true,
         usual: {
           drink: "",
           meal: "",
@@ -433,7 +444,34 @@ async function loadGuestProfileIntoControls() {
   if (!snap.exists()) return;
 
   currentGuestProfile = snap.val() || {};
-  const usual = (((currentGuestProfile || {}).preferences || {}).usual) || {};
+  const preferences = (currentGuestProfile || {}).preferences || {};
+  const usual = preferences.usual || {};
+
+  const setValue = (id, value) => {
+    const element = document.getElementById(id);
+    if (element) element.value = value == null ? "" : String(value);
+  };
+
+  setValue("profileFirstName", currentGuestProfile.firstName || "");
+  setValue("profilePreferredName", currentGuestProfile.preferredName || "");
+  setValue("profilePhone", currentGuestProfile.phone || "");
+  setValue("profilePartySize", currentGuestProfile.defaultPartySize || "");
+  setValue("profileServiceStyle", preferences.serviceStyle || "normal");
+  setValue("profileLanguage", preferences.language || "English");
+  setValue("profileBillPreference", preferences.billPreference || "none");
+  setValue("profileTipPreference", preferences.tipPreference || "none");
+  setValue("profileDietaryNote", preferences.dietaryNote || "");
+  setValue("profileAllergyNote", preferences.allergyNote || "");
+
+  document.querySelectorAll("[data-dietary]").forEach(input => {
+    input.checked = Array.isArray(preferences.dietary) && preferences.dietary.includes(input.dataset.dietary);
+  });
+
+  const notifications = document.getElementById("profileServiceNotifications");
+  if (notifications) notifications.checked = preferences.serviceNotifications !== false;
+
+  const rememberDevice = document.getElementById("profileRememberDevice");
+  if (rememberDevice) rememberDevice.checked = localStorage.getItem(rememberGuestStorageKey()) === "true";
 
   const drink = document.getElementById("usualDrink");
   const meal = document.getElementById("usualMeal");
@@ -442,6 +480,115 @@ async function loadGuestProfileIntoControls() {
   if (drink) drink.value = String(usual.drink || "");
   if (meal) meal.value = String(usual.meal || "");
   if (note) note.value = String(usual.note || "");
+
+  showGuestSettingsStatus("guestDetailsStatus", "Required details complete.", "success");
+}
+
+function showGuestSettingsStatus(targetId, message, kind = "") {
+  const target = document.getElementById(targetId);
+  if (!target) return;
+  target.innerHTML = `<div class="status ${kind}">${escapeHtml(message)}</div>`;
+}
+
+async function saveGuestDetails() {
+  if (!currentGuestUserId) {
+    showGuestSettingsStatus("guestDetailsStatus", "Your EasyBev profile is not available yet.", "danger");
+    return;
+  }
+
+  const firstName = String(document.getElementById("profileFirstName")?.value || "").trim();
+  const preferredName = String(document.getElementById("profilePreferredName")?.value || "").trim();
+  const partyRaw = String(document.getElementById("profilePartySize")?.value || "").trim();
+  const defaultPartySize = partyRaw ? Number(partyRaw) : null;
+
+  if (!firstName) {
+    showGuestSettingsStatus("guestDetailsStatus", "First name is required.", "danger");
+    return;
+  }
+
+  if (defaultPartySize !== null && (!Number.isInteger(defaultPartySize) || defaultPartySize < 1 || defaultPartySize > 30)) {
+    showGuestSettingsStatus("guestDetailsStatus", "Party size must be between 1 and 30.", "danger");
+    return;
+  }
+
+  const updates = {
+    firstName,
+    preferredName,
+    defaultPartySize,
+    detailsCompletedAt: firebase.database.ServerValue.TIMESTAMP,
+    updatedAt: firebase.database.ServerValue.TIMESTAMP
+  };
+
+  await db.ref(`users/${currentGuestUserId}`).update(updates);
+
+  const displayName = preferredName || firstName;
+  if (currentSessionId) {
+    const sessionSnap = await db.ref(`sessions/${currentSessionId}`).once("value");
+    const session = sessionSnap.val();
+    if (session && session.status === "active" && String(session.guestUserId || "") === String(currentGuestUserId)) {
+      await db.ref(`sessions/${currentSessionId}`).update({
+        guestNameCurrent: displayName,
+        lastActivityAt: firebase.database.ServerValue.TIMESTAMP
+      });
+    }
+  }
+
+  if (localStorage.getItem(rememberGuestStorageKey()) === "true") {
+    localStorage.setItem(rememberedGuestNameKey(), firstName);
+  }
+
+  currentGuestProfile = {...(currentGuestProfile || {}), ...updates};
+  showGuestSettingsStatus("guestDetailsStatus", "My Details saved.", "success");
+}
+
+async function saveGuestPreferences() {
+  if (!currentGuestUserId) {
+    showGuestSettingsStatus("guestPreferencesStatus", "Your EasyBev profile is not available yet.", "danger");
+    return;
+  }
+
+  const dietary = Array.from(document.querySelectorAll("[data-dietary]:checked"))
+    .map(input => String(input.dataset.dietary || ""))
+    .filter(Boolean);
+
+  const preferences = {
+    serviceStyle: String(document.getElementById("profileServiceStyle")?.value || "normal"),
+    language: String(document.getElementById("profileLanguage")?.value || "English"),
+    billPreference: String(document.getElementById("profileBillPreference")?.value || "none"),
+    tipPreference: String(document.getElementById("profileTipPreference")?.value || "none"),
+    dietary,
+    dietaryNote: String(document.getElementById("profileDietaryNote")?.value || "").trim(),
+    allergyNote: String(document.getElementById("profileAllergyNote")?.value || "").trim(),
+    serviceNotifications: document.getElementById("profileServiceNotifications")?.checked !== false,
+    updatedAt: firebase.database.ServerValue.TIMESTAMP
+  };
+
+  await db.ref(`users/${currentGuestUserId}/preferences`).update(preferences);
+
+  const rememberDevice = document.getElementById("profileRememberDevice")?.checked === true;
+  if (rememberDevice) {
+    localStorage.setItem(rememberGuestStorageKey(), "true");
+    localStorage.setItem(guestUserStorageKey(), currentGuestUserId);
+    if (currentGuestProfile && currentGuestProfile.phone) {
+      localStorage.setItem(phoneStorageKey(guestSlot), currentGuestProfile.phone);
+    }
+  } else {
+    localStorage.removeItem(rememberGuestStorageKey());
+    localStorage.removeItem(guestUserStorageKey());
+    localStorage.removeItem(phoneStorageKey(guestSlot));
+    localStorage.removeItem(rememberedGuestNameKey());
+  }
+
+  currentGuestProfile = {
+    ...(currentGuestProfile || {}),
+    preferences: {
+      ...((currentGuestProfile || {}).preferences || {}),
+      ...preferences
+    }
+  };
+
+  showGuestSettingsStatus("guestPreferencesStatus", "Preferences saved.", "success");
+  showEasyBevToast("Preferences saved", "Your EasyBev profile has been updated.");
 }
 
 async function saveMyUsual(showConfirmation = true) {
@@ -687,7 +834,10 @@ async function findOrCreateGuestSession(
       currentGuestUserId || null,
 
     guestNameAtStart:
-      String((currentGuestProfile && currentGuestProfile.firstName) || sessionStorage.getItem("easybev_pending_name") || "Guest").trim(),
+      String((currentGuestProfile && (currentGuestProfile.preferredName || currentGuestProfile.firstName)) || sessionStorage.getItem("easybev_pending_name") || "Guest").trim(),
+
+    guestNameCurrent:
+      String((currentGuestProfile && (currentGuestProfile.preferredName || currentGuestProfile.firstName)) || sessionStorage.getItem("easybev_pending_name") || "Guest").trim(),
 
     guestPhone:
       phone,

@@ -272,19 +272,109 @@
         </div>
 
         <details class="preferences-panel">
-          <summary>Preferences &amp; Settings</summary>
-          <div class="preferences-body">
-            <h3 style="margin-top:14px;margin-bottom:4px">Set My Usual</h3>
-            <p class="muted" style="margin-top:0">Edit what EasyBev should send when you tap My Usual.</p>
-            <div class="usual-grid">
-              <label>Favourite drink<input id="usualDrink" type="text" maxlength="100" placeholder="e.g. Castle Lite" /></label>
-              <label>Favourite meal<input id="usualMeal" type="text" maxlength="120" placeholder="e.g. Sirloin, medium rare" /></label>
-            </div>
-            <label>Optional note<input id="usualNote" type="text" maxlength="160" placeholder="e.g. No ice, lemon on the side" /></label>
-            <div class="usual-actions">
-              <button class="secondary" onclick="saveMyUsual()">Save My Usual</button>
-            </div>
-            <div id="usualStatus"></div>
+          <summary>My Profile &amp; Preferences</summary>
+          <div class="preferences-body guest-profile-settings">
+
+            <details class="settings-subsection" open>
+              <summary><span>My Details</span><span class="required-pill">Required</span></summary>
+              <div class="settings-subsection-body">
+                <p class="muted">Your name and verified mobile identify your EasyBev profile. The rest can be refined anytime.</p>
+                <div class="guest-settings-grid">
+                  <label>First name <span class="required-mark">*</span><input id="profileFirstName" type="text" maxlength="60" placeholder="First name" /></label>
+                  <label>Preferred name<input id="profilePreferredName" type="text" maxlength="60" placeholder="What should your waiter call you?" /></label>
+                  <label>Verified mobile<input id="profilePhone" type="tel" readonly aria-readonly="true" /></label>
+                  <label>Default party size<input id="profilePartySize" type="number" min="1" max="30" step="1" placeholder="Optional" /></label>
+                </div>
+                <div class="settings-actions"><button class="secondary" onclick="saveGuestDetails()">Save My Details</button></div>
+                <div id="guestDetailsStatus"></div>
+              </div>
+            </details>
+
+            <details class="settings-subsection">
+              <summary>Service Preferences</summary>
+              <div class="settings-subsection-body">
+                <div class="guest-settings-grid">
+                  <label>Service style
+                    <select id="profileServiceStyle">
+                      <option value="normal">Normal service</option>
+                      <option value="minimal">Prefer minimal interruptions</option>
+                      <option value="regular">Check in regularly</option>
+                    </select>
+                  </label>
+                  <label>Language
+                    <select id="profileLanguage">
+                      <option value="English">English</option>
+                      <option value="Afrikaans">Afrikaans</option>
+                      <option value="isiZulu">isiZulu</option>
+                      <option value="Sesotho">Sesotho</option>
+                      <option value="Setswana">Setswana</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </label>
+                  <label>Bill preference
+                    <select id="profileBillPreference">
+                      <option value="none">No preference</option>
+                      <option value="digital">Prefer EasyBev bill prompts</option>
+                      <option value="waiter">Prefer waiter-led bill service</option>
+                    </select>
+                  </label>
+                  <label>Usual tip preference
+                    <select id="profileTipPreference">
+                      <option value="none">No default</option>
+                      <option value="10">10%</option>
+                      <option value="15">15%</option>
+                      <option value="20">20%</option>
+                      <option value="custom">Decide each time</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="settings-actions"><button class="secondary" onclick="saveGuestPreferences()">Save Preferences</button></div>
+                <div id="guestPreferencesStatus"></div>
+              </div>
+            </details>
+
+            <details class="settings-subsection">
+              <summary>Food Preferences &amp; Notes</summary>
+              <div class="settings-subsection-body">
+                <p class="muted">Optional preferences that can help EasyBev tailor future service experiences.</p>
+                <div class="dietary-chip-grid" aria-label="Dietary preferences">
+                  <label><input type="checkbox" data-dietary="vegetarian" /> Vegetarian</label>
+                  <label><input type="checkbox" data-dietary="vegan" /> Vegan</label>
+                  <label><input type="checkbox" data-dietary="halal" /> Halal</label>
+                  <label><input type="checkbox" data-dietary="pescatarian" /> Pescatarian</label>
+                  <label><input type="checkbox" data-dietary="gluten_conscious" /> Gluten-conscious</label>
+                </div>
+                <label>Dietary note<input id="profileDietaryNote" type="text" maxlength="180" placeholder="e.g. No pork, prefer low sugar" /></label>
+                <label>Important food / allergy note<textarea id="profileAllergyNote" maxlength="240" rows="3" placeholder="e.g. Severe peanut allergy"></textarea></label>
+                <p class="safety-note">EasyBev stores this as a service note only. Always confirm allergies directly with venue staff.</p>
+                <div class="settings-actions"><button class="secondary" onclick="saveGuestPreferences()">Save Food Preferences</button></div>
+              </div>
+            </details>
+
+            <details class="settings-subsection">
+              <summary>My Usual</summary>
+              <div class="settings-subsection-body">
+                <p class="muted">Edit what EasyBev should send when you tap My Usual.</p>
+                <div class="usual-grid">
+                  <label>Favourite drink<input id="usualDrink" type="text" maxlength="100" placeholder="e.g. Castle Lite" /></label>
+                  <label>Favourite meal<input id="usualMeal" type="text" maxlength="120" placeholder="e.g. Sirloin, medium rare" /></label>
+                </div>
+                <label>Optional note<input id="usualNote" type="text" maxlength="160" placeholder="e.g. No ice, lemon on the side" /></label>
+                <div class="usual-actions"><button class="secondary" onclick="saveMyUsual()">Save My Usual</button></div>
+                <div id="usualStatus"></div>
+              </div>
+            </details>
+
+            <details class="settings-subsection">
+              <summary>Notifications &amp; Privacy</summary>
+              <div class="settings-subsection-body">
+                <label class="settings-check"><input id="profileServiceNotifications" type="checkbox" checked /> Save my preference for service/session notifications</label>
+                <label class="settings-check"><input id="profileRememberDevice" type="checkbox" checked /> Remember my EasyBev profile on this device</label>
+                <p class="muted">Browser notification permission is still controlled by your phone or browser.</p>
+                <div class="settings-actions"><button class="secondary" onclick="saveGuestPreferences()">Save Settings</button></div>
+              </div>
+            </details>
+
           </div>
         </details>
 
@@ -520,9 +610,20 @@
       <button id="repeatLastRoundButton" class="secondary hidden" onclick="repeatLastRound()">Repeat Last Round</button>
     </div>
 
+    <div class="order-pad-speed-row" aria-label="Quick quantity">
+      <span class="muted">Qty</span>
+      <button type="button" class="warning" data-order-pad-qty="1" onclick="setOrderPadQuantity(1)">1×</button>
+      <button type="button" class="secondary" data-order-pad-qty="2" onclick="setOrderPadQuantity(2)">2×</button>
+      <button type="button" class="secondary" data-order-pad-qty="3" onclick="setOrderPadQuantity(3)">3×</button>
+      <button type="button" class="secondary" data-order-pad-qty="4" onclick="setOrderPadQuantity(4)">4×</button>
+      <button type="button" class="secondary" data-order-pad-qty="6" onclick="setOrderPadQuantity(6)">6×</button>
+    </div>
+
+    <div id="orderPadCategories" class="order-pad-categories" aria-label="Menu categories"></div>
+
     <div class="order-pad-section-title">
-      <strong>Quick Items</strong>
-      <span class="muted">Managed by the venue</span>
+      <strong id="orderPadActiveCategoryLabel">Frequent items</strong>
+      <span class="muted">Tap to add</span>
     </div>
     <div id="quickItems" class="quick-item-grid">
       <span class="muted">Quick items will appear when management adds venue items.</span>

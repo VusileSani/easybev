@@ -63,10 +63,13 @@ async function openItemModal(
   document.getElementById("itemName").value = "";
   document.getElementById("itemPrice").value = "";
   document.getElementById("itemQty").value = "1";
+  setOrderPadQuantity(1);
 
   itemModalBatchId = `round-${Date.now()}`;
+  itemModalActiveCategoryId = "__frequent__";
 
   await loadOrderPadContext();
+  renderOrderPadCategories();
   renderQuickItems();
   updateRepeatLastRoundButton();
   refreshModalBill();
@@ -99,6 +102,8 @@ function closeItemModal() {
     null;
 
   itemModalCatalog = [];
+  itemModalCategories = [];
+  itemModalActiveCategoryId = "__frequent__";
   hideItemSuggestions();
   itemModalLastRound = [];
   itemModalBatchId = null;
@@ -196,10 +201,14 @@ async function addItemToBill() {
 
 
   const itemRef = db.ref(`sessions/${itemModalSessionId}/items`).push();
+  const catalogMatch = itemModalCatalog.find(item => item.name.toLowerCase() === name.toLowerCase());
   const newItem = {
     name,
     price,
     qty,
+    menuItemId: catalogMatch ? catalogMatch.id : null,
+    categoryId: catalogMatch ? orderPadResolvedCategoryId(catalogMatch) : null,
+    categoryName: catalogMatch ? orderPadCategoryName(orderPadResolvedCategoryId(catalogMatch)) : null,
     addedBy: itemModalWaiterName || "Waiter",
     addedByStaffId: itemModalWaiterStaffId || null,
     batchId: itemModalBatchId || `round-${Date.now()}`,
@@ -250,6 +259,7 @@ async function addItemToBill() {
     .value =
       "1";
 
+  setOrderPadQuantity(1);
 
   document
     .getElementById(
@@ -270,14 +280,48 @@ async function addItemToBill() {
    FAST ORDER PAD HELPERS
    ========================================================= */
 
+function normalisedOrderPadCategories(rawCategories) {
+  const entries = Object.entries(rawCategories || {})
+    .filter(([, category]) => category)
+    .map(([id, category]) => ({
+      id: String(id),
+      name: String(category.name || "Category").trim() || "Category",
+      sortOrder: Number(category.sortOrder || 0),
+      active: category.active !== false
+    }));
+
+  if (entries.length) {
+    const hasOther = entries.some(category => category.id === "other");
+    if (!hasOther) entries.push({id:"other",name:"Other",sortOrder:900,active:true});
+    return entries.sort((a,b) => (a.sortOrder - b.sortOrder) || a.name.localeCompare(b.name));
+  }
+
+  return DEFAULT_MENU_CATEGORIES.map(category => ({...category, active:true}));
+}
+
+function orderPadCategoryName(categoryId) {
+  const category = itemModalCategories.find(item => item.id === String(categoryId || ""));
+  return category ? category.name : "Other";
+}
+
+function orderPadResolvedCategoryId(item) {
+  const requested = String((item && item.categoryId) || "other");
+  const category = itemModalCategories.find(entry => entry.id === requested);
+  if (category && category.active !== false) return requested;
+  return "other";
+}
+
 async function loadOrderPadContext() {
-  const [menuSnap, sessionsSnap] = await Promise.all([
+  const [menuSnap, categoriesSnap, sessionsSnap] = await Promise.all([
     db.ref("menuItems").once("value"),
+    db.ref("menuCategories").once("value"),
     db.ref("sessions").once("value")
   ]);
 
   const menuItems = menuSnap.val() || {};
   const sessions = sessionsSnap.val() || {};
+  itemModalCategories = normalisedOrderPadCategories(categoriesSnap.val() || {});
+
   const usage = new Map();
   const currentItems = [];
 
@@ -304,7 +348,14 @@ async function loadOrderPadContext() {
       const name = String(item.name || "").trim();
       const price = Number(item.price);
       const stats = usage.get(name.toLowerCase()) || { uses: 0, lastUsedAt: 0 };
-      return { id, name, price, uses: stats.uses, lastUsedAt: stats.lastUsedAt };
+      return {
+        id,
+        name,
+        price,
+        categoryId: String(item.categoryId || "other"),
+        uses: stats.uses,
+        lastUsedAt: stats.lastUsedAt
+      };
     })
     .filter(item => item.name && Number.isFinite(item.price))
     .sort((a, b) => (b.uses - a.uses) || (b.lastUsedAt - a.lastUsedAt) || a.name.localeCompare(b.name));
@@ -330,21 +381,80 @@ async function loadOrderPadContext() {
   renderItemSuggestions("");
 }
 
-function renderQuickItems() {
-  const container = document.getElementById("quickItems");
+function renderOrderPadCategories() {
+  const container = document.getElementById("orderPadCategories");
   if (!container) return;
 
+  const activeCategories = itemModalCategories.filter(category => category.active !== false);
+  const tabs = [
+    {id:"__frequent__",name:"Frequent"},
+    ...activeCategories
+  ];
+
+  if (!tabs.some(tab => tab.id === itemModalActiveCategoryId)) {
+    itemModalActiveCategoryId = "__frequent__";
+  }
+
+  container.innerHTML = tabs.map(tab => `
+    <button type="button" class="${itemModalActiveCategoryId === tab.id ? "warning" : "secondary"}" onclick="setOrderPadCategory('${escapeJsString(tab.id)}')">
+      ${escapeHtml(tab.name)}
+    </button>
+  `).join("");
+}
+
+function setOrderPadCategory(categoryId) {
+  itemModalActiveCategoryId = String(categoryId || "__frequent__");
+  renderOrderPadCategories();
+  renderQuickItems();
+}
+
+function setOrderPadQuantity(qty) {
+  const input = document.getElementById("itemQty");
+  if (!input) return;
+  input.value = String(Math.max(1, Number(qty) || 1));
+  document.querySelectorAll("[data-order-pad-qty]").forEach(button => {
+    button.classList.toggle("warning", Number(button.dataset.orderPadQty) === Number(input.value));
+    button.classList.toggle("secondary", Number(button.dataset.orderPadQty) !== Number(input.value));
+  });
+}
+
+function orderPadItemsForActiveCategory() {
+  if (itemModalActiveCategoryId === "__frequent__") {
+    return itemModalCatalog.slice(0, 10);
+  }
+
+  return itemModalCatalog
+    .filter(item => orderPadResolvedCategoryId(item) === itemModalActiveCategoryId)
+    .sort((a,b) => (b.uses - a.uses) || a.name.localeCompare(b.name));
+}
+
+function renderQuickItems() {
+  const container = document.getElementById("quickItems");
+  const label = document.getElementById("orderPadActiveCategoryLabel");
+  if (!container) return;
+
+  if (label) {
+    label.textContent = itemModalActiveCategoryId === "__frequent__"
+      ? "Frequent items"
+      : orderPadCategoryName(itemModalActiveCategoryId);
+  }
+
   if (!itemModalCatalog.length) {
-    container.innerHTML = '<span class="muted">Quick items will appear as EasyBev learns the venue\'s regular items.</span>';
+    container.innerHTML = '<span class="muted">Venue items will appear here after management adds them.</span>';
     return;
   }
 
-  container.innerHTML = itemModalCatalog
-    .slice(0, 8)
+  const items = orderPadItemsForActiveCategory();
+  if (!items.length) {
+    container.innerHTML = '<span class="muted">No active items in this category yet.</span>';
+    return;
+  }
+
+  container.innerHTML = items
     .map(item => `
-      <button type="button" class="secondary" onclick="selectQuickItem('${escapeJsString(item.name)}', ${Number(item.price)})">
+      <button type="button" class="order-pad-item" onclick="selectQuickItem('${escapeJsString(item.name)}', ${Number(item.price)})">
         <strong>${escapeHtml(item.name)}</strong>
-        <small>${money(item.price)} · tap to add</small>
+        <small>${money(item.price)}</small>
       </button>
     `)
     .join("");
@@ -353,7 +463,8 @@ function renderQuickItems() {
 function selectQuickItem(name, price) {
   document.getElementById("itemName").value = name;
   document.getElementById("itemPrice").value = Number(price).toFixed(2);
-  document.getElementById("itemQty").value = "1";
+  const qtyInput = document.getElementById("itemQty");
+  if (qtyInput && (!Number.isFinite(Number(qtyInput.value)) || Number(qtyInput.value) < 1)) qtyInput.value = "1";
   hideItemSuggestions();
   addItemToBill();
 }
@@ -378,13 +489,13 @@ function renderItemSuggestions(query) {
       const bStarts = b.name.toLowerCase().startsWith(q) ? 0 : 1;
       return aStarts - bStarts || (b.uses - a.uses) || a.name.localeCompare(b.name);
     })
-    .slice(0, 5);
+    .slice(0, 6);
 
   if (!matches.length) { hideItemSuggestions(); return; }
 
   panel.innerHTML = matches.map(item => `
     <button type="button" class="item-suggestion" role="option" onclick="selectSuggestedItem('${escapeJsString(item.name)}', ${Number(item.price)})">
-      <strong>${escapeHtml(item.name)}</strong><span>${money(item.price)}</span>
+      <span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(orderPadCategoryName(orderPadResolvedCategoryId(item)))}</small></span><span>${money(item.price)}</span>
     </button>`).join("");
   panel.classList.remove("hidden");
 }

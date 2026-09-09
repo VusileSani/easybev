@@ -9,6 +9,7 @@ let managerSelectedStaffId = null;
 let managerStaffMode = "list";
 let managerItemQuery = "";
 let managerItemFilter = "all";
+let managerItemCategoryFilter = "all";
 let managerItemsVisible = 20;
 let managerSelectedItemId = null;
 let managerItemMode = "list";
@@ -73,6 +74,13 @@ function startManagerDashboard() {
       latestManagerMenuItems = snap.val() || {};
       if (!document.getElementById("managerMenuItems")?.classList.contains("hidden")) renderManagerMenuItems();
     });
+
+    db.ref("menuCategories").on("value", snap => {
+      latestManagerMenuCategories = snap.val() || {};
+      if (!document.getElementById("managerMenuItems")?.classList.contains("hidden")) renderManagerMenuItems();
+    });
+
+    ensureDefaultMenuCategories().catch(error => console.warn("Could not initialise menu categories", error));
 
     db.ref("staff").on("value", snap => {
       latestManagerStaff = snap.val() || {};
@@ -471,6 +479,51 @@ function toggleManagerMenuItems() {
   showManagerSection(managerActiveSection === "items" ? "home" : "items");
 }
 
+function sortedManagerMenuCategories(includeInactive = true) {
+  return Object.entries(latestManagerMenuCategories || {})
+    .filter(([, category]) => category)
+    .filter(([, category]) => includeInactive || category.active !== false)
+    .sort((a, b) =>
+      (Number(a[1]?.sortOrder || 0) - Number(b[1]?.sortOrder || 0)) ||
+      String(a[1]?.name || "").localeCompare(String(b[1]?.name || ""))
+    );
+}
+
+function managerCategoryName(categoryId) {
+  const category = latestManagerMenuCategories[String(categoryId || "")];
+  if (category && category.name) return String(category.name);
+  const fallback = DEFAULT_MENU_CATEGORIES.find(item => item.id === String(categoryId || ""));
+  return fallback ? fallback.name : "Other";
+}
+
+function managerResolvedItemCategoryId(item) {
+  const categoryId = String((item && item.categoryId) || "other");
+  return latestManagerMenuCategories[categoryId] ? categoryId : "other";
+}
+
+function managerDefaultCategoryId() {
+  const active = sortedManagerMenuCategories(false);
+  return active.length ? active[0][0] : "other";
+}
+
+async function ensureDefaultMenuCategories() {
+  const snap = await db.ref("menuCategories").once("value");
+  const existing = snap.val() || {};
+  if (Object.keys(existing).length) return;
+
+  const updates = {};
+  DEFAULT_MENU_CATEGORIES.forEach(category => {
+    updates[`menuCategories/${category.id}`] = {
+      name: category.name,
+      sortOrder: category.sortOrder,
+      active: true,
+      createdAt: firebase.database.ServerValue.TIMESTAMP,
+      updatedAt: firebase.database.ServerValue.TIMESTAMP
+    };
+  });
+  await db.ref().update(updates);
+}
+
 function managerFilteredItemRows() {
   const query = managerItemQuery.trim().toLowerCase();
   return Object.entries(latestManagerMenuItems || {})
@@ -479,9 +532,15 @@ function managerFilteredItemRows() {
       const active = item.active !== false;
       if (managerItemFilter === "active" && !active) return false;
       if (managerItemFilter === "inactive" && active) return false;
+      if (managerItemCategoryFilter !== "all" && managerResolvedItemCategoryId(item) !== managerItemCategoryFilter) return false;
       return !query || String(item.name || "").toLowerCase().includes(query);
     })
-    .sort((a,b) => String(a[1]?.name || "").localeCompare(String(b[1]?.name || "")));
+    .sort((a,b) => {
+      const aCat = latestManagerMenuCategories[managerResolvedItemCategoryId(a[1])] || {};
+      const bCat = latestManagerMenuCategories[managerResolvedItemCategoryId(b[1])] || {};
+      return (Number(aCat.sortOrder || 999) - Number(bCat.sortOrder || 999)) ||
+        String(a[1]?.name || "").localeCompare(String(b[1]?.name || ""));
+    });
 }
 
 function setManagerItemQuery(value) {
@@ -500,22 +559,72 @@ function setManagerItemFilter(value) {
   renderManagerMenuItems();
 }
 
+function setManagerItemCategoryFilter(value) {
+  managerItemCategoryFilter = value === "all" || latestManagerMenuCategories[value] ? value : "all";
+  managerItemsVisible = 20;
+  renderManagerMenuItems();
+}
+
 function openManagerMenuItem(id) { managerSelectedItemId = id; managerItemMode = "detail"; renderManagerMenuItems(); }
 function startAddManagerMenuItem() { managerSelectedItemId = null; managerItemMode = "add"; renderManagerMenuItems(); }
 function closeManagerItemDetail() { managerSelectedItemId = null; managerItemMode = "list"; renderManagerMenuItems(); }
 function loadMoreManagerItems() { managerItemsVisible += 20; renderManagerMenuItems(); }
 
+function managerCategoryOptions(selectedId) {
+  const rows = sortedManagerMenuCategories(true);
+  if (!rows.length) return `<option value="other">Other</option>`;
+  return rows.map(([id, category]) => {
+    const inactive = category.active === false;
+    return `<option value="${escapeHtml(id)}" ${String(id) === String(selectedId) ? "selected" : ""}>${escapeHtml(String(category.name || "Category"))}${inactive ? " (inactive)" : ""}</option>`;
+  }).join("");
+}
+
 function managerItemDetailHtml() {
   const adding = managerItemMode === "add";
-  const item = adding ? {name:"",price:"",active:true} : latestManagerMenuItems[managerSelectedItemId];
+  const item = adding ? {name:"",price:"",active:true,categoryId:managerDefaultCategoryId()} : latestManagerMenuItems[managerSelectedItemId];
   if (!item) { managerItemMode = "list"; return ""; }
   const active = item.active !== false;
+  const categoryId = managerResolvedItemCategoryId(item);
   return `<div class="manager-detail-surface">
     <div class="heading-row"><div><div class="eyebrow">${adding ? "New venue item" : "Venue item"}</div><h3>${adding ? "Add Item" : escapeHtml(String(item.name || "Unnamed item"))}</h3></div><button class="secondary" onclick="closeManagerItemDetail()">← Back to Items</button></div>
-    ${!adding ? `<div class="detail-summary-line"><span class="badge ${active ? "active" : ""}">${active ? "Active" : "Inactive"}</span><strong>${money(Number(item.price || 0))}</strong></div>` : ""}
-    <div class="manager-detail-form"><label>Item name<input id="managerItemDetailName" type="text" value="${escapeHtml(String(item.name || ""))}" placeholder="Item name" /></label><label>Price<input id="managerItemDetailPrice" type="number" min="0" step="0.01" value="${adding ? "" : Number(item.price || 0).toFixed(2)}" placeholder="Price" /></label></div>
+    ${!adding ? `<div class="detail-summary-line"><span><span class="badge ${active ? "active" : ""}">${active ? "Active" : "Inactive"}</span> <span class="badge">${escapeHtml(managerCategoryName(categoryId))}</span></span><strong>${money(Number(item.price || 0))}</strong></div>` : ""}
+    <div class="manager-detail-form menu-item-detail-form">
+      <label>Item name<input id="managerItemDetailName" type="text" value="${escapeHtml(String(item.name || ""))}" placeholder="Item name" /></label>
+      <label>Category<select id="managerItemDetailCategory">${managerCategoryOptions(categoryId)}</select></label>
+      <label>Price<input id="managerItemDetailPrice" type="number" min="0" step="0.01" value="${adding ? "" : Number(item.price || 0).toFixed(2)}" placeholder="Price" /></label>
+    </div>
+    <p class="muted manager-item-speed-note">The category controls where this item appears on the waiter digital pad.</p>
     <div class="manager-detail-actions"><button class="success" onclick="${adding ? "saveNewManagerMenuItem()" : `saveManagerMenuItem('${escapeJsString(managerSelectedItemId)}')`}">${adding ? "Add Item" : "Save Changes"}</button>${!adding ? `<button class="${active ? "danger" : "blue"}" onclick="toggleManagerMenuItem('${escapeJsString(managerSelectedItemId)}', ${active})">${active ? "Disable" : "Enable"}</button>` : ""}</div>
   </div>`;
+}
+
+function renderManagerCategoryManager() {
+  const categories = sortedManagerMenuCategories(true);
+  const movableIds = categories.filter(([categoryId]) => categoryId !== "other").map(([categoryId]) => categoryId);
+  const rows = categories.map(([id, category]) => {
+    const active = category.active !== false;
+    const itemCount = Object.values(latestManagerMenuItems || {}).filter(item => managerResolvedItemCategoryId(item) === id).length;
+    const movableIndex = movableIds.indexOf(id);
+    const upDisabled = id === "other" || movableIndex <= 0;
+    const downDisabled = id === "other" || movableIndex < 0 || movableIndex >= movableIds.length - 1;
+    return `<div class="manager-category-row">
+      <input id="managerCategoryName_${escapeHtml(id)}" type="text" maxlength="40" value="${escapeHtml(String(category.name || ""))}" aria-label="Category name" />
+      <span class="muted">${itemCount} item${itemCount === 1 ? "" : "s"}</span>
+      <div class="manager-category-actions">
+        <button class="secondary" onclick="moveManagerMenuCategory('${escapeJsString(id)}', -1)" ${upDisabled ? "disabled" : ""} aria-label="Move category up">↑</button>
+        <button class="secondary" onclick="moveManagerMenuCategory('${escapeJsString(id)}', 1)" ${downDisabled ? "disabled" : ""} aria-label="Move category down">↓</button>
+        <button class="secondary" onclick="saveManagerMenuCategory('${escapeJsString(id)}')">Save</button>
+        <button class="${active ? "danger" : "blue"}" onclick="toggleManagerMenuCategory('${escapeJsString(id)}', ${active})">${active ? "Hide" : "Show"}</button>
+      </div>
+    </div>`;
+  }).join("");
+
+  return `<details class="manager-category-panel">
+    <summary>Pad Categories <span class="muted">${categories.length} configured</span></summary>
+    <p class="muted">These tabs organise the waiter pad. Hide or reorder categories without deleting menu items.</p>
+    <div class="manager-category-add"><input id="managerNewCategoryName" type="text" maxlength="40" placeholder="New category name" /><button class="warning" onclick="addManagerMenuCategory()">+ Add Category</button></div>
+    <div class="manager-category-list">${rows || '<p class="muted">No categories yet.</p>'}</div>
+  </details>`;
 }
 
 function renderManagerMenuItems() {
@@ -527,25 +636,34 @@ function renderManagerMenuItems() {
   const shown = rows.slice(0, managerItemsVisible);
   const itemRows = shown.length ? shown.map(([id,item]) => {
     const active = item.active !== false;
-    return `<button type="button" class="manager-compact-row" onclick="openManagerMenuItem('${escapeJsString(id)}')"><span class="compact-row-main"><strong>${escapeHtml(String(item.name || "Unnamed item"))}</strong><small>${money(Number(item.price || 0))}</small></span><span class="compact-row-end"><span class="badge ${active ? "active" : ""}">${active ? "Active" : "Inactive"}</span><span aria-hidden="true">›</span></span></button>`;
+    const categoryName = managerCategoryName(managerResolvedItemCategoryId(item));
+    return `<button type="button" class="manager-compact-row" onclick="openManagerMenuItem('${escapeJsString(id)}')"><span class="compact-row-main"><strong>${escapeHtml(String(item.name || "Unnamed item"))}</strong><small>${escapeHtml(categoryName)} · ${money(Number(item.price || 0))}</small></span><span class="compact-row-end"><span class="badge ${active ? "active" : ""}">${active ? "Active" : "Inactive"}</span><span aria-hidden="true">›</span></span></button>`;
   }).join("") : `<p class="muted">No items match this view.</p>`;
 
-  panel.innerHTML = `<div class="heading-row"><div><h3 style="margin-bottom:3px">Items</h3><p class="muted" style="margin:0">${rows.length} item${rows.length === 1 ? "" : "s"}. Select an item to review or edit.</p></div><button class="warning" onclick="startAddManagerMenuItem()">+ Add Item</button></div>
+  const categoryFilters = sortedManagerMenuCategories(false).map(([id, category]) =>
+    `<button class="${managerItemCategoryFilter === id ? "warning" : "secondary"}" onclick="setManagerItemCategoryFilter('${escapeJsString(id)}')">${escapeHtml(String(category.name || "Category"))}</button>`
+  ).join("");
+
+  panel.innerHTML = `<div class="heading-row"><div><h3 style="margin-bottom:3px">Items</h3><p class="muted" style="margin:0">Categorise once here; waiters get compact rush-hour tabs automatically.</p></div><button class="warning" onclick="startAddManagerMenuItem()">+ Add Item</button></div>
+    ${renderManagerCategoryManager()}
     <div class="manager-list-toolbar"><input id="managerItemSearch" type="search" value="${escapeHtml(managerItemQuery)}" placeholder="Search items" oninput="setManagerItemQuery(this.value)" /><div class="compact-filters"><button class="${managerItemFilter === "all" ? "warning" : "secondary"}" onclick="setManagerItemFilter('all')">All</button><button class="${managerItemFilter === "active" ? "warning" : "secondary"}" onclick="setManagerItemFilter('active')">Active</button><button class="${managerItemFilter === "inactive" ? "warning" : "secondary"}" onclick="setManagerItemFilter('inactive')">Inactive</button></div></div>
+    <div class="manager-category-filters"><button class="${managerItemCategoryFilter === "all" ? "warning" : "secondary"}" onclick="setManagerItemCategoryFilter('all')">All Categories</button>${categoryFilters}</div>
     <div class="manager-compact-list">${itemRows}</div>${rows.length > shown.length ? `<button class="secondary manager-load-more" onclick="loadMoreManagerItems()">Load more · ${rows.length - shown.length} remaining</button>` : ""}`;
 }
 
 async function saveNewManagerMenuItem() {
   const name = String(document.getElementById("managerItemDetailName")?.value || "").trim();
   const price = Number(document.getElementById("managerItemDetailPrice")?.value);
+  const categoryId = String(document.getElementById("managerItemDetailCategory")?.value || managerDefaultCategoryId());
   if (!name || !Number.isFinite(price) || price < 0) { alert("Enter an item name and valid price."); return; }
+  if (!latestManagerMenuCategories[categoryId]) { alert("Choose a valid category."); return; }
   const duplicate = Object.values(latestManagerMenuItems || {}).some(item => String(item?.name || "").trim().toLowerCase() === name.toLowerCase());
   if (duplicate) { alert("That item already exists. Open the existing item instead."); return; }
   const ref = db.ref("menuItems").push();
-  await ref.set({name,price,active:true,createdAt:firebase.database.ServerValue.TIMESTAMP,updatedAt:firebase.database.ServerValue.TIMESTAMP});
+  await ref.set({name,price,categoryId,active:true,createdAt:firebase.database.ServerValue.TIMESTAMP,updatedAt:firebase.database.ServerValue.TIMESTAMP});
   managerItemMode = "list";
   renderManagerMenuItems();
-  showEasyBevToast("Menu item added", `${name} · ${money(price)}`);
+  showEasyBevToast("Menu item added", `${name} · ${managerCategoryName(categoryId)} · ${money(price)}`);
 }
 
 async function saveManagerMenuItem(id) {
@@ -553,9 +671,11 @@ async function saveManagerMenuItem(id) {
   if (!item) return;
   const name = String(document.getElementById("managerItemDetailName")?.value || "").trim();
   const price = Number(document.getElementById("managerItemDetailPrice")?.value);
+  const categoryId = String(document.getElementById("managerItemDetailCategory")?.value || "other");
   if (!name || !Number.isFinite(price) || price < 0) { alert("Enter an item name and valid price."); return; }
-  await db.ref(`menuItems/${id}`).update({name,price,updatedAt:firebase.database.ServerValue.TIMESTAMP});
-  showEasyBevToast("Menu item updated", `${name} · ${money(price)}`);
+  if (!latestManagerMenuCategories[categoryId]) { alert("Choose a valid category."); return; }
+  await db.ref(`menuItems/${id}`).update({name,price,categoryId,updatedAt:firebase.database.ServerValue.TIMESTAMP});
+  showEasyBevToast("Menu item updated", `${name} · ${managerCategoryName(categoryId)} · ${money(price)}`);
   renderManagerMenuItems();
 }
 
@@ -567,6 +687,68 @@ async function toggleManagerMenuItem(id, currentlyActive) {
     updatedAt: firebase.database.ServerValue.TIMESTAMP
   });
   showEasyBevToast(!currentlyActive ? "Item enabled" : "Item disabled", String(item.name || "Menu item"));
+}
+
+async function addManagerMenuCategory() {
+  const input = document.getElementById("managerNewCategoryName");
+  const name = String(input?.value || "").trim();
+  if (!name) { alert("Enter a category name."); return; }
+  const duplicate = Object.values(latestManagerMenuCategories || {}).some(category => String(category?.name || "").trim().toLowerCase() === name.toLowerCase());
+  if (duplicate) { alert("That category already exists."); return; }
+  const categories = sortedManagerMenuCategories(true);
+  const nonOther = categories.filter(([id]) => id !== "other");
+  const maxSort = nonOther.reduce((max, [, category]) => Math.max(max, Number(category.sortOrder || 0)), 0);
+  const nextSort = maxSort + 10;
+  const ref = db.ref("menuCategories").push();
+  const updates = {};
+  updates[`menuCategories/${ref.key}`] = {name,sortOrder:nextSort,active:true,createdAt:firebase.database.ServerValue.TIMESTAMP,updatedAt:firebase.database.ServerValue.TIMESTAMP};
+  const other = latestManagerMenuCategories.other;
+  if (other && Number(other.sortOrder || 0) <= nextSort) {
+    updates["menuCategories/other/sortOrder"] = nextSort + 100;
+    updates["menuCategories/other/updatedAt"] = firebase.database.ServerValue.TIMESTAMP;
+  }
+  await db.ref().update(updates);
+  if (input) input.value = "";
+  showEasyBevToast("Category added", name);
+}
+
+async function saveManagerMenuCategory(id) {
+  const category = latestManagerMenuCategories[id];
+  if (!category) return;
+  const input = document.getElementById(`managerCategoryName_${id}`);
+  const name = String(input?.value || "").trim();
+  if (!name) { alert("Category name cannot be empty."); return; }
+  const duplicate = Object.entries(latestManagerMenuCategories || {}).some(([otherId, other]) => otherId !== id && String(other?.name || "").trim().toLowerCase() === name.toLowerCase());
+  if (duplicate) { alert("That category name is already in use."); return; }
+  await db.ref(`menuCategories/${id}`).update({name,updatedAt:firebase.database.ServerValue.TIMESTAMP});
+  showEasyBevToast("Category updated", name);
+}
+
+async function toggleManagerMenuCategory(id, currentlyActive) {
+  const category = latestManagerMenuCategories[id];
+  if (!category) return;
+  if (id === "other" && currentlyActive) {
+    alert("Keep Other visible so uncategorised or legacy items always remain accessible.");
+    return;
+  }
+  await db.ref(`menuCategories/${id}`).update({active:!currentlyActive,updatedAt:firebase.database.ServerValue.TIMESTAMP});
+  showEasyBevToast(!currentlyActive ? "Category shown" : "Category hidden", String(category.name || "Category"));
+}
+
+async function moveManagerMenuCategory(id, direction) {
+  if (id === "other") return;
+  const categories = sortedManagerMenuCategories(true).filter(([categoryId]) => categoryId !== "other");
+  const index = categories.findIndex(([categoryId]) => categoryId === id);
+  const targetIndex = index + Number(direction || 0);
+  if (index < 0 || targetIndex < 0 || targetIndex >= categories.length) return;
+  const [currentId, current] = categories[index];
+  const [targetId, target] = categories[targetIndex];
+  const updates = {};
+  updates[`menuCategories/${currentId}/sortOrder`] = Number(target.sortOrder || targetIndex * 10);
+  updates[`menuCategories/${targetId}/sortOrder`] = Number(current.sortOrder || index * 10);
+  updates[`menuCategories/${currentId}/updatedAt`] = firebase.database.ServerValue.TIMESTAMP;
+  updates[`menuCategories/${targetId}/updatedAt`] = firebase.database.ServerValue.TIMESTAMP;
+  await db.ref().update(updates);
 }
 
 /* =========================================================

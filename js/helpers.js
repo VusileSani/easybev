@@ -94,7 +94,7 @@ function guestLabel(
 
 function guestName(session) {
   return String(
-    (session && (session.guestNameAtStart || session.guestName)) || "Guest"
+    (session && (session.guestNameCurrent || session.guestNameAtStart || session.guestName)) || "Guest"
   ).trim() || "Guest";
 }
 

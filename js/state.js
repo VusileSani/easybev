@@ -28,6 +28,24 @@ const firebaseConfig = {
 };
 
 
+
+
+/* =========================================================
+   VENUE MENU CATEGORY DEFAULTS
+   Categories are data, not hard-coded waiter screens. Management
+   can rename, reorder, add and disable them after first setup.
+   ========================================================= */
+
+const DEFAULT_MENU_CATEGORIES = [
+  { id: "drinks", name: "Drinks", sortOrder: 10 },
+  { id: "shots", name: "Shots", sortOrder: 20 },
+  { id: "starters", name: "Starters", sortOrder: 30 },
+  { id: "mains", name: "Mains", sortOrder: 40 },
+  { id: "dessert", name: "Dessert", sortOrder: 50 },
+  { id: "sushi", name: "Sushi", sortOrder: 60 },
+  { id: "other", name: "Other", sortOrder: 900 }
+];
+
 /* =========================================================
    APP STATE
    ========================================================= */
@@ -77,6 +95,7 @@ let managerSelectedSlot = null;
 let latestManagerWaiters = {};
 let latestManagerSessions = {};
 let latestManagerMenuItems = {};
+let latestManagerMenuCategories = {};
 let latestManagerStaff = {};
 
 let currentGuestUserId = null;
@@ -90,6 +109,8 @@ let itemModalSessionId = null;
 let itemModalWaiterName = null;
 let itemModalWaiterStaffId = null;
 let itemModalCatalog = [];
+let itemModalCategories = [];
+let itemModalActiveCategoryId = "__frequent__";
 let itemModalLastRound = [];
 let itemModalBatchId = null;
 let reconcileModalSessionId = null;
