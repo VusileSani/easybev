@@ -217,145 +217,67 @@ async function connectRememberedGuest() {
    MOBILE VERIFICATION
    ========================================================= */
 
-function requestOtp() {
-
+async function requestOtp() {
   const firstName = String(document.getElementById("guestName").value || "").trim();
-
   if (!firstName) {
-    document.getElementById("verificationStatus").innerHTML = `
-      <div class="status danger">Enter your first name.</div>
-    `;
+    document.getElementById("verificationStatus").innerHTML = `<div class="status danger">Enter your first name.</div>`;
+    return;
+  }
+
+  const phone = cleanPhone(document.getElementById("guestPhone").value);
+  if (phoneIndexKey(phone).length < 11) {
+    document.getElementById("verificationStatus").innerHTML = `<div class="status danger">Enter a valid mobile number.</div>`;
     return;
   }
 
   sessionStorage.setItem("easybev_pending_name", firstName);
+  sessionStorage.setItem("easybev_pending_phone", phone);
+  document.getElementById("verificationStatus").innerHTML = `<div class="status">Sending SMS verification code…</div>`;
 
-  const phone =
-    cleanPhone(
-      document
-        .getElementById(
-          "guestPhone"
-        )
-        .value
-    );
-
-
-  if (
-    phone.length < 9
-  ) {
-
-    document
-      .getElementById(
-        "verificationStatus"
-      )
-      .innerHTML = `
-
-        <div class="status danger">
-          Enter a valid mobile number.
-        </div>
-
-      `;
-
-    return;
-
+  try {
+    await beginGuestPhoneAuthentication(phone);
+    document.getElementById("otpArea").classList.remove("hidden");
+    document.getElementById("verificationStatus").innerHTML = `<div class="status success">SMS code sent. Enter it below to verify your number.</div>`;
+    document.getElementById("guestOtp")?.focus();
+  } catch (error) {
+    console.error("EasyBev phone verification failed", error);
+    resetGuestRecaptcha();
+    const message = String(error && error.message || "Could not send the SMS code.");
+    document.getElementById("verificationStatus").innerHTML = `<div class="status danger">${escapeHtml(message)}</div>`;
   }
-
-
-  sessionStorage.setItem(
-    "easybev_pending_phone",
-    phone
-  );
-
-
-  document
-    .getElementById(
-      "otpArea"
-    )
-    .classList
-    .remove(
-      "hidden"
-    );
-
-
-  document
-    .getElementById(
-      "verificationStatus"
-    )
-    .innerHTML = `
-
-      <div class="status">
-        Verification code ready.
-        Use 123456 to continue.
-      </div>
-
-    `;
-
 }
 
-
 async function verifyOtp() {
-
-  const otp =
-    document
-      .getElementById(
-        "guestOtp"
-      )
-      .value;
-
-
-  const phone =
-    sessionStorage.getItem(
-      "easybev_pending_phone"
-    );
-
-
-  if (
-    otp !== "123456"
-  ) {
-
-    document
-      .getElementById(
-        "verificationStatus"
-      )
-      .innerHTML = `
-
-        <div class="status danger">
-          Incorrect OTP.
-        </div>
-
-      `;
-
+  const otp = String(document.getElementById("guestOtp").value || "").trim();
+  const phone = sessionStorage.getItem("easybev_pending_phone");
+  if (!phone || !otp) {
+    document.getElementById("verificationStatus").innerHTML = `<div class="status danger">Enter the SMS verification code.</div>`;
     return;
-
   }
 
+  try {
+    const user = await confirmGuestPhoneAuthentication(otp);
+    const rememberMe = document.getElementById("guestRememberMe")?.checked !== false;
 
-  if (
-    !phone
-  ) {
+    if (rememberMe) {
+      localStorage.setItem(phoneStorageKey(guestSlot), phone);
+      localStorage.setItem(rememberGuestStorageKey(), "true");
+    } else {
+      localStorage.removeItem(phoneStorageKey(guestSlot));
+      localStorage.removeItem(rememberGuestStorageKey());
+    }
 
-    return;
-
+    const firstName = String(sessionStorage.getItem("easybev_pending_name") || "").trim();
+    await findOrCreateGuestProfile(phone, firstName, rememberMe, user.uid);
+    await findOrCreateGuestSession(phone);
+  } catch (error) {
+    console.error("EasyBev OTP confirmation failed", error);
+    const code = String(error && error.code || "");
+    const message = code === "auth/invalid-verification-code"
+      ? "That verification code is incorrect."
+      : "Verification failed. Request a new SMS code and try again.";
+    document.getElementById("verificationStatus").innerHTML = `<div class="status danger">${escapeHtml(message)}</div>`;
   }
-
-
-  const rememberMe = document.getElementById("guestRememberMe")?.checked !== false;
-
-  if (rememberMe) {
-    localStorage.setItem(phoneStorageKey(guestSlot), phone);
-    localStorage.setItem(rememberGuestStorageKey(), "true");
-  } else {
-    localStorage.removeItem(phoneStorageKey(guestSlot));
-    localStorage.removeItem(rememberGuestStorageKey());
-  }
-
-  const firstName = String(sessionStorage.getItem("easybev_pending_name") || "").trim();
-  await findOrCreateGuestProfile(phone, firstName, rememberMe);
-
-  await findOrCreateGuestSession(
-    phone
-  );
-
 }
 
 
@@ -369,16 +291,22 @@ async function verifyOtp() {
    to auth.uid without changing the session idea.
    ========================================================= */
 
-async function findOrCreateGuestProfile(phone, firstName, rememberMe = true) {
+async function findOrCreateGuestProfile(phone, firstName, rememberMe = true, authenticatedUid = null) {
   const clean = phoneIndexKey(phone);
   if (!clean) return null;
 
   const indexSnap = await db.ref(`userPhoneIndex/${clean}`).once("value");
-  let userId = indexSnap.val();
+  const indexedUserId = indexSnap.val();
+  const authUid = String(authenticatedUid || (auth && auth.currentUser && auth.currentUser.uid) || "").trim();
+  let userId = authUid || indexedUserId;
 
   if (!userId) {
-    const userRef = db.ref("users").push();
-    userId = userRef.key;
+    throw new Error("Verified Firebase guest identity is required.");
+  }
+
+  const existingSnap = await db.ref(`users/${userId}`).once("value");
+
+  if (!existingSnap.exists()) {
 
     const profile = {
       firstName: String(firstName || "Guest").trim() || "Guest",
@@ -411,15 +339,15 @@ async function findOrCreateGuestProfile(phone, firstName, rememberMe = true) {
     await db.ref().update(updates);
     currentGuestProfile = profile;
   } else {
-    const userSnap = await db.ref(`users/${userId}`).once("value");
-    const existing = userSnap.val() || {};
+    const existing = existingSnap.val() || {};
     const resolvedName = String(firstName || existing.firstName || "Guest").trim() || "Guest";
 
-    await db.ref(`users/${userId}`).update({
-      firstName: resolvedName,
-      phone: cleanPhone(phone),
-      updatedAt: firebase.database.ServerValue.TIMESTAMP
-    });
+    const profileUpdates = {};
+    profileUpdates[`users/${userId}/firstName`] = resolvedName;
+    profileUpdates[`users/${userId}/phone`] = cleanPhone(phone);
+    profileUpdates[`users/${userId}/updatedAt`] = firebase.database.ServerValue.TIMESTAMP;
+    profileUpdates[`userPhoneIndex/${clean}`] = userId;
+    await db.ref().update(profileUpdates);
 
     currentGuestProfile = {
       ...existing,

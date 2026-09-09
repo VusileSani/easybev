@@ -1,0 +1,93 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "platform": {
+      ".read": "auth != null && (auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')",
+      ".write": "auth != null && (auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')",
+      "staff": {
+        ".indexOn": [
+          "role",
+          "active"
+        ]
+      },
+      "venues": {
+        ".indexOn": [
+          "status",
+          "subscriptionStatus"
+        ]
+      }
+    },
+    "accessByUid": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')",
+        ".write": "auth != null && (auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')"
+      }
+    },
+    "users": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "userPhoneIndex": {
+      "$phone": {
+        ".read": "auth != null",
+        ".write": "auth != null && newData.val() === auth.uid"
+      }
+    },
+    "sessions": {
+      ".indexOn": [
+        "guestUserId",
+        "waiterSlot",
+        "status",
+        "lifecycleState",
+        "createdAt"
+      ],
+      "$sessionId": {
+        ".read": "auth != null && (data.child('guestUserId').val() === auth.uid || root.child('accessByUid').child(auth.uid).child('active').val() === true || auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')",
+        ".write": "auth != null && (data.child('guestUserId').val() === auth.uid || newData.child('guestUserId').val() === auth.uid || root.child('accessByUid').child(auth.uid).child('active').val() === true || auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')"
+      }
+    },
+    "waiters": {
+      ".indexOn": [
+        "assignedStaffId",
+        "active"
+      ],
+      ".read": "auth != null",
+      ".write": "auth != null && (root.child('accessByUid').child(auth.uid).child('role').val() === 'manager' || auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')"
+    },
+    "staff": {
+      ".indexOn": [
+        "firebaseUid",
+        "active"
+      ],
+      ".read": "auth != null && (root.child('accessByUid').child(auth.uid).child('active').val() === true || auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')",
+      ".write": "auth != null && (root.child('accessByUid').child(auth.uid).child('role').val() === 'manager' || auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')"
+    },
+    "menuItems": {
+      ".indexOn": [
+        "categoryId",
+        "active"
+      ],
+      ".read": "auth != null",
+      ".write": "auth != null && (root.child('accessByUid').child(auth.uid).child('role').val() === 'manager' || auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')"
+    },
+    "menuCategories": {
+      ".indexOn": [
+        "sortOrder",
+        "active"
+      ],
+      ".read": "auth != null",
+      ".write": "auth != null && (root.child('accessByUid').child(auth.uid).child('role').val() === 'manager' || auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')"
+    },
+    "menuUsage": {
+      ".indexOn": [
+        "count",
+        "updatedAt"
+      ],
+      ".read": "auth != null",
+      ".write": "auth != null && root.child('accessByUid').child(auth.uid).child('active').val() === true"
+    }
+  }
+}

@@ -4,10 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#07131c" />
-  <title>EasyBev · v2.5.2</title>
+  <title>EasyBev · v2.6.0</title>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <link rel="stylesheet" href="css/styles.css" />
@@ -33,21 +34,14 @@
   <small id="headerMode"></small>
 </header>
 
-<nav id="actorNav" class="actor-nav hidden" aria-label="EasyBev actor navigation">
+<nav id="actorNav" class="actor-nav hidden" aria-label="EasyBev account navigation">
   <div class="actor-nav-inner">
-    <div class="actor-switch">
-      <span class="actor-switch-label">View as</span>
-      <select id="actorSwitcher" aria-label="Switch EasyBev actor" onchange="switchEasyBevActor(this.value)">
-        <option value="guest">Guest</option>
-        <option value="waiter">Waiter</option>
-        <option value="manager">Management</option>
-        <option value="admin">EasyBev Admin</option>
-        <option value="owner">Owner</option>
-      </select>
-    </div>
     <div class="actor-nav-context">
       <div id="actorNavRole" class="actor-nav-role"></div>
-      <button type="button" class="actor-home-btn" onclick="goEasyBevHome()" aria-label="EasyBev home">Home</button>
+      <div class="auth-nav-actions">
+        <button type="button" class="actor-home-btn" onclick="goEasyBevHome()" aria-label="EasyBev home">Home</button>
+        <button id="authSignOutButton" type="button" class="actor-home-btn hidden" onclick="signOutEasyBev()">Sign out</button>
+      </div>
     </div>
   </div>
 </nav>
@@ -90,30 +84,15 @@
         <button id="guestHistoryToggle" class="secondary guest-history-toggle hidden" type="button" onclick="toggleGuestHistory()">Previous Sessions ›</button>
         <div id="guestHistory" class="guest-history hidden"></div>
 
-        <div class="access-grid">
+        <div class="access-grid auth-access-grid">
           <button class="access-btn primary" onclick="location.href='?guest=1'">
             <span class="access-icon">⌁</span>
-            <span class="access-copy"><strong>Guest</strong><small>Open the guest service experience</small></span>
+            <span class="access-copy"><strong>Guest</strong><small>Connect through a waiter QR and verify your mobile number</small></span>
           </button>
 
-          <button class="access-btn" onclick="location.href='?waiter=1'">
+          <button class="access-btn" onclick="openStaffSignIn()">
             <span class="access-icon">◉</span>
-            <span class="access-copy"><strong>Waiter</strong><small>Serve active guest sessions</small></span>
-          </button>
-
-          <button class="access-btn" onclick="location.href='?manager=1'">
-            <span class="access-icon">⚙</span>
-            <span class="access-copy"><strong>Management</strong><small>Run service, team and venue setup</small></span>
-          </button>
-
-          <button class="access-btn" onclick="location.href='?admin=1'">
-            <span class="access-icon">◎</span>
-            <span class="access-copy"><strong>EasyBev Admin</strong><small>Operate venues, support and platform communications</small></span>
-          </button>
-
-          <button class="access-btn" onclick="location.href='?owner=1'">
-            <span class="access-icon">◆</span>
-            <span class="access-copy"><strong>Owner</strong><small>Govern EasyBev access and critical platform controls</small></span>
+            <span class="access-copy"><strong>Staff sign in</strong><small>Waiter, Management, EasyBev Admin or Owner</small></span>
           </button>
         </div>
       </div>
@@ -126,6 +105,30 @@
     </div>
 
 
+  </section>
+
+
+  <!-- =====================================================
+       STAFF AUTHENTICATION
+       ===================================================== -->
+
+  <section id="staffLoginView" class="card auth-card hidden">
+    <div class="eyebrow">Secure staff access</div>
+    <h2>Sign in to EasyBev</h2>
+    <p class="muted">Your authenticated account determines your role. There is no production actor switcher.</p>
+
+    <label>Email
+      <input id="staffLoginEmail" type="email" autocomplete="username" placeholder="name@example.com" />
+    </label>
+    <label>Password
+      <input id="staffLoginPassword" type="password" autocomplete="current-password" placeholder="Password" />
+    </label>
+
+    <div class="auth-actions">
+      <button class="success" type="button" onclick="signInStaff()">Sign in</button>
+      <button class="secondary" type="button" onclick="closeStaffSignIn()">Cancel</button>
+    </div>
+    <div id="staffLoginStatus" aria-live="polite"></div>
   </section>
 
 
@@ -199,7 +202,7 @@
           />
 
           <p class="verification-code-note">
-            Verification code: <strong>123456</strong>
+            Enter the SMS verification code sent to your phone.
           </p>
 
           <button
@@ -211,6 +214,7 @@
 
         </div>
 
+        <div id="guestRecaptcha"></div>
         <div id="verificationStatus"></div>
 
       </div>

@@ -81,6 +81,9 @@ function showStartupError(
   const platformView = document.getElementById("platformView");
   if (platformView) platformView.classList.add("hidden");
 
+  const staffLoginView = document.getElementById("staffLoginView");
+  if (staffLoginView) staffLoginView.classList.add("hidden");
+
   document
     .getElementById(
       "startupErrorView"
@@ -97,7 +100,7 @@ function showStartupError(
     .textContent =
       "Service unavailable";
 
-  showActorNavigation("Service unavailable", ownerMode ? "owner" : adminMode ? "admin" : managerMode ? "manager" : waiterSlot ? "waiter" : guestSlot ? "guest" : "guest");
+  showActorNavigation("Service unavailable", "app");
 
   document
     .getElementById(
@@ -147,6 +150,9 @@ async function initialiseEasyBev() {
     db =
       firebase.database();
 
+    auth = firebase.auth();
+    await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
 
     /*
       QUICK CONNECTION TEST
@@ -161,30 +167,12 @@ async function initialiseEasyBev() {
 
 
     /*
-      BOOTSTRAP ONLY WHAT THIS ACTOR NEEDS.
-
-      Normal guest/waiter/manager traffic must not wait for the full
-      EasyBev company/platform tree to be read on every page load.
-      Venue actors only need the permanent waiter-slot foundation; the
-      company foundation is an Admin/Owner responsibility.
+      AUTHENTICATION NOW CHOOSES THE STAFF ACTOR.
+      Query-string manager/admin/owner/waiter flags are deliberately ignored.
+      Guest QR/service-slot routing remains a service-context parameter only.
     */
 
-    if (managerMode || waiterSlot || guestSlot) {
-      await ensureWaiterSlots();
-    }
-
-    if (ownerMode || adminMode) {
-      await ensurePlatformFoundation();
-    }
-
-
-    /*
-      ONLY AFTER SUCCESSFUL STARTUP
-      ROUTE TO THE CORRECT VIEW.
-    */
-
-    routeApplication();
-    updateNotificationControls();
+    await initialiseAuthRouting();
 
   }
   catch (error) {

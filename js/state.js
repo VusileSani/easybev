@@ -51,26 +51,23 @@ const DEFAULT_MENU_CATEGORIES = [
    ========================================================= */
 
 let db = null;
+let auth = null;
+let currentAuthUser = null;
+let currentAuthClaims = {};
+let currentAuthenticatedRole = null;
+let currentVenueAccess = null;
 
-const params =
-  new URLSearchParams(
-    window.location.search
-  );
+const params = new URLSearchParams(window.location.search);
 
-const managerMode =
-  params.get("manager") === "1";
+/* Staff authority is resolved from Firebase Authentication, never URL parameters. */
+let managerMode = false;
+let adminMode = false;
+let ownerMode = false;
+let waiterSlot = null;
 
-const adminMode =
-  params.get("admin") === "1";
-
-const ownerMode =
-  params.get("owner") === "1";
-
-const waiterSlot =
-  params.get("waiter");
-
-let guestSlot =
-  params.get("guest");
+/* Guest links may still carry the permanent waiter/service slot.
+   The slot selects service context; it does not grant staff authority. */
+let guestSlot = params.get("guest");
 
 
 /* Legacy table links continue to resolve to permanent waiter slots. */

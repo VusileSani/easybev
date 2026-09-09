@@ -1317,3 +1317,14 @@ button.platform-attention-item:hover { background:#f7f9f8; transform:none; }
   .order-bill-row { align-items: flex-start; }
   .order-bill-actions { flex-direction: column; align-items: flex-end; gap: 5px; }
 }
+
+
+/* =========================================================
+   v2.6 REAL AUTHENTICATION FOUNDATION
+   ========================================================= */
+.auth-nav-actions{display:flex;align-items:center;gap:8px}.auth-nav-actions button{width:auto;margin:0}
+.auth-card{max-width:520px;margin:28px auto}.auth-card label{display:grid;gap:6px;font-weight:800;margin-top:10px}.auth-card input{margin:0}
+.auth-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.auth-actions button{width:auto;margin:0}
+.auth-access-grid{grid-template-columns:1fr 1fr}
+#guestRecaptcha{min-height:0}
+@media(max-width:680px){.auth-access-grid{grid-template-columns:1fr}.auth-actions{display:grid;grid-template-columns:1fr 1fr}.auth-actions button{width:100%}}

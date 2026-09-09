@@ -1,80 +1,32 @@
 /* =========================================================
-   ACTOR NAVIGATION
+   AUTHENTICATED NAVIGATION
    ========================================================= */
 
 function goEasyBevHome() {
+  if (currentAuthenticatedRole) {
+    if (typeof prepareActorRoute === "function") prepareActorRoute();
+    routeApplication();
+    return;
+  }
   window.location.href = "./";
-}
-
-
-function currentServiceSlotForActorSwitch() {
-  const current = String(waiterSlot || guestSlot || "").trim();
-  if (current) {
-    localStorage.setItem("easybev_last_actor_slot", current);
-    return current;
-  }
-
-  return String(localStorage.getItem("easybev_last_actor_slot") || "1");
-}
-
-function switchEasyBevActor(actor) {
-  const selected = String(actor || "").toLowerCase();
-  const slot = currentServiceSlotForActorSwitch();
-
-  if (selected === "guest") {
-    window.location.href = `?guest=${encodeURIComponent(slot)}`;
-    return;
-  }
-
-  if (selected === "waiter") {
-    window.location.href = `?waiter=${encodeURIComponent(slot)}`;
-    return;
-  }
-
-  if (selected === "manager") {
-    window.location.href = "?manager=1";
-    return;
-  }
-
-  if (selected === "admin") {
-    window.location.href = "?admin=1";
-    return;
-  }
-
-  if (selected === "owner") {
-    window.location.href = "?owner=1";
-    return;
-  }
-
-  goEasyBevHome();
 }
 
 function showActorNavigation(label, actor) {
   const nav = document.getElementById("actorNav");
   const role = document.getElementById("actorNavRole");
-  const switcher = document.getElementById("actorSwitcher");
-
-  if (!nav || !role) {
-    return;
-  }
+  const signOut = document.getElementById("authSignOutButton");
+  if (!nav || !role) return;
 
   document.body.dataset.actor = String(actor || "app");
   role.innerHTML = `<strong>${escapeHtml(String(label || "EasyBev"))}</strong>`;
-
-  if (switcher && actor) {
-    switcher.value = String(actor);
-  }
-
+  if (signOut) signOut.classList.toggle("hidden", !currentAuthUser || actor === "guest");
   nav.classList.remove("hidden");
 }
 
 function hideActorNavigation() {
   const nav = document.getElementById("actorNav");
   document.body.dataset.actor = "home";
-
-  if (nav) {
-    nav.classList.add("hidden");
-  }
+  if (nav) nav.classList.add("hidden");
 }
 
 /* =========================================================
