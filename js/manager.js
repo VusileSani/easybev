@@ -589,7 +589,7 @@ function managerItemDetailHtml() {
     <div class="heading-row"><div><div class="eyebrow">${adding ? "New venue item" : "Venue item"}</div><h3>${adding ? "Add Item" : escapeHtml(String(item.name || "Unnamed item"))}</h3></div><button class="secondary" onclick="closeManagerItemDetail()">← Back to Items</button></div>
     ${!adding ? `<div class="detail-summary-line"><span><span class="badge ${active ? "active" : ""}">${active ? "Active" : "Inactive"}</span> <span class="badge">${escapeHtml(managerCategoryName(categoryId))}</span></span><strong>${money(Number(item.price || 0))}</strong></div>` : ""}
     <div class="manager-detail-form menu-item-detail-form">
-      <label>Item name<input id="managerItemDetailName" type="text" value="${escapeHtml(String(item.name || ""))}" placeholder="Item name" /></label>
+      <label>Item name<input id="managerItemDetailName" type="text" maxlength="100" value="${escapeHtml(String(item.name || ""))}" placeholder="Item name" /></label>
       <label>Category<select id="managerItemDetailCategory">${managerCategoryOptions(categoryId)}</select></label>
       <label>Price<input id="managerItemDetailPrice" type="number" min="0" step="0.01" value="${adding ? "" : Number(item.price || 0).toFixed(2)}" placeholder="Price" /></label>
     </div>
@@ -674,6 +674,11 @@ async function saveManagerMenuItem(id) {
   const categoryId = String(document.getElementById("managerItemDetailCategory")?.value || "other");
   if (!name || !Number.isFinite(price) || price < 0) { alert("Enter an item name and valid price."); return; }
   if (!latestManagerMenuCategories[categoryId]) { alert("Choose a valid category."); return; }
+  const duplicate = Object.entries(latestManagerMenuItems || {}).some(([otherId, otherItem]) =>
+    String(otherId) !== String(id) &&
+    String(otherItem && otherItem.name || "").trim().toLowerCase() === name.toLowerCase()
+  );
+  if (duplicate) { alert("Another item already uses that name. Keep waiter-pad item names unique."); return; }
   await db.ref(`menuItems/${id}`).update({name,price,categoryId,updatedAt:firebase.database.ServerValue.TIMESTAMP});
   showEasyBevToast("Menu item updated", `${name} · ${managerCategoryName(categoryId)} · ${money(price)}`);
   renderManagerMenuItems();

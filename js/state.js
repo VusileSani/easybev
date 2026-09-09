@@ -113,6 +113,8 @@ let itemModalCategories = [];
 let itemModalActiveCategoryId = "__frequent__";
 let itemModalLastRound = [];
 let itemModalBatchId = null;
+let itemModalWriteInFlight = false;
+let itemVoidItemId = null;
 let reconcileModalSessionId = null;
 let handoverModalSessionId = null;
 

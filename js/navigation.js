@@ -259,18 +259,25 @@ async function loadRememberedGuestSessions() {
 
     const activeSessions = [];
 
-    const waiters = await getAllWaiters();
+    const rememberedSlots = [];
+    const prefix = "easybev_guest_session_";
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (!key || !key.startsWith(prefix)) continue;
+      const slot = key.slice(prefix.length);
+      if (slot && localStorage.getItem(key)) rememberedSlots.push(slot);
+    }
 
-    for (const [slot] of sortedWaiterEntries(waiters)) {
+    if (!rememberedSlots.length) {
+      panel.innerHTML = "";
+      panel.classList.add("hidden");
+      return;
+    }
 
-      const sessionId =
-        localStorage.getItem(
-          sessionStorageKey(slot)
-        );
+    for (const slot of rememberedSlots) {
 
-      if (!sessionId) {
-        continue;
-      }
+      const sessionId = localStorage.getItem(sessionStorageKey(slot));
+      if (!sessionId) continue;
 
       const snap =
         await db

@@ -1282,13 +1282,13 @@ button.platform-attention-item:hover { background:#f7f9f8; transform:none; }
 .manager-category-list{display:grid;gap:7px;padding-bottom:13px}
 .manager-category-row{display:grid;grid-template-columns:minmax(150px,1fr) auto auto;gap:8px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:11px;background:#fff}
 .manager-category-row input{margin:0;min-width:0}.manager-category-actions{display:flex;gap:5px;align-items:center}.manager-category-actions button{width:auto;margin:0;padding:7px 9px}
-.manager-category-filters{display:flex;gap:6px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:thin}.manager-category-filters button{width:auto;flex:0 0 auto;margin:0;padding:8px 10px}
+.manager-category-filters{display:flex;gap:6px;flex-wrap:wrap;padding:2px 0 10px}.manager-category-filters button{width:auto;flex:0 0 auto;margin:0;padding:8px 10px}
 .menu-item-detail-form{grid-template-columns:minmax(0,1.25fr) minmax(150px,.8fr) minmax(120px,.55fr)}
 .menu-item-detail-form select{width:100%;margin-top:6px;border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:#fff;color:var(--ink);font:inherit}
 .manager-item-speed-note{margin:-4px 0 0}
 
-.order-pad-speed-row{display:flex;align-items:center;gap:6px;margin:10px 0 8px;overflow-x:auto}.order-pad-speed-row button{width:auto;min-width:42px;margin:0;padding:7px 9px;flex:0 0 auto}
-.order-pad-categories{display:flex;gap:6px;overflow-x:auto;padding:3px 0 5px;scrollbar-width:thin;overscroll-behavior-x:contain}.order-pad-categories button{width:auto;flex:0 0 auto;margin:0;padding:9px 11px}
+.order-pad-speed-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:10px 0 8px}.order-pad-speed-row button{width:auto;min-width:42px;margin:0;padding:7px 9px;flex:0 0 auto}
+.order-pad-categories{display:flex;gap:6px;flex-wrap:wrap;padding:3px 0 5px}.order-pad-categories button{width:auto;flex:0 0 auto;margin:0;padding:9px 11px}
 .quick-item-grid{grid-template-columns:repeat(3,minmax(0,1fr));max-height:255px;overflow-y:auto;padding-right:2px;align-content:start}
 .quick-item-grid .order-pad-item{min-height:54px;display:flex;flex-direction:column;justify-content:center}
 .quick-item-grid .order-pad-item small{font-weight:650}
@@ -1301,4 +1301,19 @@ button.platform-attention-item:hover { background:#f7f9f8; transform:none; }
   .menu-item-detail-form{grid-template-columns:1fr}
   .quick-item-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-height:230px}
   .modal-content{padding-left:15px;padding-right:15px}
+}
+
+/* =========================================================
+   WAITER BILL CORRECTION
+   ========================================================= */
+.order-bill-row { align-items: center; }
+.order-bill-copy { min-width: 0; display: grid; gap: 2px; }
+.order-bill-copy small:empty { display: none; }
+.order-bill-actions { display: flex; align-items: center; gap: 9px; flex-shrink: 0; }
+.compact-action { width: auto; min-width: 0; margin: 0; padding: 7px 9px; font-size: 12px; }
+.compact-sheet { max-width: 460px; }
+.compact-sheet select, .compact-sheet input { margin-top: 6px; }
+@media (max-width: 520px) {
+  .order-bill-row { align-items: flex-start; }
+  .order-bill-actions { flex-direction: column; align-items: flex-end; gap: 5px; }
 }

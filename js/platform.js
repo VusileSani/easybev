@@ -33,8 +33,8 @@ const PLATFORM_FEATURE_DEFAULTS = {
   },
   onlinePayment: {
     label: "Online payment",
-    description: "Platform-level availability of EasyBev payment handling.",
-    enabled: true,
+    description: "Enable only after a real payment provider is configured and verified.",
+    enabled: false,
     ownerOnly: true
   }
 };
@@ -298,6 +298,14 @@ function platformFeatureEnabled(key, fallback = true) {
   return item.enabled;
 }
 
+function platformOnlinePaymentReady() {
+  return (
+    platformFeatureEnabled("onlinePayment", false) &&
+    latestPlatformCompany &&
+    latestPlatformCompany.paymentIntegrationReady === true
+  );
+}
+
 function applyPlatformFeatureControls(actor) {
   const messaging = platformFeatureEnabled("guestMessaging", true);
   const alerts = platformFeatureEnabled("waiterAlerts", true);
@@ -316,7 +324,7 @@ function applyPlatformFeatureControls(actor) {
     if (liveContent) liveContent.classList.toggle("hidden", !liveBill);
 
     const payButton = document.getElementById("guestPayButton");
-    if (payButton && !platformFeatureEnabled("onlinePayment", true)) {
+    if (payButton && !platformOnlinePaymentReady()) {
       payButton.classList.add("hidden");
     }
     else if (payButton && currentSession && sessionBillStatus(currentSession) === "finalized") {

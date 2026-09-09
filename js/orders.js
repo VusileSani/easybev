@@ -131,6 +131,11 @@ async function addItemToBill() {
 
   }
 
+  if (itemModalWriteInFlight) return;
+  itemModalWriteInFlight = true;
+
+  try {
+
   const session = await readEditableOrderSession(itemModalSessionId);
   if (!session) {
     closeItemModal();
@@ -187,12 +192,16 @@ async function addItemToBill() {
       qty
     ) ||
 
-    qty < 1
+    !Number.isInteger(qty) ||
+
+    qty < 1 ||
+
+    qty > 99
 
   ) {
 
     alert(
-      "Enter an item name, valid price and quantity."
+      "Enter an item name, valid price and whole-number quantity (1–99)."
     );
 
     return;
@@ -202,9 +211,11 @@ async function addItemToBill() {
 
   const itemRef = db.ref(`sessions/${itemModalSessionId}/items`).push();
   const catalogMatch = itemModalCatalog.find(item => item.name.toLowerCase() === name.toLowerCase());
+  const capturedName = catalogMatch ? catalogMatch.name : name;
+  const capturedPrice = catalogMatch ? Number(catalogMatch.price) : price;
   const newItem = {
-    name,
-    price,
+    name: capturedName,
+    price: capturedPrice,
     qty,
     menuItemId: catalogMatch ? catalogMatch.id : null,
     categoryId: catalogMatch ? orderPadResolvedCategoryId(catalogMatch) : null,
@@ -229,6 +240,13 @@ async function addItemToBill() {
 
   /* Item write, total update and reconciliation invalidation are one atomic Firebase update. */
   await db.ref().update(updates);
+
+  if (newItem.menuItemId) {
+    bumpOrderPadUsage(newItem.menuItemId, qty);
+    recordMenuItemUsage(newItem.menuItemId, qty).catch(error =>
+      console.warn("Could not update EasyBev item usage statistics", error)
+    );
+  }
 
 
   /*
@@ -268,10 +286,13 @@ async function addItemToBill() {
     .focus();
 
 
-  await loadOrderPadContext();
   renderQuickItems();
   updateRepeatLastRoundButton();
   refreshModalBill();
+
+  } finally {
+    itemModalWriteInFlight = false;
+  }
 
 }
 
@@ -311,58 +332,75 @@ function orderPadResolvedCategoryId(item) {
   return "other";
 }
 
+function sortOrderPadCatalog() {
+  itemModalCatalog.sort((a, b) =>
+    (Number(b.uses || 0) - Number(a.uses || 0)) ||
+    (Number(b.lastUsedAt || 0) - Number(a.lastUsedAt || 0)) ||
+    a.name.localeCompare(b.name)
+  );
+}
+
+function bumpOrderPadUsage(menuItemId, qtyDelta = 1) {
+  const item = itemModalCatalog.find(entry => String(entry.id) === String(menuItemId));
+  if (!item) return;
+
+  const delta = Number(qtyDelta) || 0;
+  item.uses = Math.max(0, Number(item.uses || 0) + delta);
+  if (delta > 0) item.lastUsedAt = Date.now();
+  sortOrderPadCatalog();
+}
+
+async function recordMenuItemUsage(menuItemId, qtyDelta = 1) {
+  if (!menuItemId) return;
+
+  const delta = Number(qtyDelta) || 0;
+  if (!delta) return;
+
+  await db.ref(`menuUsage/${menuItemId}`).transaction(current => {
+    const previous = current || {};
+    const nextUses = Math.max(0, Number(previous.uses || 0) + delta);
+    return {
+      uses: nextUses,
+      lastUsedAt: delta > 0 ? Date.now() : Number(previous.lastUsedAt || 0)
+    };
+  });
+}
+
 async function loadOrderPadContext() {
-  const [menuSnap, categoriesSnap, sessionsSnap] = await Promise.all([
+  const [menuSnap, categoriesSnap, usageSnap, currentItemsSnap] = await Promise.all([
     db.ref("menuItems").once("value"),
     db.ref("menuCategories").once("value"),
-    db.ref("sessions").once("value")
+    db.ref("menuUsage").once("value"),
+    db.ref(`sessions/${itemModalSessionId}/items`).once("value")
   ]);
 
   const menuItems = menuSnap.val() || {};
-  const sessions = sessionsSnap.val() || {};
+  const usage = usageSnap.val() || {};
+  const currentItems = Object.values(currentItemsSnap.val() || {});
   itemModalCategories = normalisedOrderPadCategories(categoriesSnap.val() || {});
-
-  const usage = new Map();
-  const currentItems = [];
-
-  Object.entries(sessions).forEach(([sessionId, session]) => {
-    const items = Object.values((session && session.items) || {});
-
-    items.forEach(item => {
-      const name = String(item.name || "").trim();
-      if (!name) return;
-
-      const key = name.toLowerCase();
-      const stats = usage.get(key) || { uses: 0, lastUsedAt: 0 };
-      stats.uses += Number(item.qty || 1);
-      stats.lastUsedAt = Math.max(stats.lastUsedAt, Number(item.addedAt || 0));
-      usage.set(key, stats);
-
-      if (sessionId === itemModalSessionId) currentItems.push(item);
-    });
-  });
 
   itemModalCatalog = Object.entries(menuItems)
     .filter(([, item]) => item && item.active !== false)
     .map(([id, item]) => {
       const name = String(item.name || "").trim();
       const price = Number(item.price);
-      const stats = usage.get(name.toLowerCase()) || { uses: 0, lastUsedAt: 0 };
+      const stats = usage[id] || {};
       return {
         id,
         name,
         price,
         categoryId: String(item.categoryId || "other"),
-        uses: stats.uses,
-        lastUsedAt: stats.lastUsedAt
+        uses: Number(stats.uses || 0),
+        lastUsedAt: Number(stats.lastUsedAt || 0)
       };
     })
-    .filter(item => item.name && Number.isFinite(item.price))
-    .sort((a, b) => (b.uses - a.uses) || (b.lastUsedAt - a.lastUsedAt) || a.name.localeCompare(b.name));
+    .filter(item => item.name && Number.isFinite(item.price));
+
+  sortOrderPadCatalog();
 
   const grouped = new Map();
   currentItems.forEach(item => {
-    if (!item.batchId) return;
+    if (!item || !item.batchId) return;
     if (!grouped.has(item.batchId)) grouped.set(item.batchId, []);
     grouped.get(item.batchId).push(item);
   });
@@ -556,7 +594,10 @@ function updateRepeatLastRoundButton() {
 }
 
 async function repeatLastRound() {
-  if (!itemModalSessionId || !itemModalLastRound.length) return;
+  if (!itemModalSessionId || !itemModalLastRound.length || itemModalWriteInFlight) return;
+  itemModalWriteInFlight = true;
+
+  try {
 
   const session = await readEditableOrderSession(itemModalSessionId);
   if (!session) {
@@ -568,22 +609,68 @@ async function repeatLastRound() {
   const updates = {};
   const nextItems = { ...(session.items || {}) };
   const nowBatch = itemModalBatchId || `round-${Date.now()}`;
+  const usageIncrements = new Map();
+  let skippedUnavailable = 0;
+  let repeatedUnits = 0;
 
   itemModalLastRound.forEach(item => {
-    const key = itemRoot.push().key;
+    const priorMenuItemId = String(item && item.menuItemId || "").trim();
+    const catalogMatch = priorMenuItemId
+      ? itemModalCatalog.find(entry => String(entry.id) === priorMenuItemId)
+      : itemModalCatalog.find(entry =>
+          String(entry.name || "").trim().toLowerCase() === String(item && item.name || "").trim().toLowerCase()
+        );
+
+    /* A previously catalogued item that management has since disabled must
+       not silently return through Repeat Last Round. Manual/legacy items can
+       still be repeated because they were intentionally captured by a waiter. */
+    if (priorMenuItemId && !catalogMatch) {
+      skippedUnavailable += 1;
+      return;
+    }
+
+    const qty = Math.max(1, Math.min(99, Math.floor(Number(item && item.qty || 1) || 1)));
+    const resolvedCategoryId = catalogMatch
+      ? orderPadResolvedCategoryId(catalogMatch)
+      : String(item && item.categoryId || "").trim() || null;
     const repeatedItem = {
-      name: item.name,
-      price: Number(item.price),
-      qty: Number(item.qty || 1),
+      name: catalogMatch ? catalogMatch.name : String(item && item.name || "Item"),
+      price: catalogMatch ? Number(catalogMatch.price) : Number(item && item.price),
+      qty,
+      menuItemId: catalogMatch ? catalogMatch.id : (priorMenuItemId || null),
+      categoryId: resolvedCategoryId,
+      categoryName: catalogMatch
+        ? orderPadCategoryName(resolvedCategoryId)
+        : (String(item && item.categoryName || "").trim() || null),
       addedBy: itemModalWaiterName || "Waiter",
       addedByStaffId: itemModalWaiterStaffId || null,
       batchId: nowBatch,
       addedAt: firebase.database.ServerValue.TIMESTAMP
     };
 
+    if (!Number.isFinite(repeatedItem.price)) return;
+
+    const key = itemRoot.push().key;
     updates[`sessions/${itemModalSessionId}/items/${key}`] = repeatedItem;
     nextItems[key] = repeatedItem;
+    repeatedUnits += qty;
+
+    if (repeatedItem.menuItemId) {
+      usageIncrements.set(
+        repeatedItem.menuItemId,
+        Number(usageIncrements.get(repeatedItem.menuItemId) || 0) + qty
+      );
+    }
   });
+
+  if (!repeatedUnits) {
+    alert(
+      skippedUnavailable
+        ? "The previous catalogued items are no longer available. Choose current items from the pad instead."
+        : "The previous round could not be repeated."
+    );
+    return;
+  }
 
   Object.assign(
     updates,
@@ -596,10 +683,28 @@ async function repeatLastRound() {
 
   await db.ref().update(updates);
 
+  usageIncrements.forEach((units, menuItemId) => {
+    bumpOrderPadUsage(menuItemId, units);
+    recordMenuItemUsage(menuItemId, units).catch(error =>
+      console.warn("Could not update EasyBev item usage statistics", error)
+    );
+  });
 
+  renderQuickItems();
   refreshModalBill();
-  showEasyBevToast("Last round added", "The previous round was added to this bill.");
+
+  showEasyBevToast(
+    "Last round added",
+    skippedUnavailable
+      ? `Repeated ${repeatedUnits} item${repeatedUnits === 1 ? "" : "s"}; ${skippedUnavailable} unavailable selection${skippedUnavailable === 1 ? " was" : "s were"} skipped.`
+      : "The previous round was added to this bill."
+  );
+
+  } finally {
+    itemModalWriteInFlight = false;
+  }
 }
+
 
 /* =========================================================
    REFRESH MODAL BILL
@@ -607,113 +712,190 @@ async function repeatLastRound() {
 
 async function refreshModalBill() {
 
-  if (
-    !itemModalSessionId
-  ) {
+  if (!itemModalSessionId) return;
 
-    return;
+  const snap = await db
+    .ref(`sessions/${itemModalSessionId}/items`)
+    .once("value");
 
-  }
+  const items = snap.val() || {};
+  const entries = Object.entries(items);
+  const list = document.getElementById("modalBillItems");
 
-
-  const snap =
-    await db
-      .ref(
-        `sessions/${itemModalSessionId}/items`
-      )
-      .once(
-        "value"
-      );
-
-
-  const items =
-    snap.val() || {};
-
-
-  const entries =
-    Object.values(
-      items
-    );
-
-
-  const list =
-    document.getElementById(
-      "modalBillItems"
-    );
-
-
-  if (
-    !entries.length
-  ) {
-
-    list.innerHTML = `
-
-      <p class="muted">
-        No items yet.
-      </p>
-
-    `;
-
+  if (!entries.length) {
+    list.innerHTML = `<p class="muted">No items yet.</p>`;
   }
   else {
-
-    list.innerHTML =
-      entries
-        .map(
-          item => `
-
-            <div class="item-row">
-
-              <span>
-
-                ${escapeHtml(
-                  item.name
-                )}
-
-                ×
-                ${item.qty || 1}
-
-              </span>
-
-              <strong>
-
-                ${money(
-
-                  Number(
-                    item.price
-                  )
-
-                  *
-
-                  Number(
-                    item.qty || 1
-                  )
-
-                )}
-
-              </strong>
-
+    list.innerHTML = entries
+      .map(([itemId, item]) => {
+        const qty = Math.max(1, Number(item && item.qty || 1));
+        const price = Number(item && item.price || 0);
+        return `
+          <div class="item-row order-bill-row">
+            <div class="order-bill-copy">
+              <span>${escapeHtml(item && item.name || "Item")} × ${qty}</span>
+              <small class="muted">${escapeHtml(item && item.categoryName || "")}</small>
             </div>
-
-          `
-        )
-        .join("");
-
+            <div class="order-bill-actions">
+              <strong>${money(price * qty)}</strong>
+              <button type="button" class="danger compact-action" onclick="openItemVoidModal('${escapeJsString(itemId)}')">Remove</button>
+            </div>
+          </div>`;
+      })
+      .join("");
   }
 
+  document.getElementById("modalTotal").textContent = money(calculateTotal(items));
+}
 
-  document
-    .getElementById(
-      "modalTotal"
-    )
-    .textContent =
 
-      money(
-        calculateTotal(
-          items
-        )
+/* =========================================================
+   WAITER ITEM CORRECTION / VOID
+   Removing a captured item preserves an audit snapshot instead
+   of silently deleting history. The live bill is corrected atomically.
+   ========================================================= */
+
+async function openItemVoidModal(itemId) {
+  if (!itemModalSessionId || itemModalWriteInFlight) return;
+
+  const [sessionSnap, itemSnap] = await Promise.all([
+    db.ref(`sessions/${itemModalSessionId}`).once("value"),
+    db.ref(`sessions/${itemModalSessionId}/items/${itemId}`).once("value")
+  ]);
+
+  const session = sessionSnap.val();
+  const item = itemSnap.val();
+
+  if (!session || session.status !== "active" || sessionOrderIsLocked(session)) {
+    alert("This order can no longer be edited.");
+    return;
+  }
+
+  if (typeof waiterSlot !== "undefined" && waiterSlot && String(session.waiterSlot) !== String(waiterSlot)) {
+    alert("This session is no longer assigned to your waiter view.");
+    return;
+  }
+
+  if (!item) {
+    refreshModalBill();
+    return;
+  }
+
+  itemVoidItemId = String(itemId);
+  const qty = Math.max(1, Number(item.qty || 1));
+  document.getElementById("itemVoidLabel").textContent = `${qty}× ${String(item.name || "Item")}`;
+  document.getElementById("itemVoidReason").value = "wrong_item";
+  document.getElementById("itemVoidNote").value = "";
+  document.getElementById("itemVoidModal").classList.remove("hidden");
+}
+
+function closeItemVoidModal() {
+  document.getElementById("itemVoidModal").classList.add("hidden");
+  itemVoidItemId = null;
+}
+
+function itemVoidReasonLabel(code) {
+  const labels = {
+    wrong_item: "Wrong item captured",
+    wrong_quantity: "Wrong quantity",
+    duplicate: "Duplicate capture",
+    guest_changed_mind: "Guest changed mind",
+    unavailable: "Item unavailable",
+    other: "Other"
+  };
+  return labels[String(code || "")] || "Other";
+}
+
+async function confirmItemVoid() {
+  if (!itemModalSessionId || !itemVoidItemId || itemModalWriteInFlight) return;
+
+  itemModalWriteInFlight = true;
+
+  try {
+    const sessionId = itemModalSessionId;
+    const itemId = itemVoidItemId;
+    const [sessionSnap, itemSnap] = await Promise.all([
+      db.ref(`sessions/${sessionId}`).once("value"),
+      db.ref(`sessions/${sessionId}/items/${itemId}`).once("value")
+    ]);
+
+    const session = sessionSnap.val();
+    const item = itemSnap.val();
+
+    if (!session || session.status !== "active" || sessionOrderIsLocked(session)) {
+      closeItemVoidModal();
+      alert("This order can no longer be edited.");
+      return;
+    }
+
+    if (typeof waiterSlot !== "undefined" && waiterSlot && String(session.waiterSlot) !== String(waiterSlot)) {
+      closeItemVoidModal();
+      alert("This session is no longer assigned to your waiter view.");
+      return;
+    }
+
+    if (!item) {
+      closeItemVoidModal();
+      await refreshModalBill();
+      return;
+    }
+
+    const reasonCode = String(document.getElementById("itemVoidReason").value || "other");
+    const reasonLabel = itemVoidReasonLabel(reasonCode);
+    const note = String(document.getElementById("itemVoidNote").value || "").trim().slice(0, 180);
+    const qty = Math.max(1, Number(item.qty || 1));
+    const nextItems = { ...(session.items || {}) };
+    delete nextItems[itemId];
+
+    const timestamp = firebase.database.ServerValue.TIMESTAMP;
+    const base = `sessions/${sessionId}`;
+    const updates = orderMutationRootUpdates(sessionId, session, calculateTotal(nextItems));
+
+    updates[`${base}/items/${itemId}`] = null;
+    updates[`${base}/voidedItems/${itemId}`] = {
+      ...item,
+      originalItemId: itemId,
+      voidReasonCode: reasonCode,
+      voidReason: reasonLabel,
+      voidNote: note || null,
+      voidedBy: itemModalWaiterName || "Waiter",
+      voidedByStaffId: itemModalWaiterStaffId || null,
+      voidedByWaiterSlot: typeof waiterSlot !== "undefined" && waiterSlot ? String(waiterSlot) : null,
+      voidedAt: timestamp
+    };
+
+    const eventKey = db.ref(`${base}/orderEvents`).push().key;
+    updates[`${base}/orderEvents/${eventKey}`] = {
+      type: "item_voided",
+      itemId,
+      itemName: String(item.name || "Item"),
+      qty,
+      reasonCode,
+      reason: reasonLabel,
+      note: note || null,
+      actorName: itemModalWaiterName || "Waiter",
+      actorStaffId: itemModalWaiterStaffId || null,
+      createdAt: timestamp
+    };
+
+    await db.ref().update(updates);
+
+    if (item.menuItemId) {
+      bumpOrderPadUsage(item.menuItemId, -qty);
+      recordMenuItemUsage(item.menuItemId, -qty).catch(error =>
+        console.warn("Could not adjust EasyBev item usage statistics", error)
       );
+    }
 
+    closeItemVoidModal();
+    renderQuickItems();
+    updateRepeatLastRoundButton();
+    await refreshModalBill();
+    showEasyBevToast("Item removed", `${qty}× ${String(item.name || "Item")} removed from the live bill.`);
+  }
+  finally {
+    itemModalWriteInFlight = false;
+  }
 }
 
 

@@ -161,11 +161,21 @@ async function initialiseEasyBev() {
 
 
     /*
-      MAKE SURE OUR WAITER SLOTS EXIST
+      BOOTSTRAP ONLY WHAT THIS ACTOR NEEDS.
+
+      Normal guest/waiter/manager traffic must not wait for the full
+      EasyBev company/platform tree to be read on every page load.
+      Venue actors only need the permanent waiter-slot foundation; the
+      company foundation is an Admin/Owner responsibility.
     */
 
-    await ensureWaiterSlots();
-    await ensurePlatformFoundation();
+    if (managerMode || waiterSlot || guestSlot) {
+      await ensureWaiterSlots();
+    }
+
+    if (ownerMode || adminMode) {
+      await ensurePlatformFoundation();
+    }
 
 
     /*

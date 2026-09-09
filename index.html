@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#07131c" />
-  <title>EasyBev · v2.2</title>
+  <title>EasyBev · v2.5.2</title>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -581,6 +581,7 @@
       <input
         id="itemName"
         type="text"
+        maxlength="100"
         autocomplete="off"
         placeholder="Item or quantity + item"
         oninput="handleFastItemInput()"
@@ -600,6 +601,8 @@
         id="itemQty"
         type="number"
         min="1"
+        max="99"
+        step="1"
         value="1"
         placeholder="Qty"
       />
@@ -666,6 +669,42 @@
 
   </div>
 
+</div>
+
+
+<!-- =========================================================
+     WAITER ITEM CORRECTION / VOID MODAL
+     ========================================================= -->
+<div id="itemVoidModal" class="modal hidden">
+  <div class="modal-content compact-sheet">
+    <div class="section-kicker">Correct captured item</div>
+    <h2>Remove Item</h2>
+    <p id="itemVoidLabel" class="muted"></p>
+
+    <label>
+      Reason
+      <select id="itemVoidReason">
+        <option value="wrong_item">Wrong item captured</option>
+        <option value="wrong_quantity">Wrong quantity</option>
+        <option value="duplicate">Duplicate capture</option>
+        <option value="guest_changed_mind">Guest changed mind</option>
+        <option value="unavailable">Item unavailable</option>
+        <option value="other">Other</option>
+      </select>
+    </label>
+
+    <label>
+      Note <span class="muted">(optional)</span>
+      <input id="itemVoidNote" type="text" maxlength="180" placeholder="Short correction note" />
+    </label>
+
+    <p class="muted">The item leaves the live bill but remains in the session audit history.</p>
+
+    <div class="modal-actions">
+      <button class="secondary" type="button" onclick="closeItemVoidModal()">Cancel</button>
+      <button class="danger" type="button" onclick="confirmItemVoid()">Remove Item</button>
+    </div>
+  </div>
 </div>
 
 

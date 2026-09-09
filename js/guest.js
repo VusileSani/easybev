@@ -679,18 +679,12 @@ async function findOrCreateGuestSession(
   phone
 ) {
 
-  const sessionsSnap =
-    await db
-      .ref(
-        "sessions"
-      )
-      .once(
-        "value"
-      );
+  const sessionsQuery = currentGuestUserId
+    ? db.ref("sessions").orderByChild("guestUserId").equalTo(currentGuestUserId)
+    : db.ref("sessions").orderByChild("guestPhone").equalTo(cleanPhone(phone));
 
-
-  const sessions =
-    sessionsSnap.val() || {};
+  const sessionsSnap = await sessionsQuery.once("value");
+  const sessions = sessionsSnap.val() || {};
 
 
   const existing =
@@ -1086,9 +1080,12 @@ async function loadGuestHistory() {
   const rememberedUserId = localStorage.getItem(guestUserStorageKey());
   if (!rememberedUserId) return;
 
-  const snap = await db.ref("sessions").once("value");
+  const snap = await db.ref("sessions")
+    .orderByChild("guestUserId")
+    .equalTo(rememberedUserId)
+    .once("value");
   const rows = Object.entries(snap.val() || {})
-    .filter(([, session]) => session && session.guestUserId === rememberedUserId && ["closed", "ended"].includes(session.status))
+    .filter(([, session]) => session && ["closed", "ended"].includes(session.status))
     .sort((a, b) => Number(b[1].closedAt || b[1].endedAt || 0) - Number(a[1].closedAt || a[1].endedAt || 0))
     .slice(0, 5);
 
@@ -1329,63 +1326,10 @@ async function requestBill() {
 
 async function payBill() {
 
-  if (
-    !currentSessionId
-  ) {
-
-    return;
-
-  }
-
-
-  const sessionSnap = await db.ref(`sessions/${currentSessionId}`).once("value");
-  const session = sessionSnap.val();
-
-  if (!session || session.status !== "active" || sessionBillStatus(session) !== "finalized") {
-    alert("This bill is not ready for payment.");
-    return;
-  }
-
-  const confirmPayment =
-    confirm(
-      `Payment processing is not connected yet. Record ${money(sessionBillTotal(session))} as paid?`
-    );
-
-
-  if (
-    !confirmPayment
-  ) {
-
-    return;
-
-  }
-
-
-  const base = `sessions/${currentSessionId}`;
-  const timestamp = firebase.database.ServerValue.TIMESTAMP;
-  const updates = {};
-
-  updates[`${base}/bill/status`] = "paid";
-  updates[`${base}/bill/paidAt`] = timestamp;
-  updates[`${base}/bill/paidTotal`] = sessionBillTotal(session);
-  updates[`${base}/latestRequest`] = {
-    type: "payment",
-    label: "Payment completed",
-    status: "new",
-    createdAt: timestamp
-  };
-  updates[`${base}/lastActivityAt`] = timestamp;
-
-  addLifecycleTransitionUpdates(
-    updates,
-    currentSessionId,
-    session,
-    "awaiting_settlement",
-    "payment_recorded",
-    { role: "guest", slot: null, name: guestName(session) }
-  );
-
-  await db.ref().update(updates);
+  /* Payment is intentionally not simulated. A real provider must confirm
+     settlement through a trusted server-side integration before EasyBev
+     may write bill.status = "paid". */
+  alert("Online payment is not connected. Settlement is handled by the venue and its POS.");
 
 }
 
@@ -1404,7 +1348,7 @@ function renderGuestBillItems(session) {
         const subtotal = Number(item.price || 0) * Number(item.qty || 1);
         return `
           <div class="bill-row">
-            <span>${escapeHtml(item.name)} × ${item.qty || 1}</span>
+            <span>${escapeHtml(item.name)} × ${Number(item.qty || 1)}</span>
             <strong>${money(subtotal)}</strong>
           </div>`;
       }).join("")
@@ -1461,7 +1405,7 @@ function renderGuestBillStatus(session) {
       <div class="status success">
         Bill ready at ${money(sessionBillTotal(session))}. Settlement is being handled by the venue; order items are locked.
       </div>`;
-    if (typeof platformFeatureEnabled !== "function" || platformFeatureEnabled("onlinePayment", true)) {
+    if (typeof platformOnlinePaymentReady === "function" && platformOnlinePaymentReady()) {
       payButton.classList.remove("hidden");
     }
     return;

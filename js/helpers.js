@@ -22,7 +22,7 @@ function cleanPhone(phone) {
 
 function escapeHtml(value) {
 
-  return String(value || "")
+  return (value === null || value === undefined ? "" : String(value))
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
@@ -42,11 +42,14 @@ function calculateTotal(items) {
     .reduce(
       (total, item) => {
 
-        return (
-          total +
-          Number(item.price || 0) *
-          Number(item.qty || 1)
-        );
+        const price = Number(item && item.price);
+        const qty = Number(item && item.qty == null ? 1 : item.qty);
+
+        if (!Number.isFinite(price) || !Number.isFinite(qty) || qty <= 0) {
+          return total;
+        }
+
+        return total + (price * qty);
 
       },
       0
@@ -189,11 +192,18 @@ function sortedWaiterEntries(waiters) {
 
 
 function escapeJsString(value) {
-  return String(value || "")
+  /* Values produced here are embedded inside single-quoted JavaScript
+     strings that themselves live inside double-quoted HTML attributes.
+     Protect both parsing layers so venue-managed names cannot break out. */
+  return (value === null || value === undefined ? "" : String(value))
     .replace(/\\/g, "\\\\")
     .replace(/'/g, "\\'")
     .replace(/\r/g, "")
-    .replace(/\n/g, " ");
+    .replace(/\n/g, " ")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 

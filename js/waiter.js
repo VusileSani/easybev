@@ -74,6 +74,8 @@ async function startWaiterDashboard(
       .ref(
         "sessions"
       )
+      .orderByChild("waiterSlot")
+      .equalTo(String(slot))
       .on(
         "value",
         snap => {

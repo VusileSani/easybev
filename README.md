@@ -1,4 +1,4 @@
-# EasyBev v2.5 — Guest Profile & Categorised Waiter Pad
+# EasyBev v2.5.2 — Guest Profile, Categorised Pad & Repair Pass
 
 
 EasyBev is a lightweight guest-service and digital waiter-pad layer for hospitality venues.
@@ -13,6 +13,13 @@ EasyBev is a lightweight guest-service and digital waiter-pad layer for hospital
 - Active sessions can be handed to another assigned waiter without breaking the guest session or running bill.
 - Guests can maintain a compact reusable profile: required identity details plus optional service, language, dietary, bill, tip and notification preferences.
 - Management categorises venue items once; the waiter pad turns those categories into fast rush-hour tabs with Frequent items and quick quantities.
+
+
+## v2.5.2 repair baseline
+- Waiter item removal is an audited void with explicit reason rather than silent deletion.
+- Rush-hour paths avoid broad session-history reads where practical.
+- Normal venue actors no longer block on company/platform bootstrap during startup.
+- Repeat Last Round, managed catalogue pricing, handover, lifecycle and reconciliation invariants are regression-tested.
 
 ## Project structure
 - `index.html` — application shell
@@ -39,3 +46,7 @@ The existing restaurant service data remains the current single-venue operationa
 
 
 See `RELEASE-NOTES-v2.5.md` for guest profile and categorised waiter-pad changes. Previous release notes remain in the package.
+
+
+## Current repair pass
+See `RELEASE-NOTES-v2.5.1.md`, `VALIDATION-v2.5.1.md` and `CODE-AUDIT-v2.5.1.md` for the latest repair/performance review and remaining production blockers.
