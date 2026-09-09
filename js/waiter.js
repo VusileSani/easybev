@@ -37,13 +37,11 @@ async function startWaiterDashboard(
       LIVE WAITER NAME UPDATE
     */
 
-    db
-      .ref(
-        `waiters/${slot}`
-      )
-      .on(
-        "value",
-        snap => {
+    replaceLiveListener(
+      `actor:waiter:${slot}:identity`,
+      db.ref(`waiters/${slot}`),
+      "value",
+      snap => {
 
           const latest =
             snap.val() || {};
@@ -63,22 +61,18 @@ async function startWaiterDashboard(
               `${name}'s Guests`;
 
         }
-      );
+    );
 
 
     /*
       LIVE GUEST SESSION UPDATE
     */
 
-    db
-      .ref(
-        "sessions"
-      )
-      .orderByChild("waiterSlot")
-      .equalTo(String(slot))
-      .on(
-        "value",
-        snap => {
+    replaceLiveListener(
+      `actor:waiter:${slot}:sessions`,
+      db.ref("sessions").orderByChild("waiterSlot").equalTo(String(slot)),
+      "value",
+      snap => {
 
           const sessions =
             snap.val() || {};
@@ -97,7 +91,7 @@ async function startWaiterDashboard(
           );
 
         }
-      );
+    );
 
   }
   catch (error) {

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#07131c" />
-  <title>EasyBev · v2.6.0</title>
+  <title>EasyBev · v2.6.2</title>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -85,10 +85,10 @@
         <div id="guestHistory" class="guest-history hidden"></div>
 
         <div class="access-grid auth-access-grid">
-          <button class="access-btn primary" onclick="location.href='?guest=1'">
+          <div class="access-btn primary guest-scan-card" role="note">
             <span class="access-icon">⌁</span>
-            <span class="access-copy"><strong>Guest</strong><small>Connect through a waiter QR and verify your mobile number</small></span>
-          </button>
+            <span class="access-copy"><strong>Guest</strong><small>Scan the QR from your waiter. EasyBev opens the right service connection automatically.</small></span>
+          </div>
 
           <button class="access-btn" onclick="openStaffSignIn()">
             <span class="access-icon">◉</span>
@@ -189,8 +189,8 @@
           Remember me on this device
         </label>
 
-        <button onclick="requestOtp()">
-          Send OTP
+        <button id="guestSendOtpButton" onclick="requestOtp()">
+          Send code
         </button>
 
         <div id="otpArea" class="hidden">
@@ -206,10 +206,11 @@
           </p>
 
           <button
+            id="guestVerifyOtpButton"
             class="success"
             onclick="verifyOtp()"
           >
-            Verify
+            Verify &amp; connect
           </button>
 
         </div>
@@ -780,6 +781,7 @@
 <script src="js/helpers.js"></script>
 <script src="js/messages.js"></script>
 <script src="js/notifications.js"></script>
+<script src="js/scale.js"></script>
 <script src="js/firebase.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/navigation.js"></script>

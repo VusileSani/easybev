@@ -147,7 +147,19 @@ async function connectAuthenticatedGuestToWaiter() {
    MOBILE VERIFICATION
    ========================================================= */
 
+let guestOtpRequestInFlight = false;
+let guestOtpVerifyInFlight = false;
+
+function setGuestAuthBusy(buttonId, busy, busyLabel, idleLabel) {
+  const button = document.getElementById(buttonId);
+  if (!button) return;
+  button.disabled = Boolean(busy);
+  button.setAttribute("aria-busy", busy ? "true" : "false");
+  button.textContent = busy ? busyLabel : idleLabel;
+}
+
 async function requestOtp() {
+  if (guestOtpRequestInFlight) return;
   const firstName = String(document.getElementById("guestName").value || "").trim();
   if (!firstName) {
     document.getElementById("verificationStatus").innerHTML = `<div class="status danger">Enter your first name.</div>`;
@@ -160,6 +172,8 @@ async function requestOtp() {
     return;
   }
 
+  guestOtpRequestInFlight = true;
+  setGuestAuthBusy("guestSendOtpButton", true, "Sending…", "Send code");
   sessionStorage.setItem("easybev_pending_name", firstName);
   sessionStorage.setItem("easybev_pending_phone", phone);
   document.getElementById("verificationStatus").innerHTML = `<div class="status">Sending SMS verification code…</div>`;
@@ -174,16 +188,23 @@ async function requestOtp() {
     resetGuestRecaptcha();
     const message = String(error && error.message || "Could not send the SMS code.");
     document.getElementById("verificationStatus").innerHTML = `<div class="status danger">${escapeHtml(message)}</div>`;
+  } finally {
+    guestOtpRequestInFlight = false;
+    setGuestAuthBusy("guestSendOtpButton", false, "Sending…", "Send code");
   }
 }
 
 async function verifyOtp() {
+  if (guestOtpVerifyInFlight) return;
   const otp = String(document.getElementById("guestOtp").value || "").trim();
   const phone = sessionStorage.getItem("easybev_pending_phone");
   if (!phone || !otp) {
     document.getElementById("verificationStatus").innerHTML = `<div class="status danger">Enter the SMS verification code.</div>`;
     return;
   }
+
+  guestOtpVerifyInFlight = true;
+  setGuestAuthBusy("guestVerifyOtpButton", true, "Connecting…", "Verify & connect");
 
   try {
     const user = await confirmGuestPhoneAuthentication(otp);
@@ -219,6 +240,9 @@ async function verifyOtp() {
       ? "That verification code is incorrect."
       : (error && error.message) || "Verification failed. Request a new SMS code and try again.";
     document.getElementById("verificationStatus").innerHTML = `<div class="status danger">${escapeHtml(message)}</div>`;
+  } finally {
+    guestOtpVerifyInFlight = false;
+    setGuestAuthBusy("guestVerifyOtpButton", false, "Connecting…", "Verify & connect");
   }
 }
 
@@ -891,7 +915,7 @@ async function connectGuestToSession(sessionId) {
 
   loadGuestProfileIntoControls();
 
-  db.ref(`sessions/${sessionId}`).on("value", async snap => {
+  replaceLiveListener(`actor:guest:session:${sessionId}`, db.ref(`sessions/${sessionId}`), "value", async snap => {
     const session = snap.val();
     if (!session || session.status !== "active") {
       showGuestSessionEnded(session);

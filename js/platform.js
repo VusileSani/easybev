@@ -127,8 +127,18 @@ async function writePlatformAudit(action, targetType, targetId, reason, beforeVa
 async function ensurePlatformFoundation() {
   if (!db) return;
 
-  const snap = await db.ref("platform").once("value");
-  const platform = snap.val() || {};
+  const [companySnap, venueSnap, staffSnap, featureSnap] = await Promise.all([
+    db.ref("platform/company").once("value"),
+    db.ref(`platform/venues/${PLATFORM_DEFAULT_VENUE_ID}`).once("value"),
+    db.ref("platform/staff").once("value"),
+    db.ref("platform/featureFlags").once("value")
+  ]);
+  const platform = {
+    company: companySnap.val() || null,
+    venues: venueSnap.exists() ? {[PLATFORM_DEFAULT_VENUE_ID]: venueSnap.val()} : {},
+    staff: staffSnap.val() || null,
+    featureFlags: featureSnap.val() || {}
+  };
   const updates = {};
   const ts = platformTimestamp();
 
@@ -311,7 +321,7 @@ function subscribeToPlatformAnnouncements(actor) {
   }
 
   const companyRef = db.ref("platform/company");
-  const announcementRef = db.ref("platform/announcements");
+  const announcementRef = boundedRecentQuery("platform/announcements", "createdAt", EASYBEV_SCALE_LIMITS.platformAnnouncements);
   const featureRef = db.ref("platform/featureFlags");
   const user = auth && auth.currentUser;
   const receiptRef = user && user.uid
@@ -503,25 +513,27 @@ function startPlatformDashboard(role) {
     if (auditBtn) auditBtn.textContent = "Activity";
   }
 
+  removeLiveListenersByPrefix("actor:platform:");
+
   const bindings = [
-    ["platform/company", value => latestPlatformCompany = value],
-    ["platform/venues", value => latestPlatformVenues = value],
-    ["platform/partnerApplications", value => latestPlatformPartnerApplications = value],
-    ["platform/venuePeople", value => latestPlatformVenuePeople = value],
-    ["platform/venueInvites", value => latestPlatformVenueInvites = value],
-    ["platform/staff", value => latestPlatformStaff = value],
-    ["platform/announcements", value => latestPlatformAnnouncements = value],
-    ["platform/supportCases", value => latestPlatformSupportCases = value],
-    ["platform/featureFlags", value => latestPlatformFeatureFlags = value],
-    ["platform/auditLog", value => latestPlatformAudit = value],
-    ["sessions", value => latestPlatformSessions = value],
-    ["waiters", value => latestPlatformWaiters = value]
+    ["company", db.ref("platform/company"), value => latestPlatformCompany = value],
+    ["venues", boundedRecentQuery("platform/venues", "updatedAt", EASYBEV_SCALE_LIMITS.platformRecentVenues), value => latestPlatformVenues = value],
+    ["partnerApplications", boundedRecentQuery("platform/partnerApplications", "updatedAt", EASYBEV_SCALE_LIMITS.platformPartnerApplications), value => latestPlatformPartnerApplications = value],
+    ["venuePeople", db.ref("platform/venuePeople"), value => latestPlatformVenuePeople = value],
+    ["venueInvites", db.ref("platform/venueInvites"), value => latestPlatformVenueInvites = value],
+    ["staff", db.ref("platform/staff"), value => latestPlatformStaff = value],
+    ["announcements", boundedRecentQuery("platform/announcements", "createdAt", EASYBEV_SCALE_LIMITS.platformAnnouncements), value => latestPlatformAnnouncements = value],
+    ["supportCases", boundedRecentQuery("platform/supportCases", "updatedAt", EASYBEV_SCALE_LIMITS.platformSupportCases), value => latestPlatformSupportCases = value],
+    ["featureFlags", db.ref("platform/featureFlags"), value => latestPlatformFeatureFlags = value],
+    ["audit", boundedRecentQuery("platform/auditLog", "createdAt", EASYBEV_SCALE_LIMITS.platformAuditEvents), value => latestPlatformAudit = value],
+    ["sessions", boundedRecentQuery("sessions", "lastActivityAt", EASYBEV_SCALE_LIMITS.platformRecentSessions), value => latestPlatformSessions = value],
+    ["waiters", db.ref("waiters"), value => latestPlatformWaiters = value]
   ];
 
-  bindings.forEach(([path, assign]) => {
-    db.ref(path).on("value", snap => {
+  bindings.forEach(([key, query, assign]) => {
+    replaceLiveListener(`actor:platform:${key}`, query, "value", snap => {
       assign(snap.val() || {});
-      renderPlatformDashboard();
+      scheduleUiRender("platform:dashboard", renderPlatformDashboard);
     });
   });
 }

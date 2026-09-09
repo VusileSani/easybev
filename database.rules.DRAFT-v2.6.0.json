@@ -13,8 +13,39 @@
       },
       "venues": {
         ".indexOn": [
+          "updatedAt",
           "status",
-          "subscriptionStatus"
+          "name"
+        ]
+      },
+      "partnerApplications": {
+        ".indexOn": [
+          "updatedAt",
+          "status",
+          "receivedAt"
+        ]
+      },
+      "announcements": {
+        ".indexOn": [
+          "createdAt",
+          "publishedAt",
+          "status"
+        ]
+      },
+      "supportCases": {
+        ".indexOn": [
+          "updatedAt",
+          "createdAt",
+          "status",
+          "severity",
+          "venueId"
+        ]
+      },
+      "auditLog": {
+        ".indexOn": [
+          "createdAt",
+          "actorRole",
+          "targetType"
         ]
       }
     },
@@ -22,7 +53,12 @@
       "$uid": {
         ".read": "auth != null && (auth.uid === $uid || auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')",
         ".write": "auth != null && (auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')"
-      }
+      },
+      ".indexOn": [
+        "venueId",
+        "role",
+        "active"
+      ]
     },
     "users": {
       "$uid": {
@@ -38,11 +74,11 @@
     },
     "sessions": {
       ".indexOn": [
-        "guestUserId",
         "waiterSlot",
+        "guestUserId",
+        "guestPhone",
         "status",
-        "lifecycleState",
-        "createdAt"
+        "lastActivityAt"
       ],
       "$sessionId": {
         ".read": "auth != null && (data.child('guestUserId').val() === auth.uid || root.child('accessByUid').child(auth.uid).child('active').val() === true || auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')",
@@ -68,7 +104,8 @@
     "menuItems": {
       ".indexOn": [
         "categoryId",
-        "active"
+        "active",
+        "name"
       ],
       ".read": "auth != null",
       ".write": "auth != null && (root.child('accessByUid').child(auth.uid).child('role').val() === 'manager' || auth.token.easybevRole === 'owner' || auth.token.easybevRole === 'admin')"
@@ -84,7 +121,7 @@
     "menuUsage": {
       ".indexOn": [
         "count",
-        "updatedAt"
+        "lastUsedAt"
       ],
       ".read": "auth != null",
       ".write": "auth != null && root.child('accessByUid').child(auth.uid).child('active').val() === true"

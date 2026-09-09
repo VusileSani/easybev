@@ -6,6 +6,7 @@ let guestConfirmationResult = null;
 let guestRecaptchaVerifier = null;
 
 function resetActorAuthority() {
+  removeLiveListenersByPrefix("actor:");
   managerMode = false;
   adminMode = false;
   ownerMode = false;

@@ -1332,3 +1332,10 @@ button.platform-attention-item:hover { background:#f7f9f8; transform:none; }
 /* v2.6.1 authenticated announcement dismissal */
 .platform-notice-copy{display:flex;align-items:center;gap:10px;min-width:0;flex:1}.platform-notice-copy span{min-width:0}.platform-notice-dismiss{margin-left:auto;min-width:32px;width:32px;height:32px;padding:0;border:0;border-radius:50%;background:transparent;color:inherit;font-size:22px;line-height:1;box-shadow:none}.platform-notice-dismiss:hover,.platform-notice-dismiss:focus{background:rgba(7,19,28,.08);transform:none}.platform-notice.warning .platform-notice-dismiss:hover,.platform-notice.warning .platform-notice-dismiss:focus{background:rgba(95,67,11,.10)}
 @media(max-width:760px){.platform-notice{flex-direction:row}.platform-notice-copy{align-items:flex-start;flex-direction:column;gap:3px}.platform-notice-dismiss{flex:0 0 32px;align-self:flex-start}}
+
+
+/* v2.6.2 ease + stress-operation refinements */
+.guest-scan-card { cursor: default; }
+.guest-scan-card:hover { transform: none; }
+button[aria-busy="true"] { opacity: .72; cursor: wait; pointer-events: none; }
+.auth-card input:disabled, #guestVerification input:disabled { opacity: .72; }

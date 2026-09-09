@@ -55,40 +55,59 @@ function showManagerSection(section = "home") {
 function startManagerDashboard() {
 
   try {
+    removeLiveListenersByPrefix("actor:manager:");
 
-    db.ref("waiters").on("value", snap => {
+    replaceLiveListener("actor:manager:waiters", db.ref("waiters"), "value", snap => {
       latestManagerWaiters = snap.val() || {};
-      if (managerActiveSection === "home") renderManagerServicePulse();
-      if (managerActiveSection === "team") renderManagerWaiterSlots(latestManagerWaiters, latestManagerSessions);
-      if (managerActiveSection === "service") renderManagerReports();
+      scheduleUiRender("manager:waiters", () => {
+        if (managerActiveSection === "home") renderManagerServicePulse();
+        if (managerActiveSection === "team") renderManagerWaiterSlots(latestManagerWaiters, latestManagerSessions);
+        if (managerActiveSection === "service") renderManagerReports();
+      });
     });
 
-    db.ref("sessions").on("value", snap => {
-      latestManagerSessions = snap.val() || {};
-      if (managerActiveSection === "home") renderManagerServicePulse();
-      if (managerActiveSection === "team") renderManagerWaiterSlots(latestManagerWaiters, latestManagerSessions);
-      if (managerActiveSection === "service") renderManagerReports();
-    });
+    /* Management only needs the live/recent operating window on screen.
+       Historical reporting belongs in bounded report queries, not a permanent
+       subscription to every session the venue has ever created. */
+    replaceLiveListener(
+      "actor:manager:sessions",
+      boundedRecentQuery("sessions", "lastActivityAt", EASYBEV_SCALE_LIMITS.managerRecentSessions),
+      "value",
+      snap => {
+        latestManagerSessions = snap.val() || {};
+        scheduleUiRender("manager:sessions", () => {
+          if (managerActiveSection === "home") renderManagerServicePulse();
+          if (managerActiveSection === "team") renderManagerWaiterSlots(latestManagerWaiters, latestManagerSessions);
+          if (managerActiveSection === "service") renderManagerReports();
+        });
+      }
+    );
 
-    db.ref("menuItems").on("value", snap => {
+    replaceLiveListener("actor:manager:menuItems", db.ref("menuItems"), "value", snap => {
       latestManagerMenuItems = snap.val() || {};
-      if (!document.getElementById("managerMenuItems")?.classList.contains("hidden")) renderManagerMenuItems();
+      scheduleUiRender("manager:items", () => {
+        if (!document.getElementById("managerMenuItems")?.classList.contains("hidden")) renderManagerMenuItems();
+      });
     });
 
-    db.ref("menuCategories").on("value", snap => {
+    replaceLiveListener("actor:manager:menuCategories", db.ref("menuCategories"), "value", snap => {
       latestManagerMenuCategories = snap.val() || {};
-      if (!document.getElementById("managerMenuItems")?.classList.contains("hidden")) renderManagerMenuItems();
+      scheduleUiRender("manager:categories", () => {
+        if (!document.getElementById("managerMenuItems")?.classList.contains("hidden")) renderManagerMenuItems();
+      });
     });
 
     ensureDefaultMenuCategories().catch(error => console.warn("Could not initialise menu categories", error));
 
-    db.ref("staff").on("value", snap => {
+    replaceLiveListener("actor:manager:staff", db.ref("staff"), "value", snap => {
       latestManagerStaff = snap.val() || {};
-      if (managerActiveSection === "team") {
-        renderManagerWaiterSlots(latestManagerWaiters, latestManagerSessions);
-        renderManagerStaff();
-      }
-      if (managerActiveSection === "service") renderManagerReports();
+      scheduleUiRender("manager:staff", () => {
+        if (managerActiveSection === "team") {
+          renderManagerWaiterSlots(latestManagerWaiters, latestManagerSessions);
+          renderManagerStaff();
+        }
+        if (managerActiveSection === "service") renderManagerReports();
+      });
     });
 
     showManagerSection("home");
@@ -99,7 +118,6 @@ function startManagerDashboard() {
     showStartupError(error.message || "Could not load management dashboard.");
   }
 }
-
 
 function renderManagerServicePulse() {
   const panel = document.getElementById("managerServicePulse");
