@@ -282,7 +282,10 @@ async function loadRememberedGuestSessions() {
       const isActive =
         session &&
         session.status === "active" &&
-        String(session.waiterSlot) === String(slot);
+        (
+          String(session.waiterSlot) === String(slot) ||
+          String(sessionOriginalWaiterSlot(session)) === String(slot)
+        );
 
       if (!isActive) {
         localStorage.removeItem(
@@ -291,9 +294,9 @@ async function loadRememberedGuestSessions() {
         continue;
       }
 
-      let waiterName = sessionWaiterSnapshotName(session);
+      let waiterName = sessionWaiterCurrentName(session);
       if (!waiterName) {
-        const waiter = await getWaiter(slot);
+        const waiter = await getWaiter(session.waiterSlot || slot);
         waiterName = getWaiterDisplayName(waiter);
       }
 

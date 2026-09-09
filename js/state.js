@@ -93,6 +93,7 @@ let itemModalCatalog = [];
 let itemModalLastRound = [];
 let itemModalBatchId = null;
 let reconcileModalSessionId = null;
+let handoverModalSessionId = null;
 
 
 /* Lightweight attention state. Unread state stays local to the waiter device. */

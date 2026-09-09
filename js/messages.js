@@ -234,8 +234,8 @@ async function sendWaiterMessage(
     `sessions/${sessionId}/messages/${messageRef.key}`
   ] = {
     sender: "waiter",
-    senderStaffId: sessionWaiterSnapshotId(session) || null,
-    senderName: sessionWaiterSnapshotName(session) || null,
+    senderStaffId: sessionWaiterCurrentId(session) || null,
+    senderName: sessionWaiterCurrentName(session) || null,
     text,
     createdAt:
       firebase.database.ServerValue.TIMESTAMP

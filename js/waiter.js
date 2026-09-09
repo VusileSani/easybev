@@ -117,90 +117,42 @@ function renderWaiterDashboard(
   sessions
 ) {
 
-  const container =
-    document.getElementById(
-      "waiterSessions"
+  const container = document.getElementById("waiterSessions");
+
+  const activeSessions = Object.entries(sessions)
+    .filter(([, session]) =>
+      session &&
+      session.status === "active" &&
+      String(session.waiterSlot) === String(slot)
+    )
+    .sort((a, b) =>
+      Number(b[1].lastActivityAt || b[1].createdAt || 0) -
+      Number(a[1].lastActivityAt || a[1].createdAt || 0)
     );
 
-
-  const activeSessions =
-
-    Object.entries(
-      sessions
+  const recentlyClosed = Object.entries(sessions)
+    .filter(([, session]) =>
+      session &&
+      session.status === "closed" &&
+      String(session.waiterSlot) === String(slot)
     )
+    .sort((a, b) => Number(b[1].closedAt || 0) - Number(a[1].closedAt || 0))
+    .slice(0, 4);
 
-      .filter(
-        ([, session]) =>
+  const activeHtml = activeSessions.length
+    ? activeSessions.map(([sessionId, session]) => waiterSessionHtml(sessionId, session)).join("")
+    : `<div class="card"><p class="muted">No active guest sessions.</p></div>`;
 
-          session &&
+  const closedHtml = recentlyClosed.length
+    ? `<details class="card recent-sessions">
+        <summary>Recently closed <span class="badge">${recentlyClosed.length}</span></summary>
+        <div class="recent-session-list">
+          ${recentlyClosed.map(([sessionId, session]) => waiterClosedSessionHtml(sessionId, session)).join("")}
+        </div>
+      </details>`
+    : "";
 
-          session.status ===
-            "active" &&
-
-          String(
-            session.waiterSlot
-          ) ===
-            String(
-              slot
-            )
-
-      )
-
-      .sort(
-        (a, b) =>
-
-          Number(
-            b[1].lastActivityAt ||
-            b[1].createdAt ||
-            0
-          )
-
-          -
-
-          Number(
-            a[1].lastActivityAt ||
-            a[1].createdAt ||
-            0
-          )
-      );
-
-
-  if (
-    !activeSessions.length
-  ) {
-
-    container.innerHTML = `
-
-      <div class="card">
-
-        <p class="muted">
-          No active guest sessions.
-        </p>
-
-      </div>
-
-    `;
-
-    return;
-
-  }
-
-
-  container.innerHTML =
-
-    activeSessions
-      .map(
-
-        ([sessionId, session]) =>
-
-          waiterSessionHtml(
-            sessionId,
-            session
-          )
-
-      )
-      .join("");
-
+  container.innerHTML = activeHtml + closedHtml;
 }
 
 
@@ -243,7 +195,14 @@ function waiterBillActionHtml(sessionId, session) {
   const billStatus = sessionBillStatus(session);
   const reconciliationStatus = String((session.reconciliation && session.reconciliation.status) || "");
 
-  if (["open", "requested"].includes(billStatus)) {
+  if (billStatus === "open") {
+    return `<div class="bill-close-actions">
+      <button class="warning" onclick="markBillRequestedByWaiter('${sessionId}')">Bill Requested</button>
+      <span class="muted">Use when the guest asks verbally.</span>
+    </div>`;
+  }
+
+  if (billStatus === "requested") {
     if (reconciliationStatus === "stale") {
       return `<span class="badge">Reconcile POS list again before processing bill</span>`;
     }
@@ -254,11 +213,11 @@ function waiterBillActionHtml(sessionId, session) {
   }
 
   if (billStatus === "finalized") {
-    return `<div class="bill-close-actions"><span class="badge active">Bill Processed</span><button class="success" onclick="closePaidSession('${sessionId}')">Close Session</button></div>`;
+    return `<div class="bill-close-actions"><span class="badge warning">Awaiting settlement</span><button class="success" onclick="closePaidSession('${sessionId}')">Close Session</button></div>`;
   }
 
   if (billStatus === "paid") {
-    return `<button class="success" onclick="closePaidSession('${sessionId}')">Close Session</button>`;
+    return `<div class="bill-close-actions"><span class="badge active">Payment recorded</span><button class="success" onclick="closePaidSession('${sessionId}')">Close Session</button></div>`;
   }
 
   return "";
@@ -276,6 +235,13 @@ function waiterOrderActionsHtml(sessionId, label, session) {
 }
 
 
+function waiterLifecycleBadgeHtml(session) {
+  const state = sessionLifecycleState(session);
+  const klass = sessionLifecycleBadgeClass(state);
+  return `<span class="badge ${klass}">${escapeHtml(sessionLifecycleLabel(state))}</span>`;
+}
+
+
 function waiterSessionHtml(sessionId, session) {
   const total = sessionBillTotal(session);
   const label = guestLabel(sessionId, session);
@@ -290,7 +256,7 @@ function waiterSessionHtml(sessionId, session) {
         </div>
         <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
           ${unreadCount ? `<span class="unread-badge">${unreadCount} new</span>` : ""}
-          <span class="badge active">Active</span>
+          ${waiterLifecycleBadgeHtml(session)}
         </div>
       </div>
 
@@ -312,16 +278,160 @@ function waiterSessionHtml(sessionId, session) {
       ${waiterOrderActionsHtml(sessionId, label, session)}
       ${waiterBillActionHtml(sessionId, session)}
 
-      ${!["finalized", "paid"].includes(sessionBillStatus(session)) ? `
-        <details class="session-more">
-          <summary>More</summary>
-          <div class="session-more-body">
-            <button class="danger" onclick="endSessionOverride('${sessionId}', 'waiter_override')">End Session</button>
-            <p class="muted">Exception only: abandoned or stuck service sessions. Normal service uses Process Bill → Close Session.</p>
+      <details class="session-more">
+        <summary>More</summary>
+        <div class="session-more-body">
+          <div class="session-secondary-actions">
+            <button class="secondary" onclick="openWaiterHandoverModal('${sessionId}')">Transfer Waiter</button>
+            ${!["finalized", "paid"].includes(sessionBillStatus(session))
+              ? `<button class="danger" onclick="endSessionOverride('${sessionId}', 'waiter_override')">End Session</button>`
+              : ""}
           </div>
-        </details>
-      ` : ""}
+          ${!["finalized", "paid"].includes(sessionBillStatus(session))
+            ? `<p class="muted">End Session is exception-only for abandoned or stuck service sessions.</p>`
+            : ""}
+          <div class="lifecycle-audit-block">
+            <strong>Session activity</strong>
+            ${sessionLifecycleHistoryHtml(session)}
+          </div>
+        </div>
+      </details>
     </div>`;
+}
+
+
+function waiterClosedSessionHtml(sessionId, session) {
+  return `<div class="recent-session-row">
+    <div>
+      <strong>${escapeHtml(guestName(session))}</strong>
+      <small>${escapeHtml(guestLabel(sessionId, session))} · ${escapeHtml(money(sessionBillTotal(session)))}</small>
+    </div>
+    <div class="recent-session-actions">
+      <span class="badge">Closed</span>
+      <button class="secondary" onclick="reopenClosedSession('${sessionId}')">Reopen</button>
+    </div>
+  </div>`;
+}
+
+
+/* =========================================================
+   WAITER HANDOVER
+   ========================================================= */
+
+async function openWaiterHandoverModal(sessionId) {
+  const sessionSnap = await db.ref(`sessions/${sessionId}`).once("value");
+  const session = sessionSnap.val();
+
+  if (!session || session.status !== "active") {
+    alert("This session is no longer active.");
+    return;
+  }
+
+  if (!canManageSessionLifecycle(session)) {
+    alert("This session is not assigned to your waiter view.");
+    return;
+  }
+
+  const waiters = await getAllWaiters();
+  const candidates = sortedWaiterEntries(waiters)
+    .filter(([slot, candidate]) =>
+      String(slot) !== String(session.waiterSlot) &&
+      candidate &&
+      candidate.active !== false &&
+      Boolean(candidate.assignedStaffId || candidate.assignedStaffName || candidate.name)
+    );
+
+  if (!candidates.length) {
+    alert("There is no other assigned, active waiter available for handover.");
+    return;
+  }
+
+  handoverModalSessionId = sessionId;
+  document.getElementById("handoverSessionLabel").textContent =
+    `${guestName(session)} · ${guestLabel(sessionId, session)}`;
+
+  const select = document.getElementById("handoverWaiterSelect");
+  select.innerHTML = candidates.map(([slot, candidate]) => `
+    <option value="${escapeHtml(String(slot))}">${escapeHtml(getWaiterDisplayName({ ...candidate, slot: String(slot) }))} · Waiter ${escapeHtml(String(slot))}</option>
+  `).join("");
+
+  document.getElementById("handoverModal").classList.remove("hidden");
+}
+
+
+function closeWaiterHandoverModal() {
+  document.getElementById("handoverModal").classList.add("hidden");
+  handoverModalSessionId = null;
+}
+
+
+async function confirmWaiterHandover() {
+  if (!handoverModalSessionId) return;
+
+  const sessionId = handoverModalSessionId;
+  const targetSlot = String(document.getElementById("handoverWaiterSelect").value || "").trim();
+  if (!targetSlot) return;
+
+  const [sessionSnap, targetWaiter] = await Promise.all([
+    db.ref(`sessions/${sessionId}`).once("value"),
+    getWaiter(targetSlot)
+  ]);
+
+  const session = sessionSnap.val();
+
+  if (!session || session.status !== "active") {
+    closeWaiterHandoverModal();
+    alert("This session is no longer active.");
+    return;
+  }
+
+  if (!canManageSessionLifecycle(session)) {
+    closeWaiterHandoverModal();
+    alert("This session is no longer assigned to your waiter view.");
+    return;
+  }
+
+  if (!targetWaiter.exists || targetWaiter.active === false) {
+    alert("The selected waiter slot is no longer available.");
+    return;
+  }
+
+  const fromSlot = String(session.waiterSlot || "");
+  const targetName = getWaiterDisplayName(targetWaiter);
+  const targetStaffId = String(targetWaiter.assignedStaffId || "").trim() || null;
+  const targetStaffName = String(targetWaiter.assignedStaffName || targetWaiter.name || "").trim() || targetName;
+  const base = `sessions/${sessionId}`;
+  const timestamp = firebase.database.ServerValue.TIMESTAMP;
+  const updates = {};
+
+  if (!session.waiterSlotAtStart) {
+    updates[`${base}/waiterSlotAtStart`] = fromSlot;
+  }
+
+  updates[`${base}/waiterSlot`] = targetSlot;
+  updates[`${base}/waiterNameCurrent`] = targetName;
+  updates[`${base}/waiterStaffIdCurrent`] = targetStaffId;
+  updates[`${base}/waiterStaffNameCurrent`] = targetStaffName;
+  updates[`${base}/lastHandoverAt`] = timestamp;
+  updates[`${base}/lastActivityAt`] = timestamp;
+
+  addLifecycleTransitionUpdates(
+    updates,
+    sessionId,
+    session,
+    sessionLifecycleState(session),
+    "waiter_handover",
+    lifecycleActorContext(),
+    {
+      fromWaiterSlot: fromSlot,
+      toWaiterSlot: targetSlot,
+      toWaiterName: targetName
+    }
+  );
+
+  await db.ref().update(updates);
+  closeWaiterHandoverModal();
+  showEasyBevToast("Waiter handover complete", `${guestLabel(sessionId, session)} is now with ${targetName}.`);
 }
 
 

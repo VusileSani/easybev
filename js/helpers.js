@@ -197,6 +197,14 @@ function escapeJsString(value) {
 }
 
 
+function sessionOriginalWaiterSlot(session) {
+  return String(
+    (session && (session.waiterSlotAtStart || session.waiterSlot)) ||
+    ""
+  ).trim();
+}
+
+
 function sessionWaiterSnapshotName(session) {
   if (!session) return "";
 
@@ -211,6 +219,30 @@ function sessionWaiterSnapshotName(session) {
 function sessionWaiterSnapshotId(session) {
   return String(
     (session && session.waiterStaffIdAtStart) ||
+    ""
+  ).trim();
+}
+
+
+function sessionWaiterCurrentName(session) {
+  if (!session) return "";
+
+  return String(
+    session.waiterStaffNameCurrent ||
+    session.waiterNameCurrent ||
+    session.waiterStaffNameAtStart ||
+    session.waiterNameAtStart ||
+    ""
+  ).trim();
+}
+
+
+function sessionWaiterCurrentId(session) {
+  return String(
+    (session && (
+      session.waiterStaffIdCurrent ||
+      session.waiterStaffIdAtStart
+    )) ||
     ""
   ).trim();
 }
@@ -237,6 +269,149 @@ function sessionBillStatus(session) {
     (session && session.bill && session.bill.status) ||
     "open"
   );
+}
+
+
+function sessionLifecycleState(session) {
+  if (!session) return "closed";
+
+  const stored = String(
+    (session.lifecycle && session.lifecycle.state) ||
+    ""
+  ).trim();
+
+  if (stored) return stored;
+
+  if (["closed", "ended"].includes(String(session.status || ""))) {
+    return "closed";
+  }
+
+  const billStatus = sessionBillStatus(session);
+
+  if (billStatus === "requested") return "bill_requested";
+  if (["finalized", "paid"].includes(billStatus)) return "awaiting_settlement";
+  return "active";
+}
+
+
+function sessionLifecycleLabel(sessionOrState) {
+  const state = typeof sessionOrState === "string"
+    ? sessionOrState
+    : sessionLifecycleState(sessionOrState);
+
+  return ({
+    active: "Active",
+    bill_requested: "Bill requested",
+    awaiting_settlement: "Awaiting settlement",
+    closed: "Closed"
+  })[state] || "Active";
+}
+
+
+function sessionLifecycleBadgeClass(sessionOrState) {
+  const state = typeof sessionOrState === "string"
+    ? sessionOrState
+    : sessionLifecycleState(sessionOrState);
+
+  if (state === "bill_requested") return "alert";
+  if (state === "awaiting_settlement") return "warning";
+  if (state === "closed") return "";
+  return "active";
+}
+
+
+function lifecycleActorContext(overrides = {}) {
+  const actor = {
+    role: "system",
+    slot: null,
+    name: "EasyBev"
+  };
+
+  if (typeof managerMode !== "undefined" && managerMode) {
+    actor.role = "manager";
+    actor.name = "Venue Management";
+  }
+  else if (typeof waiterSlot !== "undefined" && waiterSlot) {
+    actor.role = "waiter";
+    actor.slot = String(waiterSlot);
+    actor.name = `Waiter ${waiterSlot}`;
+  }
+  else if (typeof guestSlot !== "undefined" && guestSlot) {
+    actor.role = "guest";
+    actor.slot = String(guestSlot);
+    actor.name = "Guest";
+  }
+
+  return { ...actor, ...overrides };
+}
+
+
+function addLifecycleTransitionUpdates(
+  updates,
+  sessionId,
+  session,
+  toState,
+  action,
+  actorOverrides = {},
+  details = {}
+) {
+  const base = `sessions/${sessionId}`;
+  const timestamp = firebase.database.ServerValue.TIMESTAMP;
+  const eventKey = db.ref(`${base}/lifecycleEvents`).push().key;
+  const fromState = sessionLifecycleState(session);
+  const actor = lifecycleActorContext(actorOverrides);
+
+  updates[`${base}/lifecycle/state`] = toState;
+  updates[`${base}/lifecycle/updatedAt`] = timestamp;
+  updates[`${base}/lifecycle/lastAction`] = action;
+  updates[`${base}/lifecycleEvents/${eventKey}`] = {
+    fromState,
+    toState,
+    action,
+    actorRole: actor.role || "system",
+    actorSlot: actor.slot || null,
+    actorName: actor.name || null,
+    details: details || {},
+    createdAt: timestamp
+  };
+
+  return updates;
+}
+
+
+function lifecycleEventList(session) {
+  return Object.values((session && session.lifecycleEvents) || {})
+    .filter(Boolean)
+    .sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+}
+
+
+function lifecycleActionLabel(action) {
+  return ({
+    session_started: "Session started",
+    bill_requested: "Bill requested",
+    bill_requested_by_waiter: "Bill request recorded",
+    bill_processed: "Bill processed",
+    payment_recorded: "Payment recorded",
+    waiter_handover: "Waiter handover",
+    session_closed: "Session closed",
+    session_ended_override: "Session ended by override",
+    session_reopened: "Session reopened"
+  })[String(action || "")] || "Session updated";
+}
+
+
+function sessionLifecycleHistoryHtml(session, limit = 4) {
+  const events = lifecycleEventList(session).slice(0, limit);
+  if (!events.length) return `<p class="muted">No lifecycle activity recorded yet.</p>`;
+
+  return `<div class="lifecycle-history">${events.map(event => {
+    const when = Number(event.createdAt || 0)
+      ? new Date(Number(event.createdAt)).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })
+      : "just now";
+    const actor = event.actorName || event.actorRole || "EasyBev";
+    return `<div class="lifecycle-event"><span><strong>${escapeHtml(lifecycleActionLabel(event.action))}</strong><small>${escapeHtml(actor)}</small></span><small>${escapeHtml(when)}</small></div>`;
+  }).join("")}</div>`;
 }
 
 

@@ -1,4 +1,4 @@
-# EasyBev v2.3 — Operational Reality
+# EasyBev v2.4 — Session Lifecycle & Waiter Handover
 
 
 EasyBev is a lightweight guest-service and digital waiter-pad layer for hospitality venues.
@@ -8,7 +8,9 @@ EasyBev is a lightweight guest-service and digital waiter-pad layer for hospital
 - Management assigns staff members to those permanent slots.
 - Waiters capture orders directly into EasyBev and respond to guest requests/messages.
 - Guests see a live running bill and request the official bill when ready.
-- Waiters reconcile the EasyBev order list in the venue POS before finalising.
+- Waiters reconcile the EasyBev order list in the venue POS before processing the bill.
+- Sessions move through Active → Bill requested → Awaiting settlement → Closed.
+- Active sessions can be handed to another assigned waiter without breaking the guest session or running bill.
 
 ## Project structure
 - `index.html` — application shell
@@ -34,4 +36,4 @@ The browser role switch exists for product testing. In production, Owner/Admin a
 The existing restaurant service data remains the current single-venue operational model. `platform/venues` is the company venue registry and onboarding/support layer; a later multi-venue backend migration should namespace operational data by venue before more than one venue is considered fully live in the same database.
 
 
-See `RELEASE-NOTES-v2.3.md` for the approved September 7 refinements.
+See `RELEASE-NOTES-v2.4.md` for the session lifecycle and waiter handover implementation. Previous release notes remain in the package.

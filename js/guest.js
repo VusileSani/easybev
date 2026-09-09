@@ -25,35 +25,6 @@ async function startGuestFlow() {
         `Service by ${currentGuestWaiterName}`;
 
 
-    if (
-      !waiter.active
-    ) {
-
-      document
-        .getElementById(
-          "guestVerification"
-        )
-        .innerHTML = `
-
-          <div class="status warning">
-
-            This waiter service slot
-            is currently unavailable.
-
-            <br><br>
-
-            Please ask a staff member
-            for assistance.
-
-          </div>
-
-        `;
-
-      return;
-
-    }
-
-
     const rememberedPhone =
       localStorage.getItem(
         phoneStorageKey(
@@ -129,12 +100,10 @@ async function startGuestFlow() {
         session.status ===
           "active" &&
 
-        String(
-          session.waiterSlot
-        ) ===
-          String(
-            guestSlot
-          )
+        (
+          String(session.waiterSlot) === String(guestSlot) ||
+          String(sessionOriginalWaiterSlot(session)) === String(guestSlot)
+        )
 
       ) {
 
@@ -153,7 +122,7 @@ async function startGuestFlow() {
         }
 
         const rememberedSessionWaiterName =
-          sessionWaiterSnapshotName(session) || currentGuestWaiterName;
+          sessionWaiterCurrentName(session) || currentGuestWaiterName;
 
 
         document
@@ -589,12 +558,10 @@ async function findOrCreateGuestSession(
         session.status ===
           "active" &&
 
-        String(
-          session.waiterSlot
-        ) ===
-          String(
-            guestSlot
-          ) &&
+        (
+          String(session.waiterSlot) === String(guestSlot) ||
+          String(sessionOriginalWaiterSlot(session)) === String(guestSlot)
+        ) &&
 
         (
           (currentGuestUserId && session.guestUserId === currentGuestUserId)
@@ -655,6 +622,17 @@ async function findOrCreateGuestSession(
   }
 
 
+  const waiter = await getWaiter(guestSlot);
+
+  if (!waiter.exists || !waiter.active) {
+    document.getElementById("verificationMessage").innerHTML = `
+      <div class="status warning">
+        This waiter service slot is currently unavailable. If an existing session was transferred, scan the current waiter QR or ask a staff member for assistance.
+      </div>`;
+    return;
+  }
+
+
   const sessionRef =
     db
       .ref(
@@ -673,11 +651,10 @@ async function findOrCreateGuestSession(
     );
 
 
-  const waiter =
-    await getWaiter(
-      guestSlot
-    );
-
+  const startedEventKey = db.ref(`sessions/${newSessionId}/lifecycleEvents`).push().key;
+  const waiterNameAtStart = getWaiterDisplayName(waiter);
+  const waiterStaffIdAtStart = String(waiter.assignedStaffId || "").trim() || null;
+  const waiterStaffNameAtStart = String(waiter.assignedStaffName || waiter.name || "").trim() || null;
 
   const newSession = {
 
@@ -686,16 +663,25 @@ async function findOrCreateGuestSession(
         guestSlot
       ),
 
-    waiterNameAtStart:
-      getWaiterDisplayName(
-        waiter
+    waiterSlotAtStart:
+      String(
+        guestSlot
       ),
 
-    waiterStaffIdAtStart:
-      String(waiter.assignedStaffId || "").trim() || null,
+    waiterNameAtStart,
 
-    waiterStaffNameAtStart:
-      String(waiter.assignedStaffName || waiter.name || "").trim() || null,
+    waiterStaffIdAtStart,
+
+    waiterStaffNameAtStart,
+
+    waiterNameCurrent:
+      waiterNameAtStart,
+
+    waiterStaffIdCurrent:
+      waiterStaffIdAtStart,
+
+    waiterStaffNameCurrent:
+      waiterStaffNameAtStart,
 
     guestUserId:
       currentGuestUserId || null,
@@ -727,6 +713,25 @@ async function findOrCreateGuestSession(
     bill: {
       status:
         "open"
+    },
+
+    lifecycle: {
+      state: "active",
+      updatedAt: firebase.database.ServerValue.TIMESTAMP,
+      lastAction: "session_started"
+    },
+
+    lifecycleEvents: {
+      [startedEventKey]: {
+        fromState: "active",
+        toState: "active",
+        action: "session_started",
+        actorRole: "guest",
+        actorSlot: String(guestSlot),
+        actorName: "Guest",
+        details: {},
+        createdAt: firebase.database.ServerValue.TIMESTAMP
+      }
     },
 
     total:
@@ -844,7 +849,7 @@ function connectGuestToSession(
           session;
 
 
-        let waiterName = sessionWaiterSnapshotName(session);
+        let waiterName = sessionWaiterCurrentName(session);
 
         if (!waiterName) {
           const waiter = await getWaiter(session.waiterSlot);
@@ -860,6 +865,9 @@ function connectGuestToSession(
           )
           .textContent =
             waiterName;
+
+        const serviceHeading = document.getElementById("guestServiceHeading");
+        if (serviceHeading) serviceHeading.textContent = `Service by ${waiterName}`;
 
 
         document
@@ -1137,44 +1145,30 @@ async function requestBill() {
   }
 
 
-  await db
-    .ref(
-      `sessions/${currentSessionId}`
-    )
-    .update({
+  const base = `sessions/${currentSessionId}`;
+  const timestamp = firebase.database.ServerValue.TIMESTAMP;
+  const updates = {};
 
-      latestRequest: {
+  updates[`${base}/latestRequest`] = {
+    type: "bill",
+    label: "Bill requested",
+    status: "new",
+    createdAt: timestamp
+  };
+  updates[`${base}/bill/status`] = "requested";
+  updates[`${base}/bill/requestedAt`] = timestamp;
+  updates[`${base}/lastActivityAt`] = timestamp;
 
-        type:
-          "bill",
+  addLifecycleTransitionUpdates(
+    updates,
+    currentSessionId,
+    currentSession,
+    "bill_requested",
+    "bill_requested",
+    { role: "guest", slot: null, name: guestName(currentSession) }
+  );
 
-        label:
-          "Bill requested",
-
-        status:
-          "new",
-
-        createdAt:
-          firebase.database
-            .ServerValue
-            .TIMESTAMP
-
-      },
-
-      "bill/status":
-        "requested",
-
-      "bill/requestedAt":
-        firebase.database
-          .ServerValue
-          .TIMESTAMP,
-
-      lastActivityAt:
-        firebase.database
-          .ServerValue
-          .TIMESTAMP
-
-    });
+  await db.ref().update(updates);
 
 }
 
@@ -1217,47 +1211,31 @@ async function payBill() {
   }
 
 
-  await db
-    .ref(
-      `sessions/${currentSessionId}`
-    )
-    .update({
+  const base = `sessions/${currentSessionId}`;
+  const timestamp = firebase.database.ServerValue.TIMESTAMP;
+  const updates = {};
 
-      "bill/status":
-        "paid",
+  updates[`${base}/bill/status`] = "paid";
+  updates[`${base}/bill/paidAt`] = timestamp;
+  updates[`${base}/bill/paidTotal`] = sessionBillTotal(session);
+  updates[`${base}/latestRequest`] = {
+    type: "payment",
+    label: "Payment completed",
+    status: "new",
+    createdAt: timestamp
+  };
+  updates[`${base}/lastActivityAt`] = timestamp;
 
-      "bill/paidAt":
-        firebase.database
-          .ServerValue
-          .TIMESTAMP,
+  addLifecycleTransitionUpdates(
+    updates,
+    currentSessionId,
+    session,
+    "awaiting_settlement",
+    "payment_recorded",
+    { role: "guest", slot: null, name: guestName(session) }
+  );
 
-      "bill/paidTotal":
-        sessionBillTotal(session),
-
-      latestRequest: {
-
-        type:
-          "payment",
-
-        label:
-          "Payment completed",
-
-        status:
-          "new",
-
-        createdAt:
-          firebase.database
-            .ServerValue
-            .TIMESTAMP
-
-      },
-
-      lastActivityAt:
-        firebase.database
-          .ServerValue
-          .TIMESTAMP
-
-    });
+  await db.ref().update(updates);
 
 }
 
@@ -1331,7 +1309,7 @@ function renderGuestBillStatus(session) {
   if (billStatus === "finalized") {
     billStatusDiv.innerHTML = `
       <div class="status success">
-        Bill processed at ${money(sessionBillTotal(session))}. Order items are now locked.
+        Bill ready at ${money(sessionBillTotal(session))}. Settlement is being handled by the venue; order items are locked.
       </div>`;
     if (typeof platformFeatureEnabled !== "function" || platformFeatureEnabled("onlinePayment", true)) {
       payButton.classList.remove("hidden");
@@ -1342,7 +1320,7 @@ function renderGuestBillStatus(session) {
   if (billStatus === "paid") {
     billStatusDiv.innerHTML = `
       <div class="status success">
-        Payment received. Waiting for the session to be closed.
+        Payment recorded. Waiting for the waiter to close the session.
       </div>`;
     return;
   }

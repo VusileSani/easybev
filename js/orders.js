@@ -50,8 +50,8 @@ async function openItemModal(
   if (!session) return;
 
   itemModalSessionId = sessionId;
-  itemModalWaiterName = sessionWaiterSnapshotName(session);
-  itemModalWaiterStaffId = sessionWaiterSnapshotId(session);
+  itemModalWaiterName = sessionWaiterCurrentName(session);
+  itemModalWaiterStaffId = sessionWaiterCurrentId(session);
 
   if (!itemModalWaiterName) {
     const waiter = await getWaiter(session.waiterSlot);
@@ -614,38 +614,78 @@ function doneAddingItems() {
 
 
 /* =========================================================
-   BILL FINALISATION
+   SESSION LIFECYCLE + BILL PROCESSING
    ========================================================= */
 
-async function processBill(
-  sessionId
-) {
+function canManageSessionLifecycle(session) {
+  if (typeof managerMode !== "undefined" && managerMode) return true;
 
-  const snap =
-    await db
-      .ref(
-        `sessions/${sessionId}`
-      )
-      .once(
-        "value"
-      );
-
-
-  const session =
-    snap.val();
-
-
-  if (
-    !session ||
-    session.status !== "active"
-  ) {
-
-    return;
-
+  if (typeof waiterSlot !== "undefined" && waiterSlot) {
+    return session && String(session.waiterSlot) === String(waiterSlot);
   }
 
-  if (!["open", "requested"].includes(sessionBillStatus(session))) {
-    alert("This bill has already been processed.");
+  return false;
+}
+
+
+async function markBillRequestedByWaiter(sessionId) {
+  const snap = await db.ref(`sessions/${sessionId}`).once("value");
+  const session = snap.val();
+
+  if (!session || session.status !== "active") return;
+
+  if (!canManageSessionLifecycle(session)) {
+    alert("This session is not assigned to your waiter view.");
+    return;
+  }
+
+  if (sessionBillStatus(session) !== "open") return;
+
+  if (sessionBillTotal(session) <= 0) {
+    alert("There are no billable items.");
+    return;
+  }
+
+  const confirmed = confirm(
+    `Record a bill request for ${guestLabel(sessionId, session)}? Use this when the guest asked verbally rather than tapping Request Bill.`
+  );
+
+  if (!confirmed) return;
+
+  const base = `sessions/${sessionId}`;
+  const timestamp = firebase.database.ServerValue.TIMESTAMP;
+  const updates = {};
+
+  updates[`${base}/bill/status`] = "requested";
+  updates[`${base}/bill/requestedAt`] = timestamp;
+  updates[`${base}/lastActivityAt`] = timestamp;
+
+  addLifecycleTransitionUpdates(
+    updates,
+    sessionId,
+    session,
+    "bill_requested",
+    "bill_requested_by_waiter",
+    lifecycleActorContext()
+  );
+
+  await db.ref().update(updates);
+}
+
+
+async function processBill(sessionId) {
+  const snap = await db.ref(`sessions/${sessionId}`).once("value");
+  const session = snap.val();
+
+  if (!session || session.status !== "active") return;
+
+  if (!canManageSessionLifecycle(session)) {
+    alert("This session is not assigned to your waiter view.");
+    return;
+  }
+
+  if (sessionBillStatus(session) !== "requested") {
+    alert("Record the bill request before processing the bill.");
     return;
   }
 
@@ -662,78 +702,42 @@ async function processBill(
     return;
   }
 
+  const total = calculateTotal(session.items || {});
 
-  const total =
-    calculateTotal(
-      session.items || {}
-    );
-
-
-  if (
-    total <= 0
-  ) {
-
-    alert(
-      "There are no billable items."
-    );
-
+  if (total <= 0) {
+    alert("There are no billable items.");
     return;
-
   }
 
+  const base = `sessions/${sessionId}`;
+  const timestamp = firebase.database.ServerValue.TIMESTAMP;
+  const updates = {};
 
-  await db
-    .ref(
-      `sessions/${sessionId}`
-    )
-    .update({
+  updates[`${base}/total`] = total;
+  updates[`${base}/bill/status`] = "finalized";
+  updates[`${base}/bill/finalizedAt`] = timestamp;
+  updates[`${base}/bill/processedAt`] = timestamp;
+  updates[`${base}/bill/finalizedTotal`] = total;
+  updates[`${base}/bill/finalizedItemCount`] = Object.values(session.items || {})
+    .reduce((sum, item) => sum + Number(item.qty || 1), 0);
+  updates[`${base}/latestRequest`] = {
+    type: "bill",
+    label: "Bill processed",
+    status: "completed",
+    completedAt: timestamp
+  };
+  updates[`${base}/lastActivityAt`] = timestamp;
 
-      total,
+  addLifecycleTransitionUpdates(
+    updates,
+    sessionId,
+    session,
+    "awaiting_settlement",
+    "bill_processed",
+    lifecycleActorContext()
+  );
 
-      "bill/status":
-        "finalized",
-
-      "bill/finalizedAt":
-        firebase.database
-          .ServerValue
-          .TIMESTAMP,
-
-      "bill/processedAt":
-        firebase.database
-          .ServerValue
-          .TIMESTAMP,
-
-      "bill/finalizedTotal":
-        total,
-
-      "bill/finalizedItemCount":
-        Object.values(session.items || {}).reduce((sum, item) => sum + Number(item.qty || 1), 0),
-
-      latestRequest: {
-
-        type:
-          "bill",
-
-        label:
-          "Bill processed",
-
-        status:
-          "completed",
-
-        completedAt:
-          firebase.database
-            .ServerValue
-            .TIMESTAMP
-
-      },
-
-      lastActivityAt:
-        firebase.database
-          .ServerValue
-          .TIMESTAMP
-
-    });
-
+  await db.ref().update(updates);
 }
 
 
@@ -744,60 +748,36 @@ async function finalizeBill(sessionId) {
 
 
 /* =========================================================
-   NORMAL PAID SESSION CLOSURE
+   NORMAL SESSION CLOSURE
    ========================================================= */
 
-async function closePaidSession(
-  sessionId
-) {
+async function closePaidSession(sessionId) {
+  const snap = await db.ref(`sessions/${sessionId}`).once("value");
+  const session = snap.val();
 
-  const snap =
-    await db
-      .ref(
-        `sessions/${sessionId}`
-      )
-      .once(
-        "value"
-      );
+  if (!session || session.status !== "active") return;
 
+  if (!canManageSessionLifecycle(session)) {
+    alert("This session is not assigned to your waiter view.");
+    return;
+  }
 
-  const session =
-    snap.val();
-
-
-  if (!session || !session.bill || !["finalized", "paid"].includes(session.bill.status)) {
+  if (!session.bill || !["finalized", "paid"].includes(session.bill.status)) {
     alert("Process the bill before closing the session.");
     return;
   }
 
+  const label = guestLabel(sessionId, session);
+  const confirmed = confirm(
+    `Close ${label}? Confirm settlement has been handled by the venue. The session will be locked and moved into completed history.`
+  );
 
-  const label =
-    guestLabel(
-      sessionId,
-      session
-    );
-
-
-  const confirmed =
-    confirm(
-      `Close ${label}? The bill has been processed and the session will move to guest history.`
-    );
-
-
-  if (
-    !confirmed
-  ) {
-
-    return;
-
-  }
-
+  if (!confirmed) return;
 
   await closeSessionAtomic(
     sessionId,
     session.bill.status === "paid" ? "paid" : "bill_processed"
   );
-
 }
 
 
@@ -805,31 +785,15 @@ async function closePaidSession(
    WAITER / MANAGER SESSION OVERRIDE
    ========================================================= */
 
-async function endSessionOverride(
-  sessionId,
-  reason = "waiter_override"
-) {
+async function endSessionOverride(sessionId, reason = "waiter_override") {
+  const snap = await db.ref(`sessions/${sessionId}`).once("value");
+  const session = snap.val();
 
-  const snap =
-    await db
-      .ref(
-        `sessions/${sessionId}`
-      )
-      .once(
-        "value"
-      );
+  if (!session || session.status !== "active") return;
 
-
-  const session =
-    snap.val();
-
-
-  if (
-    !session
-  ) {
-
+  if (!canManageSessionLifecycle(session)) {
+    alert("This session is not assigned to your waiter view.");
     return;
-
   }
 
   if (sessionBillStatus(session) === "paid") {
@@ -837,53 +801,17 @@ async function endSessionOverride(
     return;
   }
 
-
-  const label =
-    guestLabel(
-      sessionId,
-      session
-    );
-
-
-  const confirmed =
-    confirm(
-
-      `End the active session for ${label}?\n\n` +
-
-      `Use this for an abandoned, broken or stuck session.`
-
-    );
-
-
-  if (
-    !confirmed
-  ) {
-
-    return;
-
-  }
-
-
-  const secondConfirm =
-    confirm(
-      `Confirm: end ${label} now?`
-    );
-
-
-  if (
-    !secondConfirm
-  ) {
-
-    return;
-
-  }
-
-
-  await closeSessionAtomic(
-    sessionId,
-    reason
+  const label = guestLabel(sessionId, session);
+  const confirmed = confirm(
+    `End the active session for ${label}?\n\nUse this only for an abandoned, broken or stuck session.`
   );
 
+  if (!confirmed) return;
+
+  const secondConfirm = confirm(`Confirm: end ${label} now?`);
+  if (!secondConfirm) return;
+
+  await closeSessionAtomic(sessionId, reason);
 }
 
 
@@ -891,103 +819,100 @@ async function endSessionOverride(
    SESSION CLOSURE
 
    THERE IS NO TABLE RECORD TO RELEASE.
-
    EACH GUEST SESSION IS INDEPENDENT.
    ========================================================= */
 
-async function closeSessionAtomic(
-  sessionId,
-  reason
-) {
+async function closeSessionAtomic(sessionId, reason) {
+  const sessionSnap = await db.ref(`sessions/${sessionId}`).once("value");
+  const session = sessionSnap.val();
 
-  const sessionSnap =
-    await db
-      .ref(
-        `sessions/${sessionId}`
-      )
-      .once(
-        "value"
-      );
+  if (!session) return;
 
-
-  const session =
-    sessionSnap.val();
-
-
-  if (
-    !session
-  ) {
-
-    return;
-
-  }
-
-
-  const finalStatus =
-
-    ["paid", "bill_processed"].includes(reason)
-
-      ? "closed"
-
-      : "ended";
-
-
+  const normalClose = ["paid", "bill_processed"].includes(reason);
+  const finalStatus = normalClose ? "closed" : "ended";
+  const base = `sessions/${sessionId}`;
+  const timestamp = firebase.database.ServerValue.TIMESTAMP;
   const updates = {};
 
+  updates[`${base}/status`] = finalStatus;
+  updates[`${base}/endedAt`] = timestamp;
+  updates[`${base}/closedAt`] = timestamp;
+  updates[`${base}/closeReason`] = reason;
+  updates[`${base}/latestRequest`] = null;
+  updates[`${base}/lastActivityAt`] = timestamp;
 
-  updates[
-    `sessions/${sessionId}/status`
-  ] =
-    finalStatus;
-
-
-  updates[`sessions/${sessionId}/endedAt`] = firebase.database.ServerValue.TIMESTAMP;
-  updates[`sessions/${sessionId}/closedAt`] = firebase.database.ServerValue.TIMESTAMP;
-
-
-  updates[
-    `sessions/${sessionId}/closeReason`
-  ] =
-    reason;
-
-
-  updates[
-    `sessions/${sessionId}/latestRequest`
-  ] =
-    null;
-
-
-  updates[
-    `sessions/${sessionId}/lastActivityAt`
-  ] =
-    firebase.database
-      .ServerValue
-      .TIMESTAMP;
-
-
-  await db
-    .ref()
-    .update(
-      updates
-    );
-
-
-  alert(
-
-    ["paid", "bill_processed"].includes(reason)
-
-      ? `${guestLabel(
-          sessionId,
-          session
-        )} closed successfully.`
-
-      : `${guestLabel(
-          sessionId,
-          session
-        )} session ended.`
-
+  addLifecycleTransitionUpdates(
+    updates,
+    sessionId,
+    session,
+    "closed",
+    normalClose ? "session_closed" : "session_ended_override",
+    lifecycleActorContext(),
+    { closeReason: reason }
   );
 
+  await db.ref().update(updates);
+
+  alert(
+    normalClose
+      ? `${guestLabel(sessionId, session)} closed successfully.`
+      : `${guestLabel(sessionId, session)} session ended.`
+  );
 }
 
 
+/* =========================================================
+   REOPEN ACCIDENTALLY CLOSED SESSION
+   ========================================================= */
+
+async function reopenClosedSession(sessionId) {
+  const snap = await db.ref(`sessions/${sessionId}`).once("value");
+  const session = snap.val();
+
+  if (!session || session.status !== "closed") {
+    alert("Only normally closed sessions can be reopened.");
+    return;
+  }
+
+  if (!canManageSessionLifecycle(session)) {
+    alert("This session is not assigned to your waiter view.");
+    return;
+  }
+
+  const label = guestLabel(sessionId, session);
+  const confirmed = confirm(
+    `Reopen ${label}? The previous close remains in the audit trail.`
+  );
+
+  if (!confirmed) return;
+
+  const billStatus = sessionBillStatus(session);
+  const restoredState = billStatus === "requested"
+    ? "bill_requested"
+    : ["finalized", "paid"].includes(billStatus)
+      ? "awaiting_settlement"
+      : "active";
+
+  const base = `sessions/${sessionId}`;
+  const timestamp = firebase.database.ServerValue.TIMESTAMP;
+  const updates = {};
+
+  updates[`${base}/status`] = "active";
+  updates[`${base}/closedAt`] = null;
+  updates[`${base}/endedAt`] = null;
+  updates[`${base}/closeReason`] = null;
+  updates[`${base}/lastActivityAt`] = timestamp;
+
+  addLifecycleTransitionUpdates(
+    updates,
+    sessionId,
+    session,
+    restoredState,
+    "session_reopened",
+    lifecycleActorContext(),
+    { restoredBillStatus: billStatus }
+  );
+
+  await db.ref().update(updates);
+  showEasyBevToast("Session reopened", `${label} is active again.`);
+}

@@ -103,7 +103,10 @@ function renderManagerServicePulse() {
     session.latestRequest && session.latestRequest.status === "new"
   ).length;
   const billsWaiting = activeSessions.filter(session =>
-    sessionBillStatus(session) === "requested"
+    sessionLifecycleState(session) === "bill_requested"
+  ).length;
+  const awaitingSettlement = activeSessions.filter(session =>
+    sessionLifecycleState(session) === "awaiting_settlement"
   ).length;
 
   panel.innerHTML = `
@@ -116,8 +119,12 @@ function renderManagerServicePulse() {
       <strong>${attention}</strong>
     </div>
     <div class="service-pulse-card ${billsWaiting ? "needs-attention" : ""}">
-      <span>Bills waiting</span>
+      <span>Bill requests</span>
       <strong>${billsWaiting}</strong>
+    </div>
+    <div class="service-pulse-card ${awaitingSettlement ? "needs-attention" : ""}">
+      <span>Settlement</span>
+      <strong>${awaitingSettlement}</strong>
     </div>`;
 }
 
@@ -635,22 +642,51 @@ function managerSessionsForSlot(slot, sessions) {
     .sort((a, b) => Number(b[1].lastActivityAt || b[1].createdAt || 0) - Number(a[1].lastActivityAt || a[1].createdAt || 0));
 }
 
+function managerClosedSessionsForSlot(slot, sessions) {
+  return Object.entries(sessions || {})
+    .filter(([, session]) => session && session.status === "closed" && String(session.waiterSlot) === String(slot))
+    .sort((a, b) => Number(b[1].closedAt || 0) - Number(a[1].closedAt || 0))
+    .slice(0, 4);
+}
+
 function managerWaiterDetailHtml(slot, waiter, activeSessions, guestLink) {
   const name = String(waiter.assignedStaffName || waiter.name || "").trim();
   const assignedStaffId = String(waiter.assignedStaffId || "").trim();
   const active = waiter.active !== false;
+  const recentClosed = managerClosedSessionsForSlot(slot, latestManagerSessions);
 
   const sessionHtml = activeSessions.length
     ? activeSessions.map(([sessionId, session]) => `
-        <div class="manager-row">
+        <div class="manager-row manager-session-row">
           <div>
             <strong>${escapeHtml(guestName(session))}</strong>
             <div class="muted">${escapeHtml(guestLabel(sessionId, session))}</div>
+            <span class="badge ${sessionLifecycleBadgeClass(session)}">${escapeHtml(sessionLifecycleLabel(session))}</span>
           </div>
-          <strong>${money(calculateTotal(session.items || {}))}</strong>
+          <div class="manager-session-actions">
+            <strong>${money(calculateTotal(session.items || {}))}</strong>
+            <button class="secondary" onclick="openWaiterHandoverModal('${sessionId}')">Transfer</button>
+          </div>
         </div>
       `).join("")
     : `<p class="muted">No active guests for this waiter.</p>`;
+
+  const closedHtml = recentClosed.length
+    ? `<details class="manager-recent-sessions">
+        <summary>Recently closed (${recentClosed.length})</summary>
+        ${recentClosed.map(([sessionId, session]) => `
+          <div class="manager-row manager-session-row">
+            <div>
+              <strong>${escapeHtml(guestName(session))}</strong>
+              <div class="muted">${escapeHtml(guestLabel(sessionId, session))}</div>
+            </div>
+            <div class="manager-session-actions">
+              <strong>${money(sessionBillTotal(session))}</strong>
+              <button class="secondary" onclick="reopenClosedSession('${sessionId}')">Reopen</button>
+            </div>
+          </div>`).join("")}
+      </details>`
+    : "";
 
   return `
     <div class="slot-detail" onclick="event.stopPropagation()">
@@ -674,6 +710,7 @@ function managerWaiterDetailHtml(slot, waiter, activeSessions, guestLink) {
         <div>
           <strong>Active guests</strong>
           ${sessionHtml}
+          ${closedHtml}
         </div>
       </div>
 

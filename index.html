@@ -602,6 +602,36 @@
 </div>
 
 
+<!-- =========================================================
+     WAITER HANDOVER MODAL
+     ========================================================= -->
+
+<div id="handoverModal" class="modal hidden">
+  <div class="modal-content compact-modal">
+    <div class="reconcile-head">
+      <div>
+        <div class="eyebrow" style="color:#a8750e">Waiter handover</div>
+        <h2 style="margin:0">Transfer Session</h2>
+        <span id="handoverSessionLabel" class="muted"></span>
+      </div>
+      <button class="secondary" onclick="closeWaiterHandoverModal()">Close</button>
+    </div>
+
+    <p class="muted">The guest session, running bill, messages and history stay intact. Only service ownership changes.</p>
+
+    <label>
+      New waiter
+      <select id="handoverWaiterSelect"></select>
+    </label>
+
+    <div class="modal-actions">
+      <button class="secondary" onclick="closeWaiterHandoverModal()">Cancel</button>
+      <button class="success" onclick="confirmWaiterHandover()">Transfer Waiter</button>
+    </div>
+  </div>
+</div>
+
+
 <script src="js/state.js"></script>
 <script src="js/helpers.js"></script>
 <script src="js/messages.js"></script>

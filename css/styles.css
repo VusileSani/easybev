@@ -951,7 +951,7 @@ button:active { transform: none; filter: brightness(.98); }
 /* Management */
 .service-pulse-grid {
   display: grid;
-  grid-template-columns: repeat(3,minmax(0,1fr));
+  grid-template-columns: repeat(4,minmax(0,1fr));
   gap: 10px;
   margin-bottom: 16px;
 }
@@ -1019,7 +1019,7 @@ button:active { transform: none; filter: brightness(.98); }
   input, select { font-size: 16px; }
   .container { padding-top: 16px; }
   .section-intro { padding: 20px; }
-  .service-pulse-grid { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 7px; }
+  .service-pulse-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; }
   .service-pulse-card { min-height: 78px; padding: 12px 10px; }
   .service-pulse-card span { font-size: 10px; }
   .service-pulse-card strong { font-size: 25px; }
@@ -1241,3 +1241,9 @@ button.platform-attention-item:hover { background:#f7f9f8; transform:none; }
 .manager-compact-list{display:grid;gap:7px}.manager-compact-row{width:100%;margin:0;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:#f8faf9;color:var(--ink);display:flex;justify-content:space-between;align-items:center;gap:12px;text-align:left}.manager-compact-row:hover,.manager-compact-row:focus{background:#fff;border-color:#cfd6da}.compact-row-main{display:grid;gap:2px;min-width:0}.compact-row-main strong,.compact-row-main small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.compact-row-main small{color:var(--muted);font-weight:500}.compact-row-end{display:flex;gap:9px;align-items:center;flex:0 0 auto}.manager-load-more{margin-top:10px}
 .manager-detail-surface{display:grid;gap:15px}.manager-detail-surface h3{margin:3px 0 0}.detail-summary-line{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.manager-detail-form{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.7fr);gap:10px}.manager-detail-form label{font-weight:750}.manager-detail-form input{margin-top:6px}.manager-detail-actions{display:flex;gap:8px;flex-wrap:wrap}.manager-detail-actions button{width:auto;margin:0}
 @media(max-width:680px){.manager-list-toolbar{align-items:stretch;flex-direction:column}.compact-filters{display:grid;grid-template-columns:repeat(3,1fr)}.manager-detail-form{grid-template-columns:1fr}.compact-row-end .badge{display:none}}
+
+/* =========================================================
+   SESSION LIFECYCLE + HANDOVER
+   ========================================================= */
+.badge.warning{background:#fff1cf;color:#7a5608}.session-secondary-actions{display:flex;gap:8px;flex-wrap:wrap}.lifecycle-audit-block{margin-top:14px;padding-top:12px;border-top:1px solid #e6eaed}.lifecycle-history{display:grid;gap:8px;margin-top:8px}.lifecycle-event{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:8px 0;border-bottom:1px solid #edf0f2}.lifecycle-event:last-child{border-bottom:0}.lifecycle-event span{display:grid;gap:2px}.lifecycle-event small{color:#68747b}.recent-sessions{margin-top:14px}.recent-sessions>summary,.manager-recent-sessions>summary{cursor:pointer;font-weight:800;display:flex;align-items:center;gap:8px}.recent-session-list{display:grid;gap:8px;margin-top:12px}.recent-session-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid #edf0f2}.recent-session-row>div:first-child{display:grid;gap:2px}.recent-session-row small{color:#68747b}.recent-session-actions,.manager-session-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}.manager-session-row{align-items:center}.manager-recent-sessions{margin-top:14px;padding-top:12px;border-top:1px solid #e6eaed}.compact-modal{max-width:480px}.compact-modal label{display:grid;gap:7px;font-weight:800}.compact-modal select{width:100%}
+@media(max-width:680px){.recent-session-row,.lifecycle-event{align-items:flex-start;flex-direction:column}.recent-session-actions,.manager-session-actions{justify-content:flex-start}.session-secondary-actions{display:grid;grid-template-columns:1fr}.session-secondary-actions button{width:100%}}
